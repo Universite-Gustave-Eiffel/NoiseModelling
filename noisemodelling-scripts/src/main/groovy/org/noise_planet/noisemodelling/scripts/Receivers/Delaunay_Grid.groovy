@@ -141,6 +141,13 @@ inputs = [
                 default    : 'RECEIVERS',
                 type       : String.class
         ],
+        isoSurfaceInBuildings: [
+                name        : 'Create IsoSurfaces over buildings',
+                title       : 'Create IsoSurfaces over buildings',
+                description : 'If enabled, isosurfaces will be visible at the location of buildings',
+                default    : true,
+                type        : Boolean.class
+        ],
         fenceNegativeBuffer             : [
                 name       : 'Negative buffer',
                 title      : 'Negative buffer',
@@ -208,7 +215,10 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
     if (input['tableBuilding']) {
         building_table_name = input['tableBuilding']
     }
+
     building_table_name = TableLocation.capsIdentifier(building_table_name, dbType)
+
+    boolean isoSurfaceInBuildings = input.getOrDefault('isoSurfaceInBuildings', true) as Boolean
 
     Double maxCellDist = 600.0
     if (input['maxCellDist']) {
@@ -363,9 +373,38 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
 
     long nbReceivers = delaunayReceiversMaker.getReceiversCount()
 
+    if(!isoSurfaceInBuildings && !building_table_name.isEmpty()) {
+        logger.info("Removing triangles that are over buildings")
+        int removedTriangles = 0
+        if(!exportTriangles) {
+            removedTriangles = sql.executeUpdate("""
+            DELETE FROM TRIANGLES T WHERE EXISTS (SELECT 1 FROM $building_table_name B WHERE 
+                ST_MakeLine((SELECT THE_GEOM FROM $receivers_table_name R1 WHERE R1.PK = T.PK_1),
+                            (SELECT THE_GEOM FROM $receivers_table_name R2 WHERE R2.PK = T.PK_2),
+                            (SELECT THE_GEOM FROM $receivers_table_name R3 WHERE R3.PK = T.PK_3)) && B.THE_GEOM AND
+                            ST_Intersects(B.THE_GEOM, ST_MakePolygon(ST_MakeLine((SELECT THE_GEOM FROM $receivers_table_name R1 WHERE R1.PK = T.PK_1),
+                            (SELECT THE_GEOM FROM $receivers_table_name R2 WHERE R2.PK = T.PK_2),
+                            (SELECT THE_GEOM FROM $receivers_table_name R3 WHERE R3.PK = T.PK_3),
+                            (SELECT THE_GEOM FROM $receivers_table_name R1 WHERE R1.PK = T.PK_1)))));
+        """ as String)
+        } else {
+            removedTriangles = sql.executeUpdate("""
+                DELETE FROM TRIANGLES T WHERE EXISTS (SELECT 1 FROM $building_table_name B 
+                            WHERE T.THE_GEOM && B.THE_GEOM AND ST_Intersects(B.THE_GEOM, T.THE_GEOM));
+            """ as String);
+        }
+        logger.info("Removed {0} triangles that are over buildings", removedTriangles)
+        sql.execute("""
+            -- Remove points not referenced by triangles
+            DELETE FROM $receivers_table_name R 
+            WHERE NOT EXISTS (SELECT 1 FROM $outputTableNameTriangles T WHERE T.PK_1 = R.PK)
+              AND NOT EXISTS (SELECT 1 FROM $outputTableNameTriangles T WHERE T.PK_2 = R.PK)
+              AND NOT EXISTS (SELECT 1 FROM $outputTableNameTriangles T WHERE T.PK_3 = R.PK);
+        """ as String)
+    }
+
     // Process Done
-    def resultString = "Delaunay grid created with " + nbReceivers + " receivers in table " + receivers_table_name +
-            (exportTriangles ? " and triangles in table TRIANGLES" : "" )+ "."
+    def resultString = "Delaunay grid created with $nbReceivers receivers in table $receivers_table_name${exportTriangles ? " and triangles in table " + outputTableNameTriangles : ""}."
     resultString += " Process time: " + (processTime / 1000) + " seconds."
 
     // print to command window

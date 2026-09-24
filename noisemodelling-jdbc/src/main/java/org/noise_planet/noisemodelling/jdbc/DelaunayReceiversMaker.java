@@ -54,9 +54,9 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
-    private AtomicInteger constraintId = new AtomicInteger(1);
+    private final AtomicInteger constraintId = new AtomicInteger(1);
     private double epsilon = 1e-6;
-    private double geometrySimplificationDistance = 1;
+    private double geometrySimplificationDistance = 0.1;
     private boolean exportTrianglesGeometries = false;
 
     /**
