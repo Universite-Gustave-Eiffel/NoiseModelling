@@ -71,7 +71,7 @@ To date, NoiseModelling has been applied in a variety of research projects and p
 
 Other software that fully implement the CNOSSOS-EU method exist, but to our knowledge they are all commercial and closed-source software. Other open-source tools can produce noise maps :
 
-  - Code_TYMPAN [@edf_code_tympan] is desktop application that focuses on industrial noise and is based on the ISO 9613-2 method. It does not handle CNOSSOS-EU sepecifics such as road traffic and rail traffic emissions.
+  - Code_TYMPAN [@edf_code_tympan] is desktop application that focuses on industrial noise and is based on the ISO 9613-2 method. It does not handle CNOSSOS-EU specifics such as road traffic and rail traffic emissions.
   - OpeNoise Map [@arpa_piemonte_openoise_2024] is a QGis plugin that only implements a simplified version of the CNOSSOS-EU method, it lacks some parts such as reflexions or ground elevation.
 
 # Architecture
