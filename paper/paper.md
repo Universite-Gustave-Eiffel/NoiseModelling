@@ -59,17 +59,20 @@ It is therefore crucial to simulate and predict noise propagation in various env
 
 Since 2019 and Directive (EU) 2015/996 [@noauthor_commission_2015], the CNOSSOS-EU emission and propagation method must be used to produce strategic noise maps as described in Directive 2002/49/EC [@noauthor_commission_2002].
 
-There is software that fully implements the CNOSSOS-EU method, but this is commercial closed-source software. Other open-source tools can produce noise maps, such as OpeNoise Map [@arpa_piemonte_openoise_2024] and Code_TYMPAN [@edf_code_tympan], but they either focus on the ISO 9613-2:2024 method or do not fully implement the CNOSSOS-EU model.
-
 The NoiseModelling library has been developed jointly by Gustave Eiffel University and CNRS in an effort to provide the engineering and scientific communities around the world with a fully free and open-source software to compute and explore noise maps and experiment with the underlying models.
 
 To date, NoiseModelling has been applied in a variety of research projects and practical scenarios, including, but not limited to:
 
 - Standard noise maps of the main transport infrastructures [@aumond_strategic_2023].
-- Dynamic noise maps from the coupling with several traffic models such as MATSim, SUMO and Symuvia [@le_bescond_open-source_2021], [@baclet_near-real-time_2023], [@quintero_statistical_2019].
+- Dynamic noise maps from the coupling with several traffic models [@le_bescond_open-source_2021], [@baclet_near-real-time_2023], [@quintero_statistical_2019], such as MATSim [@horni_multi-agent_2016], SUMO [@lopez_microscopic_2018] and SymuVia [@licit_open-symuvia].
 - Sensitivity analysis of various aspects of the CNOSSOS-EU model [@aumond_global_2021].
 - Dynamic noise map from noise sensors with data assimilation methods [@lesieur_data_2021].
 - Noise quantification of specific sources such as sirens [@siliezar_case_2023] or drones [@legriffon_drone_2024]
+
+Other software that fully implement the CNOSSOS-EU method exist, but to our knowledge they are all commercial and closed-source software. Other open-source tools can produce noise maps :
+
+  - Code_TYMPAN [@edf_code_tympan] is desktop application that focuses on industrial noise and is based on the ISO 9613-2 method. It does not handle CNOSSOS-EU sepecifics such as road traffic and rail traffic emissions.
+  - OpeNoise Map [@arpa_piemonte_openoise_2024] is a QGis plugin that only implements a simplified version of the CNOSSOS-EU method, it lacks some parts such as reflexions or ground elevation.
 
 # Architecture
 
@@ -82,7 +85,7 @@ NoiseModelling is made of five main Java libraries:
 - noisemodelling-emission: to determine the sound power level of rail or road traffic,
 - noisemodelling-pathfinder: to find the cut profiles between the source-receiver pairs,
 - noisemodelling-propagation: to compute the noise attenuation between the source-receiver pairs,
-- noisemodelling-jdbc: to connect NoiseModelling to a database,
+- noisemodelling-jdbc: to connect previous librairies to a spatial database,
 - noisemodelling-scripts: utility and processing scripts, exposed through a built-in web server with a graphical interface and through a command-line runner.
 
 Note that the noisemodelling-jdbc library (JDBC = Java DataBase Connectivity) is central since it allows the emission, path-finding and propagation libraries to communicate with each other as soon as the data are stored in a database. A connection wrapper facilitates the connection to the H2 database with its spatial extension H2GIS, as well as to a PostgreSQL database server with the PostGIS spatial extension.
@@ -140,7 +143,7 @@ All discrepancies between our implementation and the references can be identifie
 
 A substantial effort is being made to help newcomers get started with NoiseModelling, through a clear documentation and through dedicated tutorials.
 
-Every year since 2021, the community has gathered at NoiseModelling Days (https://noise-planet.org/noisemodelling_days.html). These one- or two-day online or hybrid sessions provide training for new users, as well as an opportunity to discuss the work carried out by experienced users. At this annual meeting, progress and prospects within the model are presented.
+Every year since 2021, the community has gathered at NoiseModelling Days. These one- or two-day online or hybrid sessions provide training for new users, as well as an opportunity to discuss the work carried out by experienced users. At this annual meeting, progress and prospects within the model are presented.
 
 # Acknowledgements
 
