@@ -10,11 +10,11 @@
 package org.noise_planet.noisemodelling.propagation.template;
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
-import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.List;
 
 /**
  * Template of propagation model. To be used as a basis
- * for new P2P model implementation.
+ * for new propagation model implementation.
  * @author Martin Glesser
  */
 public class TemplatePropagationModel implements PropagationModel {
@@ -31,6 +31,35 @@ public class TemplatePropagationModel implements PropagationModel {
      * Constructor for TemplatePropagationModel objects
      */
     public TemplatePropagationModel(){}
+
+    /**
+     * Initialize the attenuation computation each time a new cut plane is detected
+     */
+    @Override
+    public void initialize() {
+
+    }
+
+    /**
+     * Call the PathFinder method implementing the appropriate
+     * rcv to src propagation strategy for Template propagation model
+     *
+     * @param src source point information
+     * @param rcv receiver point information
+     * @param receiverMirrorIndex reflexion information
+     * @param computationProcessor object launching the computations performed at different steps of the path finding
+     * @return Search strategy for the next steps of the path finding
+     */
+    @Override
+    public PathFinderProcessor.PathSearchStrategy callRcvSrcPropagationMethod(PathFinder.SourcePointInfo src,
+                                                                              PathFinder.ReceiverPointInfo rcv,
+                                                                              MirrorReceiversCompute receiverMirrorIndex,
+                                                                              PathFinder propagationProcess,
+                                                                              PathFinderProcessor computationProcessor) {
+        // CNOSSOS propagation strategy is used, but another strategy can be
+        // defined in PathFinder and called from here
+        return propagationProcess.cnossosRcvSrcPropagation(src, rcv, computationProcessor, receiverMirrorIndex);
+    }
 
     /**
      * Compute the attenuation for a given cut-profile
@@ -46,8 +75,10 @@ public class TemplatePropagationModel implements PropagationModel {
                                                       boolean isExportAttenuationMatrix) {
         // Attenuation computation here
         List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-        AttenuationOutput attenuationOutput = new AttenuationOutput(cutProfile);
-        attenuationOutput.aGlobal = new double[]{0};
+        AttenuationOutput attenuationOutput = new AttenuationOutput(cutProfile); // Store propagation path
+        attenuationOutput.setMeteoType(MeteoType.CUSTOM); // Store meteo type
+        attenuationOutput.aGlobal = new double[]{0, 0, 0, 0, 0, 0, 0, 0};
+        attenuationOutput.lineString = cutProfile.getPropagationPath();
         attenuationOutputs.add(attenuationOutput);
         //
         return attenuationOutputs;

@@ -21,7 +21,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum MeteoType {
     // CNOSSOS
     FAVOURABLE("favorable"), // CNOSSOS Favourable condition
-    HOMOGENEOUS("homogeneous"); // Null vertical gradient of effective sound celerity
+    HOMOGENEOUS("homogeneous"), // Null vertical gradient of effective sound celerity
+    // Other propagation models
+    CUSTOM("custom"); // User defined meteorological conditions
 
     private final String description;
 

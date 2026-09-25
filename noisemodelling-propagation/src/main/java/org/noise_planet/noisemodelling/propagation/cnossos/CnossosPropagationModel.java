@@ -11,6 +11,9 @@ package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.propagation.*;
@@ -20,8 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * CNOSSOS P2P propagation model
- * Note : the instances of the class are thread-safe.
+ * CNOSSOS propagation model
+ * Note : the instances of the class must be thread-safe.
  * @author Martin Glesser
  */
 public class CnossosPropagationModel implements PropagationModel {
@@ -31,6 +34,34 @@ public class CnossosPropagationModel implements PropagationModel {
      * Constructor for CnossosPropagationModel objects
      */
     public CnossosPropagationModel(){}
+
+    /**
+     * Initialize the list of Cnossos paths each time a new cut profile
+     * is detected
+     */
+    @Override
+    public void initialize() {
+        cnossosPaths = new ArrayList<>();
+    }
+
+    /**
+     * Call the PathFinder method implementing the appropriate
+     * rcv to src propagation strategy for Cnossos propagation model
+     *
+     * @param src source point information
+     * @param rcv receiver point information
+     * @param receiverMirrorIndex reflexion information
+     * @param computationProcessor object launching the computations performed at different steps of the path finding
+     * @return Search strategy for the next steps of the path finding
+     */
+    @Override
+    public PathFinderProcessor.PathSearchStrategy callRcvSrcPropagationMethod(PathFinder.SourcePointInfo src,
+                                                                              PathFinder.ReceiverPointInfo rcv,
+                                                                              MirrorReceiversCompute receiverMirrorIndex,
+                                                                              PathFinder propagationProcess,
+                                                                              PathFinderProcessor computationProcessor){
+        return propagationProcess.cnossosRcvSrcPropagation(src, rcv, computationProcessor, receiverMirrorIndex);
+    }
 
     /**
      * Compute the attenuation for a list of paths

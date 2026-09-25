@@ -13,7 +13,7 @@ package org.noise_planet.noisemodelling.propagation;
 import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelFactory;
 
 
 import java.util.*;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
+public class AttenuationComputeOutput implements PathFinderProcessorManager {
     public ConcurrentLinkedDeque<ReceiverNoiseLevel> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public Deque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
     public boolean exportPaths;
@@ -41,12 +41,12 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
     public SceneWithAttenuation scene;
-    public PropagationModelCreator propagationModelCreator;
+    public PropagationModelFactory propagationModelFactory;
 
     public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithAttenuation scene) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-        this.propagationModelCreator = new CnossosPropagationModelCreator();
+        this.propagationModelFactory = new CnossosPropagationModelFactory();
         this.scene = scene;
     }
 
@@ -59,7 +59,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public CutPlaneVisitor subProcess(ProgressVisitor progressVisitor) {
+    public PathFinderProcessor subProcess(ProgressVisitor progressVisitor) {
         return new AttenuationVisitor(this);
     }
 

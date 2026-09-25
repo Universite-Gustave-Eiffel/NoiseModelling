@@ -12,28 +12,26 @@ package org.noise_planet.noisemodelling.jdbc.output;
 import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
-import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessorManager;
+import org.noise_planet.noisemodelling.propagation.PropagationModelFactory;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class is built on each new computation cell area. It will create for each thread (range of receivers) an instance
- * of AttenuationOutputSingleThread
+ * Creates, for each thread (range of receivers) an instance of AttenuationProcessor.
+ * This class is built on each new computation cell area.
  */
-public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
+public class AttenuationProcessorManager implements PathFinderProcessorManager {
     public ResultsCache resultsCache = new ResultsCache();
     public SceneWithEmission sceneWithEmission;
     public NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
     public AtomicInteger cutProfileCount = new AtomicInteger();
-    public PropagationModelCreator propagationModelCreator;
+    public PropagationModelFactory propagationModelFactory;
 
     /**
      * Create NoiseMap constructor
@@ -42,25 +40,25 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
      * @param resultsCache Results cache
      * @param noiseMapDatabaseParameters Propagation parameters
      */
-    public AttenuationOutputMultiThread(SceneWithEmission inputData, PropagationModelCreator propagationModelCreator,
-                                        ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
+    public AttenuationProcessorManager(SceneWithEmission inputData, PropagationModelFactory propagationModelFactory,
+                                       ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        this.propagationModelCreator = propagationModelCreator;
+        this.propagationModelFactory = propagationModelFactory;
     }
 
     /**
-     * Constructor for AttenuationOutputMultiThread with Cnossos propagation model
+     * Constructor for AttenuationProcessorManager with Cnossos propagation model
      * (for testing purpose).
      *
      * @param sceneWithEmission Geometrical information about the propagation scene
      */
-    public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission) {
+    public AttenuationProcessorManager(SceneWithEmission sceneWithEmission) {
         this.sceneWithEmission = sceneWithEmission;
-        this.propagationModelCreator = new CnossosPropagationModelCreator();
+        this.propagationModelFactory = new CnossosPropagationModelFactory();
     }
 
     /**
@@ -68,8 +66,8 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public CutPlaneVisitor subProcess(ProgressVisitor visitor) {
-        return new AttenuationOutputSingleThread(this, visitor);
+    public PathFinderProcessor subProcess(ProgressVisitor visitor) {
+        return new AttenuationProcessor(this, visitor);
     }
 
 }

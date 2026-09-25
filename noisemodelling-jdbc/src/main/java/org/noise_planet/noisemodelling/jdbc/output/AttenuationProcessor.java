@@ -14,8 +14,9 @@ import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -32,12 +33,14 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 
 
 /**
- * Managed by a single thread, process all incoming vertical profile, compute attenuation and push on appropriate stack
- * for exporting result values in a thread safe way. It processes the receiver one at a time.
+ * Launch the PropagationModel's methods to compute the attenuation
+ * and push on appropriate stack for exporting result values in a thread
+ * safe way. It processes the receiver one at a time. Managed by a single
+ * thread.
  */
-public class AttenuationOutputSingleThread implements CutPlaneVisitor {
+public class AttenuationProcessor implements PathFinderProcessor {
     private static final int UNKNOWN_SOURCE_ID = -1;
-    AttenuationOutputMultiThread multiThread;
+    AttenuationProcessorManager multiThread;
     NoiseMapDatabaseParameters dbSettings;
     PropagationModel propagationModel;
     public List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
@@ -66,17 +69,35 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     ProgressVisitor progressVisitor;
 
     /**
-     * Constructs a AttenuationOutputSingleThread object with a multithreaded parent
-     * AttenuationOutputMultiThread instance.
+     * Constructs a AttenuationProcessor object with a multithreaded parent
+     * AttenuationProcessorManager instance.
      * This class is not thread-safe
      *
      * @param multiThreadParent multi thread cell computation manager
      * @param progressVisitor progress information
      */
-    public AttenuationOutputSingleThread(AttenuationOutputMultiThread multiThreadParent, ProgressVisitor progressVisitor) {
+    public AttenuationProcessor(AttenuationProcessorManager multiThreadParent, ProgressVisitor progressVisitor) {
         this.multiThread = multiThreadParent;
         this.dbSettings = multiThreadParent.noiseMapDatabaseParameters;
         this.progressVisitor = progressVisitor;
+        // Create a PropagationModel instance
+        propagationModel = multiThread.propagationModelFactory.create();
+    }
+
+    /**
+     * Manage the call to the path finding methods each time a new couple
+     * source/receiver has been found.
+     *
+     * @param src source point information
+     * @param rcv receiver point information
+     * @param receiverMirrorIndex reflexion information
+     * @param propagationProcess PathFinder instance
+     * @return Search strategy for the next steps of the path finding
+     */
+    public PathSearchStrategy onNewRcvSrc(PathFinder.SourcePointInfo src, PathFinder.ReceiverPointInfo rcv,
+                                   MirrorReceiversCompute receiverMirrorIndex, PathFinder propagationProcess){
+        return propagationModel.callRcvSrcPropagationMethod(src,rcv, receiverMirrorIndex, propagationProcess, this);
+
     }
 
     /**
@@ -232,16 +253,13 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     /**
      * Manage attenuation computation each time a cutProfile is found.
-     * Note: in the case of CNOSSOS propagation model, a new instance of PropagationModel needs to be
-     * created for each cutProfile to ensure a new computation of the cnossosPaths.
      *
      * @param cutProfile vertical profile
      * @return Search strategy
      */
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-        // Create a PropagationModel instance
-        propagationModel = multiThread.propagationModelCreator.create();
+        propagationModel.initialize();
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         multiThread.cutProfileCount.addAndGet(1);
         final SceneWithEmission scene = multiThread.sceneWithEmission;
@@ -290,7 +308,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             AtomicInteger cutProfileCount) {
         this.cutProfileCount = cutProfileCount;
         // Create a PropagationModel instance
-        propagationModel = multiThread.propagationModelCreator.create();
+        propagationModel = multiThread.propagationModelFactory.create();
         // Quickly evaluate the maximum expected power level at receiver location
         // using all nearby sources maximum emission in reflective direct field
         if(isMaximumErrorPruningEnabled() && !multiThread.sceneWithEmission.wjSources.isEmpty()) {

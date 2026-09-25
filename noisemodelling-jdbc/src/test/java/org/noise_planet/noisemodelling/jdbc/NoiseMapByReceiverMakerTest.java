@@ -37,6 +37,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorptio
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
+import org.noise_planet.noisemodelling.propagation.template.TemplatePropagationModelFactory;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -186,6 +187,21 @@ public class NoiseMapByReceiverMakerTest {
         mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
         mapper.registerModule(new JtsModule());
         return mapper.readValue(json, CnossosAttenuationOutput.class);
+
+    }
+
+    /**
+     * Deserialize AttenuationOutput object.
+     *
+     * @param json The serialized CnossosAttenuationOutput
+     * @return Deserialized CnossosAttenuationOutput object
+     * @throws JsonProcessingException if the deserialization fails
+     */
+    public static AttenuationOutput jsonToAttenuationOutput(String json) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.registerModule(new JtsModule());
+        return mapper.readValue(json, AttenuationOutput.class);
 
     }
 
@@ -584,8 +600,8 @@ public class NoiseMapByReceiverMakerTest {
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
             try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
-                    attenuationOutputs.add(attenuationOutput);
+                    CnossosAttenuationOutput cnossosPath = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
+                    attenuationOutputs.add(cnossosPath);
                 }
             }
             // Diffraction over the walls of the building, but no direct path
@@ -598,6 +614,68 @@ public class NoiseMapByReceiverMakerTest {
             assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutputs.get(1));
             CnossosAttenuationOutput cnossosAttenuationOutput1 = (CnossosAttenuationOutput) attenuationOutputs.get(1);
             assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput1.propagationPath.getPointList().get(1).type);
+        }
+    }
+
+    /**
+     * Basic propagation test for the template propagation model.
+     * Source, receiver and building on the side
+     * S            R
+     *     -----
+     *     |   |
+     *     -----
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testTemplatePropagationModel() throws Exception {
+        try (Statement st = connection.createStatement()) {
+             // create building table
+            st.execute("CREATE TABLE BUILDINGS(pk serial PRIMARY KEY, the_geom GEOMETRY(POLYGON), height real)");
+            st.execute("INSERT INTO BUILDINGS values (0, 'SRID=2154; POLYGON ((348222 6683040, 348265 6683028, 348253 6682985, 348211 6682997, 348222 6683040))', 20)");
+
+
+            // create source point direction east->90°
+            st.execute(createSource(new GeometryFactory(new PrecisionModel(), 2154).createPoint(new Coordinate(348162.758, 6683091.962,1.0 )),
+                    91, new Orientation(90,0,0),0));
+            //st.execute("insert into ROADS_GEOM values (201, 'SRID=2154; POINTZ (348203.511 6683058.790 1)', 91, new Orientation(90,0,0),0)");
+            // st.execute("SHOW COLUMNS FROM ROADS_GEOM");
+
+            // create receiver(s)
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ))");
+            st.execute("insert into receivers values (100, 'SRID=2154; POINTZ (348340.937 6683042.522 1)')");
+            // st.execute("insert into receivers values (101, 'SRID=2154; POINTZ (348280.239 6683041.543 1)')");
+
+            // create the noise map computation object
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setPropagationModel(new TemplatePropagationModelFactory());
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(1);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
+
+            // Run noise map computation
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            // Extract results
+            NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+            List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+                while (rs.next()) {
+                    AttenuationOutput attenuationOutput = jsonToAttenuationOutput(rs.getString("PATH"));
+                    attenuationOutputs.add(attenuationOutput);
+                }
+            }
+            // Assertions
+            assertEquals(2 , attenuationOutputs.size());
+            assertEquals("custom", attenuationOutputs.getFirst().meteoType.getMeteoType());
         }
     }
 }

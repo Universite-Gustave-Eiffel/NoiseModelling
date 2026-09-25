@@ -13,7 +13,7 @@ package org.noise_planet.noisemodelling.propagation;
  * Declares the factory method that returns PropagationModel objects
  * @author Martin Glesser
  */
-public interface PropagationModelCreator {
+public interface PropagationModelFactory {
     /**
      * Factory method that returns PropagationModel objects
      * @return PropagationModel object

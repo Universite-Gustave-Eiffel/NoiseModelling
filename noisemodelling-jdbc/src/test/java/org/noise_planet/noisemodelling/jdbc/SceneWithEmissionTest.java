@@ -23,7 +23,7 @@ import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
+import org.noise_planet.noisemodelling.jdbc.output.AttenuationProcessorManager;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
@@ -154,8 +154,8 @@ public class SceneWithEmissionTest {
         return parameters;
     }
 
-    private static AttenuationOutputMultiThread runSceneWithMaximumError(SceneWithEmission scene, double maxError) {
-        AttenuationOutputMultiThread output = new AttenuationOutputMultiThread(scene);
+    private static AttenuationProcessorManager runSceneWithMaximumError(SceneWithEmission scene, double maxError) {
+        AttenuationProcessorManager output = new AttenuationProcessorManager(scene);
         output.noiseMapDatabaseParameters.setMaximumError(maxError);
         output.noiseMapDatabaseParameters.setMergeSources(false);
         output.noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
@@ -193,8 +193,8 @@ public class SceneWithEmissionTest {
         return counts;
     }
 
-    private static void assertOutputsEquivalentWithinMaximumError(AttenuationOutputMultiThread baseline,
-                                                                  AttenuationOutputMultiThread optimized,
+    private static void assertOutputsEquivalentWithinMaximumError(AttenuationProcessorManager baseline,
+                                                                  AttenuationProcessorManager optimized,
                                                                   double maxError) {
         Map<String, Integer> baselineReceiverKeys = countSourcePeriodReceiverLevels(baseline.resultsCache.receiverLevels);
         Map<String, Integer> optimizedReceiverKeys = countSourcePeriodReceiverLevels(optimized.resultsCache.receiverLevels);
@@ -436,7 +436,7 @@ public class SceneWithEmissionTest {
         attData.setHumidity(70);
         attData.setTemperature(10);
 
-        AttenuationOutputMultiThread propDataOut = new AttenuationOutputMultiThread(scene);
+        AttenuationProcessorManager propDataOut = new AttenuationProcessorManager(scene);
 
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
@@ -448,7 +448,7 @@ public class SceneWithEmissionTest {
         scene.addSource(1L, geomSource);
         scene.addSourceEmission(1L, "", roadLvl);
 
-        AttenuationOutputMultiThread propDataOutTest = new AttenuationOutputMultiThread(scene);
+        AttenuationProcessorManager propDataOutTest = new AttenuationProcessorManager(scene);
         computeRays.run(propDataOutTest);
 
         List<ReceiverNoiseLevel> levelsPerReceiver = new ArrayList<>(propDataOut.resultsCache.receiverLevels);
@@ -514,7 +514,7 @@ public class SceneWithEmissionTest {
         for(int i = 0; i < 100; i++) {
 
             //Out and computation settings
-            AttenuationOutputMultiThread propDataOut = new AttenuationOutputMultiThread(scene);
+            AttenuationProcessorManager propDataOut = new AttenuationProcessorManager(scene);
             scene.reflexionOrder = i;
             PathFinder computeRays = new PathFinder(scene);
             computeRays.setThreadCount(1);
@@ -575,7 +575,7 @@ public class SceneWithEmissionTest {
 
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
-        AttenuationOutputMultiThread outputMultiThread = new AttenuationOutputMultiThread(scene);
+        AttenuationProcessorManager outputMultiThread = new AttenuationProcessorManager(scene);
         computeRays.run(outputMultiThread);
 
         assertEquals(1, outputMultiThread.resultsCache.queueSize.get());
@@ -613,8 +613,8 @@ public class SceneWithEmissionTest {
         scene.addSource(3L, factory.createPoint(new Coordinate(duplicatedSource)));
         scene.addSourceEmission(3L, "T1", createFlatSpectrum(builder, 112.0));
 
-        AttenuationOutputMultiThread baseline = runSceneWithMaximumError(scene, 0.0);
-        AttenuationOutputMultiThread optimized = runSceneWithMaximumError(scene, maxError);
+        AttenuationProcessorManager baseline = runSceneWithMaximumError(scene, 0.0);
+        AttenuationProcessorManager optimized = runSceneWithMaximumError(scene, maxError);
 
         assertOutputsEquivalentWithinMaximumError(baseline, optimized, maxError);
     }
@@ -664,12 +664,12 @@ public class SceneWithEmissionTest {
         scene.addSource(3L, factory.createPoint(new Coordinate(duplicatedSource)));
         scene.addSourceEmission(3L, "T1", createFlatSpectrum(profileBuilder, 112.0));
 
-        AttenuationOutputMultiThread baseline = runSceneWithMaximumError(scene, 0.0);
+        AttenuationProcessorManager baseline = runSceneWithMaximumError(scene, 0.0);
         assertTrue(baseline.resultsCache.attenuationOutputs.stream().anyMatch(attenuationOutput ->
                         attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
                 "Baseline scene should include at least one reflection path");
 
-        AttenuationOutputMultiThread optimized = runSceneWithMaximumError(scene, maxError);
+        AttenuationProcessorManager optimized = runSceneWithMaximumError(scene, maxError);
 
         assertOutputsEquivalentWithinMaximumError(baseline, optimized, maxError);
     }
@@ -750,7 +750,7 @@ public class SceneWithEmissionTest {
         scene.defaultCnossosParameters.setHumidity(70);
         scene.defaultCnossosParameters.setTemperature(15);
 
-        AttenuationOutputMultiThread outPoints = new AttenuationOutputMultiThread(scene);
+        AttenuationProcessorManager outPoints = new AttenuationProcessorManager(scene);
         outPoints.noiseMapDatabaseParameters.setMaximumError(0);
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
@@ -760,7 +760,7 @@ public class SceneWithEmissionTest {
         scene.clearSources();
         scene.addSource(1L, lineSource);
         scene.addSourceEmission(1L, "", roadLvl);
-        AttenuationOutputMultiThread outLine = new AttenuationOutputMultiThread(scene);
+        AttenuationProcessorManager outLine = new AttenuationProcessorManager(scene);
         outLine.noiseMapDatabaseParameters.setMaximumError(maxError);
         computeRays.run(outLine);
 

@@ -25,27 +25,27 @@ public final class ThreadPathFinder implements Callable<Boolean> {
     int endReceiver; // Excluded
     PathFinder propagationProcess;
     ProgressVisitor visitor;
-    CutPlaneVisitor dataOut;
+    PathFinderProcessor computationProcessor;
     Scene data;
 
 
     /**
      * Create the ThreadPathFinder constructor
-     * @param startReceiver
-     * @param endReceiver
-     * @param propagationProcess
-     * @param visitor
-     * @param dataOut
-     * @param data
+     * @param startReceiver start receiver ID
+     * @param endReceiver end  receiver ID
+     * @param propagationProcess PathFinder instance
+     * @param visitor progress visitor used for cancellation and progression managing
+     * @param computationProcessor object launching the computations performed at different steps of the path finding
+     * @param data propagation parameters
      */
     public ThreadPathFinder(int startReceiver, int endReceiver, PathFinder propagationProcess,
-                            ProgressVisitor visitor, CutPlaneVisitor dataOut,
+                            ProgressVisitor visitor, PathFinderProcessor computationProcessor,
                             Scene data) {
         this.startReceiver = startReceiver;
         this.endReceiver = endReceiver;
         this.propagationProcess = propagationProcess;
         this.visitor = visitor;
-        this.dataOut = dataOut;
+        this.computationProcessor = computationProcessor;
         this.data = data;
     }
 
@@ -68,7 +68,7 @@ public final class ThreadPathFinder implements Callable<Boolean> {
                 PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, receiverPk, data.receivers.get(idReceiver));
 
 
-                propagationProcess.computeRaysAtPosition(rcv, dataOut, visitor);
+                propagationProcess.computeRaysAtPosition(rcv, computationProcessor, visitor);
 
                 if (visitor != null) {
                     visitor.endStep();

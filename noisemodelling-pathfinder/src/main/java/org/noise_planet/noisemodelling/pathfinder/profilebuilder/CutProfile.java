@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -513,6 +514,16 @@ public class CutProfile {
     @JsonIgnore
     public Orientation getSourceOrientation() {
         return this.getSource().orientation;
+    }
+
+    /**
+     * @return Propagation path as a geometry object
+     */
+    @JsonIgnore
+    public LineString getPropagationPath() {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        Coordinate[] coordinates = getCutPoints().stream().map(CutPoint::getCoordinate).toArray(Coordinate[]::new);
+        return geometryFactory.createLineString(coordinates);
     }
 
 }

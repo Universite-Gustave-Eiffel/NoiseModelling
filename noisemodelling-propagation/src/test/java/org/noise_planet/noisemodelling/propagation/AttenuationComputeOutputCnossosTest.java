@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector3D;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
-import org.noise_planet.noisemodelling.pathfinder.DefaultCutPlaneVisitor;
+import org.noise_planet.noisemodelling.pathfinder.DefaultPathFinderProcessor;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -132,22 +132,22 @@ public class AttenuationComputeOutputCnossosTest {
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true,
                 sceneWithAttenuation);
 
-        CutPlaneVisitor cutPlaneVisitor = propDataOut.subProcess(new EmptyProgressVisitor());
+        PathFinderProcessor pathFinderProcessor = propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (URL cutProfileUrl : cutProfileUrls) {
             CutProfile cutProfile;
             try(InputStream inputStream = cutProfileUrl.openStream()) {
                 cutProfile = loadCutProfile(inputStream);
             }
-            cutPlaneVisitor.onNewCutPlane(cutProfile);
+            pathFinderProcessor.onNewCutPlane(cutProfile);
             if(lastReceiver.receiverPk != -1 && cutProfile.getReceiver().receiverPk != lastReceiver.receiverPk) {
                 // merge attenuation per receiver
-                cutPlaneVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
+                pathFinderProcessor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
             }
             lastReceiver = new PathFinder.ReceiverPointInfo(cutProfile.getReceiver());
         }
         // merge attenuation per receiver
-        cutPlaneVisitor.finalizeReceiver(lastReceiver);
+        pathFinderProcessor.finalizeReceiver(lastReceiver);
 
         return propDataOut;
     }
@@ -6942,7 +6942,7 @@ public class AttenuationComputeOutputCnossosTest {
                 .build();
         rayData.reflexionOrder = 1;
 
-        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        DefaultPathFinderProcessor propDataOut = new DefaultPathFinderProcessor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);

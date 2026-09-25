@@ -9,6 +9,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorFactory {
+public class DefaultPathFinderProcessor implements PathFinderProcessor, PathFinderProcessorManager {
     /** This list is thread safe so can be used in a multi-thread environment */
     public ConcurrentLinkedDeque<CutProfile> cutProfiles = new ConcurrentLinkedDeque<>();
     public Scene inputData;
@@ -33,12 +34,12 @@ public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorF
     public boolean keepCutPlanes = true;
     public AtomicLong pathCount = new AtomicLong();
 
-    public DefaultCutPlaneVisitor(boolean keepCutPlanes, Scene inputData) {
+    public DefaultPathFinderProcessor(boolean keepCutPlanes, Scene inputData) {
         this.keepCutPlanes = keepCutPlanes;
         this.inputData = inputData;
     }
 
-    public DefaultCutPlaneVisitor(boolean keepCutPlanes) {
+    public DefaultPathFinderProcessor(boolean keepCutPlanes) {
         this.keepCutPlanes = keepCutPlanes;
     }
 
@@ -67,6 +68,11 @@ public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorF
     }
 
     @Override
+    public PathSearchStrategy onNewRcvSrc(PathFinder.SourcePointInfo src, PathFinder.ReceiverPointInfo rcv, MirrorReceiversCompute receiverMirrorIndex, PathFinder propagationProcess) {
+        return propagationProcess.cnossosRcvSrcPropagation(src, rcv, this, receiverMirrorIndex);
+    }
+
+    @Override
     public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
                               AtomicInteger cutProfileCount) {
 
@@ -77,7 +83,7 @@ public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorF
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public CutPlaneVisitor subProcess(ProgressVisitor visitor) {
+    public PathFinderProcessor subProcess(ProgressVisitor visitor) {
         return this;
     }
 

@@ -22,14 +22,15 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
+import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWritingManager;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessorManager;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
-import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
+import org.noise_planet.noisemodelling.propagation.PropagationModelFactory;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +55,12 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /** If true, all processing are aborted and all threads will be shutdown */
     public AtomicBoolean aborted = new AtomicBoolean(false);
     private final NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
-    private IComputeRaysOutFactory computeRaysOutFactory;
-    private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
+    private NoiseMapWritingManagerFactory noiseMapWritingManagerFactory;
+    private final Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
     public String exportKmlName = "cell_%d_%d.kml";
+    public PropagationModelFactory propagationModel = new CnossosPropagationModelFactory();
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
@@ -72,7 +74,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
-        computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
+        noiseMapWritingManagerFactory = new NoiseMapWritingManager(noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     /**
@@ -169,17 +171,17 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
-     * @param computeRaysOutFactory Factory to create output data handler for each cell
+     * @param noiseMapWritingManagerFactory Factory to create output data handler for each cell
      */
-    public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
-        this.computeRaysOutFactory = computeRaysOutFactory;
+    public void setNoiseMapWritingManagerFactory(NoiseMapWritingManagerFactory noiseMapWritingManagerFactory) {
+        this.noiseMapWritingManagerFactory = noiseMapWritingManagerFactory;
     }
 
     /**
-     * @return Factory to create an output data handler for each cell the default is {@link DefaultCutPlaneProcessing}
+     * @return Factory to create an output data handler for each cell the default is {@link NoiseMapWritingManager}
      */
-    public IComputeRaysOutFactory getComputeRaysOutFactory() {
-        return computeRaysOutFactory;
+    public NoiseMapWritingManagerFactory getNoiseMapWritingManagerFactory() {
+        return noiseMapWritingManagerFactory;
     }
 
     /**
@@ -303,11 +305,10 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @param cellIndex Computation area index
      * @param progression Progression info
      * @param skipReceivers Do not process the receivers primary keys in this set and once included add the new receivers primary in it
-     * @return Output data instance for this cell
      * @throws SQLException Sql exception instance
      */
-    public CutPlaneVisitorFactory evaluateCell(Connection connection, CellIndex cellIndex,
-                                        ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
+    public void evaluateCell(Connection connection, CellIndex cellIndex,
+                                                   ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers);
 
         File sceneExportFolder = getNoiseMapDatabaseParameters().getSceneExportFolder();
@@ -316,12 +317,12 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         }
 
         if(verbose) {
-            logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
-                    scene.receivers.size(), scene.sourceGeometries.size(),
-                    scene.profileBuilder.getBuildingCount()));
+            logger.info("This computation area contains {} receivers {} sound sources and {} buildings",
+                    scene.receivers.size(), scene.sourceGeometries.size(), scene.profileBuilder.getBuildingCount());
         }
 
-        CutPlaneVisitorFactory computeRaysOut = computeRaysOutFactory.create(scene);
+        PathFinderProcessorManager computationProcessorManager = noiseMapWritingManagerFactory.createProcessorManager(scene,
+                propagationModel);
 
         PathFinder computeRays = new PathFinder(scene, progression);
 
@@ -333,9 +334,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
             computeRays.setThreadCount(threadCount);
         }
 
-        computeRays.run(computeRaysOut);
-
-        return computeRaysOut;
+        computeRays.run(computationProcessorManager);
     }
 
     /**
@@ -381,7 +380,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     public void initialize(Connection connection) throws SQLException {
         super.initialize(connection);
         tableLoader.initialize(connection, this);
-        computeRaysOutFactory.initialize(connection, this);
+        noiseMapWritingManagerFactory.initialize(connection, this);
     }
 
     /**
@@ -398,7 +397,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
 
         try {
-            computeRaysOutFactory.start(progressVisitor);
+            noiseMapWritingManagerFactory.start(progressVisitor);
             for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
                 try {
@@ -412,7 +411,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
                 }
             }
         } finally {
-            computeRaysOutFactory.stop();
+            noiseMapWritingManagerFactory.stop();
         }
     }
 
@@ -438,5 +437,13 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
          * @return Scene to feed the data
          */
         SceneWithEmission create(Connection connection, CellIndex cellIndex, Set<Long> skipReceivers) throws SQLException;
+    }
+
+    /**
+     * Setter for the propagation model to be used
+     * @param propagationModel Propagation model
+     */
+    public void setPropagationModel(PropagationModelFactory propagationModel) {
+        this.propagationModel = propagationModel;
     }
 }

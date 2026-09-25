@@ -10,18 +10,40 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 import java.util.List;
 
 /**
  * Interface for point to point propagation models.
  * Note : the instances of the different implementations of
- * the interface are thread-safe.
+ * the interface must be thread-safe.
  * @author Martin Glesser
  */
 public interface PropagationModel {
+
+    /**
+     * Called each time a new cut profile is detected
+     */
+    void initialize();
+
+    /**
+     * Launches the path finding methods (direct path, diffracted path and/or reflected path)
+     *
+     * @param src source point information
+     * @param rcv receiver point information
+     * @param receiverMirrorIndex reflexion information
+     * @param propagationProcess PathFinder instance
+     * @param computationProcessor object launching the computations performed at different steps of the path finding
+     * @return Search strategy for the next steps of the path finding
+     */
+    PathFinderProcessor.PathSearchStrategy callRcvSrcPropagationMethod(PathFinder.SourcePointInfo src,
+                                                                       PathFinder.ReceiverPointInfo rcv,
+                                                                       MirrorReceiversCompute receiverMirrorIndex,
+                                                                       PathFinder propagationProcess,
+                                                                       PathFinderProcessor computationProcessor);
 
     /**
      * Compute the attenuation for a given cut-profile

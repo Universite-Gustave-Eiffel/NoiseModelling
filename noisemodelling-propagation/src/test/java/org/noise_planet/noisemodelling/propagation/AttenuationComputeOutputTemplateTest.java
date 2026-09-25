@@ -52,7 +52,8 @@ public class AttenuationComputeOutputTemplateTest {
     }
 
     /**
-     * Dummy for template P2P propagation model
+     * Dummy test for template propagation model
+     * (Uses the
      */
     @Test
     public void test_template_01() throws IOException {

@@ -9,8 +9,9 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
+import org.noise_planet.noisemodelling.pathfinder.PathFinderProcessor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Receive vertical cut plane, compute the attenuation corresponding to this plane
  */
-public class AttenuationVisitor implements CutPlaneVisitor {
+public class AttenuationVisitor implements PathFinderProcessor {
     public AttenuationComputeOutput multiThreadParent;
     public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
     public List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
@@ -35,6 +36,8 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     public AttenuationVisitor(AttenuationComputeOutput multiThreadParent) {
         this.multiThreadParent = multiThreadParent;
         this.keepRays = multiThreadParent.exportPaths;
+        // Create a PropagationModel instance
+        propagationModel = multiThreadParent.propagationModelFactory.create();
     }
 
     /**
@@ -47,8 +50,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
      */
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-        // Create a PropagationModel instance
-        propagationModel = multiThreadParent.propagationModelCreator.create();
+        propagationModel.initialize();
         multiThreadParent.cutProfileCount.addAndGet(1);
         final SceneWithAttenuation scene = multiThreadParent.scene;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
@@ -68,6 +70,11 @@ public class AttenuationVisitor implements CutPlaneVisitor {
         }
 
         return PathSearchStrategy.CONTINUE;
+    }
+
+    @Override
+    public PathSearchStrategy onNewRcvSrc(PathFinder.SourcePointInfo src, PathFinder.ReceiverPointInfo rcv, MirrorReceiversCompute receiverMirrorIndex, PathFinder propagationProcess) {
+        return propagationProcess.cnossosRcvSrcPropagation(src, rcv, this, receiverMirrorIndex);
     }
 
     @Override
