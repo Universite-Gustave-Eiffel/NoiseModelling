@@ -150,6 +150,6 @@ Every year since 2021, the community has gathered at NoiseModelling Days. These 
 
 # Acknowledgements
 
-We would like to thank Arnaud Can, Olivier Chiello, Ndeye Maguette Diagne, David Ecotière, Benoit Gauvreau, Gwenaël Guillaume, Adrien Le Bellec, Sylvain Palominos and Su Qi for their valuable contributions to this project.
+We would like to thank Arnaud Can, Olivier Chiello, Ndeye Maguette Diagne, David Ecotière, Benoit Gauvreau, Gwenaël Guillaume, Adrien Le Bellec, Sylvain Palominos, Su Qi and all the future contributors for their valuable contributions to this project.
 
 # References
