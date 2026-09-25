@@ -94,6 +94,10 @@ public class WpsXmlDocumentGenerator {
         input.setMinOccurs(BigInteger.valueOf(scriptInput.minOccurs));
         LiteralInputType literalInputType = wpsf.createLiteralInputType();
         input.setLiteralData(literalInputType);
+        // Set default value
+        if(scriptInput.defaultValue != null) {
+            literalInputType.setDefaultValue(scriptInput.defaultValue.toString());
+        }
         if (scriptInput.type.equals(Boolean.class)) {
             // Special handling for boolean input
             literalInputType.setDataType(domainMetadataType("xs:boolean"));
@@ -101,10 +105,6 @@ public class WpsXmlDocumentGenerator {
             literalInputType.getAllowedValues().getValue().add(valueType("true"));
             literalInputType.getAllowedValues().getValue().add(valueType("false"));
         } else {
-            // Set default value
-            if(scriptInput.defaultValue != null) {
-                literalInputType.setDefaultValue(scriptInput.defaultValue.toString());
-            }
             // Generate allowed values
             if(!scriptInput.allowedValues.isEmpty()) {
                 literalInputType.setAllowedValues(owsf.createAllowedValuesType());

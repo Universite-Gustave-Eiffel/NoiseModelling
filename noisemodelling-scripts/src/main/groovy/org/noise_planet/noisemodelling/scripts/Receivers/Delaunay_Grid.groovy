@@ -145,7 +145,7 @@ inputs = [
                 name        : 'Create IsoSurfaces over buildings',
                 title       : 'Create IsoSurfaces over buildings',
                 description : 'If enabled, isosurfaces will be visible at the location of buildings',
-                default    : true,
+                default     : true,
                 type        : Boolean.class
         ],
         fenceNegativeBuffer             : [
@@ -371,8 +371,6 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
     long processTime = System.currentTimeMillis() - startTime
     logger.info("Delaunay grid computed in " + (processTime / 1000) + " seconds.")
 
-    long nbReceivers = delaunayReceiversMaker.getReceiversCount()
-
     if(!isoSurfaceInBuildings && !building_table_name.isEmpty()) {
         logger.info("Removing triangles that are over buildings")
         int removedTriangles = 0
@@ -393,7 +391,7 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
                             WHERE T.THE_GEOM && B.THE_GEOM AND ST_Intersects(B.THE_GEOM, T.THE_GEOM));
             """ as String);
         }
-        logger.info("Removed {0} triangles that are over buildings", removedTriangles)
+        logger.info("Removed {} triangles that are over buildings", removedTriangles)
         sql.execute("""
             -- Remove points not referenced by triangles
             DELETE FROM $receivers_table_name R 
@@ -403,8 +401,15 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
         """ as String)
     }
 
+
+    long nbReceivers = JDBCUtilities.getRowCount(connection, receivers_table_name)
+    long nbTriangles = JDBCUtilities.getRowCount(connection, outputTableNameTriangles)
+
     // Process Done
-    def resultString = "Delaunay grid created with $nbReceivers receivers in table $receivers_table_name${exportTriangles ? " and triangles in table " + outputTableNameTriangles : ""}."
+    def resultString = "Delaunay grid created with $nbReceivers receivers in table $receivers_table_name${exportTriangles ? " and $nbTriangles triangles in table " + outputTableNameTriangles : ""}."
+
+
+
     resultString += " Process time: " + (processTime / 1000) + " seconds."
 
     // print to command window
