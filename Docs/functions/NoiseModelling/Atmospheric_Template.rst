@@ -14,18 +14,6 @@ Overview
 Arguments
 ---------
 
-Mandatory inputs
-~~~~~~~~~~~~~~~~
-
-``tableSourcesEmission`` — *Sources emission table name*
-   Name of the Sources table (ex. SOURCES_EMISSION)  The table must contain:
-   
-   *  IDSOURCE * : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)
-   
-   *  PERIOD * : Time period, you will find this column on the output (VARCHAR)
-
-   Type: ``String``
-
 Optional inputs
 ~~~~~~~~~~~~~~~
 
@@ -87,6 +75,15 @@ Optional inputs
    Type: ``String``
 
    Default: ``SOURCES_ATMOSPHERIC``
+
+``tableSourcesEmission`` — *Sources emission table name*
+   Name of the Sources table (ex. SOURCES_EMISSION)  The table must contain:
+   
+   *  IDSOURCE * : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)
+   
+   *  PERIOD * : Time period, you will find this column on the output (VARCHAR)
+
+   Type: ``String``
 
 Output
 ------
