@@ -79,6 +79,13 @@ Optional inputs
 
    Default: ``4``
 
+``isoSurfaceInBuildings`` — *Create IsoSurfaces over buildings*
+   If enabled, isosurfaces will be visible at the location of buildings
+
+   Type: ``Boolean``
+
+   Default: ``true``
+
 ``maxArea`` — *Maximum Area*
    Set Maximum Area (in m2) (FLOAT). No triangles larger than provided area will be created.Smaller area will create more receivers
 
