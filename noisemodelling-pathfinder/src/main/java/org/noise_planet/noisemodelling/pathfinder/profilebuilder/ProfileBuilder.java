@@ -1028,7 +1028,7 @@ public class ProfileBuilder {
             for (Object groundEffectAreaIndex : res) {
                 if(groundEffectAreaIndex instanceof Integer) {
                     GroundAbsorption groundAbsorption = groundAbsorptions.get((Integer) groundEffectAreaIndex);
-                    if(groundAbsorption.geom.intersects(query)) {
+                    if(groundAbsorption.preparedGeom.intersects(query)) {
                         return (Integer) groundEffectAreaIndex;
                     }
                 }
@@ -1109,7 +1109,7 @@ public class ProfileBuilder {
         Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
         Point afterIntersectionPoint = FACTORY.createPoint(Vector2D.create(intersection).add(directionAfter).toCoordinate());
         GroundAbsorption groundAbsorption = groundAbsorptions.get(facetLine.getOriginId());
-        if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
+        if (groundAbsorption.preparedGeom.intersects(afterIntersectionPoint)) {
             // we enter a new ground effect
             newCutPoints.add(new CutPointGroundEffect(processedWallIndex, intersection, groundAbsorption.getCoefficient()));
         } else {
