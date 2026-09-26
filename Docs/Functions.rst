@@ -97,6 +97,7 @@ Geometric Tools
 
     functions/Geometric_Tools/Change_SRID
     functions/Geometric_Tools/Clean_Buildings_Table
+    functions/Geometric_Tools/Correct_building_altitude
     functions/Geometric_Tools/Enrich_DEM
     functions/Geometric_Tools/Enrich_DEM_with_lines
     functions/Geometric_Tools/Enrich_DEM_with_rail
