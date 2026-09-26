@@ -15,7 +15,6 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -53,6 +52,7 @@ public class CnossosPath {
     public double deltaSPrimeR= Double.MAX_VALUE;
     public double deltaSRPrime= Double.MAX_VALUE;
     public double e=0;
+    public double probability = Double.MAX_VALUE; // store fav/hom. probability for debug purposes
 
     public CnossosPath() {
     }

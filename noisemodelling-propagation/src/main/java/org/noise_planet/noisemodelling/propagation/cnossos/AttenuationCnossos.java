@@ -743,12 +743,9 @@ public class AttenuationCnossos {
 
         }
 
-        // restore the Map relative propagation direction from the emission propagation relative to the sound source orientation
-        // just swap the inverse boolean parameter
-        // @see ComputeCnossosRays#computeOrientation
-        Vector3D fieldVectorPropagation = Orientation.rotate(attenuationOutput.getCutProfile().getSourceOrientation(),
-                Orientation.toVector(attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity()), false);
-        double probability = data.getWindRose().getFavourableProbability(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
+        Coordinate sourceCoord = attenuationOutput.getCutProfile().getSource().getCoordinate();
+        Coordinate receiverCoord = attenuationOutput.getCutProfile().getReceiver().getCoordinate();
+        double probability = data.getWindRose().getFavourableProbability(Math.atan2(receiverCoord.getY() - sourceCoord.getY(),receiverCoord.getX() - sourceCoord.getX()));
         if(!cnossosPath.isFavourable()) {
             // Homogenous conditions
             if (probability < 1) {
@@ -796,6 +793,7 @@ public class AttenuationCnossos {
             // compute homogeneous conditions probability from favourable probability
             probability = 1 - probability;
         }
+        cnossosPath.probability = probability;
         for (int i = 0; i < aGlobalMeteoRay.length; i++) {
             aGlobalMeteoRay[i] = wToDb(probability * dBToW(aGlobalMeteo[i]));
         }
