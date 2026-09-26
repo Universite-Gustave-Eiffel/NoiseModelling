@@ -114,8 +114,6 @@ Please execute:
 .. tip::
     NoiseModelling will stay open as long as the command window is open. If you close it, NoiseModelling will automatically stop and the GUI will no longer be available.
 
-.. _H2GIS : http://www.h2gis.org/Load input files
-
 Step 4: Open NoiseModelling GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -11,7 +11,7 @@ This database does not need to be configured or installed on the system. It's tr
 .. tip ::
     Many spatial processing are possible with H2GIS. Please have a look to the numerous functions on the `H2GIS website`_.
 
-.. _H2GIS website: http://www.h2gis.org/docs/dev/functions/
+.. _H2GIS website: https://h2gis.readthedocs.io/en/latest/
 
 To visualize and manage NoiseModelling data (*e.g* roads, buildings or landcover layers) you have the choice between the three following approaches *(listed from simple to advanced)*:
 
