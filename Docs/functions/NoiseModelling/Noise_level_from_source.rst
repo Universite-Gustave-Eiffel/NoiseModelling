@@ -112,6 +112,11 @@ Optional inputs
 
    Default: ``0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5``
 
+``confFenceID`` — *ID of the fence record OR receiver ID*
+   When tableFence is provided, only the receivers within the geometry of the record with this ID are used for the calculation. If tableFence is absent, only the receiver with this ID is calculated.
+
+   Type: ``Integer``
+
 ``confHumidity`` — *Relative humidity*
    🌧 Humidity for noise propagation (%) [0,100]
 
@@ -222,6 +227,15 @@ Optional inputs
    *   THE_GEOM  : the 3D geometry of the elevation points (POINTZ)
    
    💡 This table can be generated from the WPS Block "Import_Asc_File"
+
+   Type: ``String``
+
+``tableFence`` — *Table name with fence for receiverpoints*
+   Name of the table with fences for receiver points  The table must contain the following columns:
+   
+   *   ID : identifier
+   
+   *   GEOMETRY : geometry (polygon) of the fence
 
    Type: ``String``
 

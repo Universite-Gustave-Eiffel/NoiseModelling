@@ -36,6 +36,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.SQLException
+import java.sql.Statement
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -150,6 +151,25 @@ inputs = [
                         '</ul>' ,
                 min        : 0, max: 1,
                 type: String.class
+        ],
+        tableFence                            : [
+                name       : 'Table name with fence for receiverpoints',
+                title      : 'Table name with fence for receiverpoints',
+                description: 'Name of the table with fences for receiver points </br> </br>' +
+                        'The table must contain the following columns: </br> <ul>' +
+                        '<li> <b> ID </b>: identifier </li>' +
+                        '<li> <b> GEOMETRY </b>: geometry (polygon) of the fence </li> </ul>',
+                min        : 0, max: 1,
+                type: String.class
+        ],
+        confFenceID                           : [
+                name      : 'ID of the fence record OR receiver ID',
+                title     : 'ID of the fence record OR receiver ID',
+                description: 'When <i>tableFence</i> is provided, only the receivers within the geometry of the record ' +
+                        'with this ID are used for the calculation. If <i>tableFence</i> is absent, only the receiver ' +
+                        'with this ID is calculated.',
+                min       : 0, max: 1,
+                type: Integer.class
         ],
         paramWallAlpha          : [
                 name       : 'wallAlpha',
@@ -363,7 +383,49 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     //Get the primary key field of the receiver table
     int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name, dbType))
     if (pkIndexRecv < 1) {
-        throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
+        throw new IllegalArgumentException(String.format("Receiver table %s does not contain a primary key", receiverTableIdentifier))
+    }
+
+    //Get the fences (ID can be 0, and input['confFenceID'] would then evaluate to false. Therefore use 'contains'
+    if (input.keySet().contains("confFenceID")){
+        fence_id = input['confFenceID']
+        if (input['tableFence']) {
+            fence_table_name = input['tableFence']
+
+            //Get the geometry field of the fence table
+            TableLocation fenceTableIdentifier = TableLocation.parse(fence_table_name, dbType)
+            List<String> geomFieldsFence = GeometryTableUtilities.getGeometryColumnNames(connection, fenceTableIdentifier)
+            if (geomFieldsFence.isEmpty()) {
+                throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", fenceTableIdentifier))
+            }
+
+            // Check if srid are in metric projection and are all the same.
+            int sridFENCE = GeometryTableUtilities.getSRID(connection, TableLocation.parse(fence_table_name, dbType))
+            if (!DataBaseUtilities.isSridMetric(connection, sridFENCE)) throw new IllegalArgumentException("Error : Please use a metric projection for " + fence_table_name + ".")
+            if (sridFENCE == 0) throw new IllegalArgumentException("Error : The table " + fence_table_name + " does not have an associated SRID.")
+            if (sridFENCE != sridSources) throw new IllegalArgumentException("Error : The SRID of table " + fence_table_name + " and " + sources_table_name + " are not the same.")
+
+            fence_col_names = JDBCUtilities.getColumnNames(connection, fence_table_name)
+            if (!('ID' in fence_col_names)) throw new IllegalArgumentException("Error: The column 'ID' should be present in " + fence_table_name)
+
+            Statement stmt = connection.createStatement()
+            String createView = "CREATE OR REPLACE VIEW " + receivers_table_name + "_SELECTION AS " +
+                                    "SELECT r.* FROM " + receivers_table_name + " AS r, " +
+                                    "(SELECT " + geomFieldsFence.first() + " FROM " + fence_table_name + " WHERE ID = " +  fence_id  + ") as f " +
+                                    "WHERE ST_WITHIN(r." + geomFieldsRcv.first() + ", f." + geomFieldsFence.first() + ")"
+            stmt.execute(createView)
+
+        } else {
+            //no fence table, so fenceID references the primary key of the receivers table
+            receiverPK = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection, TableLocation.parse(receivers_table_name, dbType)).first()
+            Statement stmt = connection.createStatement()
+            String createView = "CREATE OR REPLACE VIEW " + receivers_table_name + "_SELECTION AS " +
+                    "SELECT r.* FROM " + receivers_table_name + " AS r " +
+                    "WHERE r." + receiverPK + " = " + fence_id
+            stmt.execute(createView)
+        }
+        //the name of the view must be linked to the original table name, so the PK can still be obtained
+        receivers_table_name = receivers_table_name + "_SELECTION"
     }
 
     String building_table_name = input['tableBuilding']

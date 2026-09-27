@@ -321,7 +321,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         if(intPk >= 1) {
             pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), dbType);
         } else {
-            throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
+            //perhaps it's a view on the receivers_table
+            intPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(receiverTableName.replace("_SELECTION",""), dbType));
+            if(intPk >= 1) {
+                pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), dbType);
+            } else {
+                throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
+            }
         }
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + " FROM " +

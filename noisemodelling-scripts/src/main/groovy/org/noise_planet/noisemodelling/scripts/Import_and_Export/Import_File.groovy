@@ -164,7 +164,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     if(tableExists && "Overwrite" == tableExistsOperation) {
         // Drop the table if already exists
         logger.info("Table already exists drop the table..")
-        String dropOutputTable = "drop table if exists " + tableName
+        String dropOutputTable = "drop table if exists " + tableName + " cascade"
         stmt.execute(dropOutputTable)
     } else if(tableExists && "Skip import" == tableExistsOperation) {
         logger.info("Table already exists skip importing the file")
