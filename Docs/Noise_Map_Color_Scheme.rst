@@ -17,7 +17,7 @@ Introduction
 Creation of the Isosurfaces
 **********************************
 
-NoiseModelling can produce isophones (also called isosurfaces) thanks to the ``Acoustic_Tools:Create_Isosurface`` script. In this script, an optionnal parameter called ``Iso levels in dB`` allows the user to specify the thresholds used to generate the surfaces.
+NoiseModelling can produce isophones (also called isosurfaces) thanks to the ``Acoustic_Tools:Create_Isosurface`` script. In this script, an optional parameter called ``Iso levels in dB`` allows the user to specify the thresholds used to generate the surfaces.
 
 .. figure:: images/Noise_Map_Color_Scheme/contouring_noise_map.png
     :align: center
@@ -75,7 +75,7 @@ The SLD representation of this color scheme is available here : `Style NF S31-13
 .. _Style NF S31-130 : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.2/Docs/styles/style_nf_s31-130.sld
 
 .. warning ::
-    This style will work only if you specified ``Iso levels in dB`` = ``45, 50, 55, 60, 65, 70, 75, 200`` when exectuting the ``Acoustic_Tools:Create_Isosurface`` script
+    This style will work only if you specified ``Iso levels in dB`` = ``45, 50, 55, 60, 65, 70, 75, 200`` when executing the ``Acoustic_Tools:Create_Isosurface`` script
 
 German DIN 18005-2:1991
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,11 +188,11 @@ The rule is applied:
 
 * thanks to an operator that indicates how to filter the table values. In the example below ``PropertyIsEqualTo`` indicates that an equality test will be made to select values. If the value in the column match with the one defined in the rule, the object (geometry) will be selected to apply the rule.
 * on a specific column : ``<ogc:PropertyName>``. In the example below, ``ISOLVL``. If the column does not exist in the table or if the name is not written exactly in the same way, your rule will not work.
-* for a specific value : ``<ogc:Literal>``. In the example below, ``1``. So for each objetcs that have ``1`` in the column ``ISOLVL`` the rule will be applied
+* for a specific value : ``<ogc:Literal>``. In the example below, ``1``. So for each objects that have ``1`` in the column ``ISOLVL`` the rule will be applied
 
 Symbol
 -------
-For one rule, we can define how the symbol will be displayed. In our case, the symbol is a polygon (the isosufrce). In the SLD langage, a polygon is called a ``PolygonSymbolizer``. This object has two main caracteristics:
+For one rule, we can define how the symbol will be displayed. In our case, the symbol is a polygon (the isosufrce). In the SLD language, a polygon is called a ``PolygonSymbolizer``. This object has two main characteristics:
 
 * The fill : ``<se:Fill>``
     * a color, exprimed with an hexadecimal code. In the example below, `#a0bbbf`_

@@ -44,7 +44,7 @@ Mandatory inputs
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``invert`` — *Invert the substraction ?*
+``invert`` — *Invert the subtraction ?*
    Invert the substraction?
    
    * False (default) : Primary map - Second map

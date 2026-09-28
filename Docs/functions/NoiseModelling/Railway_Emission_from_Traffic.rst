@@ -4,7 +4,7 @@
 Railway Emission from Traffic
 =============================
 
-Compute railway emission noise map from vehicule, traffic table AND section table.
+Compute railway emission noise map from vehicle, traffic table AND section table.
 
 Overview
 --------
@@ -50,7 +50,7 @@ Mandatory inputs
    
    * IDTRAFFIC* : A traffic identifier (PRIMARY KEY) (INTEGER)
    
-   * IDSECTION* : A section identifier, refering to RAIL_SECTIONS table (INTEGER)
+   * IDSECTION* : A section identifier, referring to RAIL_SECTIONS table (INTEGER)
    
    * TRAINTYPE* : Type of vehicle, listed in the Rail_Train_SNCF_2021 file (mainly for french SNCF) (STRING)
    

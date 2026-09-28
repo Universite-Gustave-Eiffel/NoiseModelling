@@ -32,7 +32,7 @@ And six parameters:
 
 * Input SRID (inputSRID): SRID of the input tables (Optional)
 
-* Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied
+* Output suffixe (outputSuffixe): Suffixe applied at the end of the resulting table name (Optional). If not specified, "ENRICHED" is applied
 
 In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter railWidth, using the following formula:
 

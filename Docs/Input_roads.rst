@@ -173,7 +173,7 @@ Emission
 
 According to CNOSSOS-EU, emissions from road traffic should be 5cm above the ground. 
 
-You can create your own emmission layer or use the dedicated NoiseModelling block called ``Road_Emission_from_Traffic.groovy``. In this script, the table ``ROADS`` is used to create the emission table ``LW_ROADS``. As a consequence, whether or not your roads have a Z value in ``ROADS``, NoiseModelling forces a ``Zsource`` value of 5cm in ``LW_ROADS``.
+You can create your own emission layer or use the dedicated NoiseModelling block called ``Road_Emission_from_Traffic.groovy``. In this script, the table ``ROADS`` is used to create the emission table ``LW_ROADS``. As a consequence, whether or not your roads have a Z value in ``ROADS``, NoiseModelling forces a ``Zsource`` value of 5cm in ``LW_ROADS``.
 
 .. figure:: images/Input_tables/roads_emission.png
     :align: center
