@@ -147,10 +147,11 @@ public class SceneWithEmissionTest {
         return spectrum;
     }
 
-    private static AttenuationParameters createPeriodParameters(SceneWithEmission scene) {
+    private static AttenuationParameters createPeriodParameters(SceneWithEmission scene, FavourableProbability favourableProbability) {
         AttenuationParameters parameters = new AttenuationParameters(scene.defaultCnossosParameters);
         parameters.setHumidity(HUMIDITY);
         parameters.setTemperature(TEMPERATURE);
+        parameters.setWindRose(favourableProbability);
         return parameters;
     }
 
@@ -601,8 +602,8 @@ public class SceneWithEmissionTest {
         scene.maxSrcDist = 500;
         scene.defaultCnossosParameters.setHumidity(HUMIDITY);
         scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
-        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene));
-        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene));
+        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene, new DiscreteFavourableProbability()));
+        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene, new DiscreteFavourableProbability(0)));
 
         scene.addSource(1L, factory.createPoint(new Coordinate(5, 0, 0.05)));
         scene.addSourceEmission(1L, "T0", createFlatSpectrum(builder, 120.0));
@@ -652,8 +653,8 @@ public class SceneWithEmissionTest {
         scene.maxRefDist = 500;
         scene.defaultCnossosParameters.setHumidity(HUMIDITY);
         scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
-        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene));
-        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene));
+        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene, new DiscreteFavourableProbability()));
+        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene, new DiscreteFavourableProbability(0)));
 
         scene.addSource(1L, factory.createPoint(new Coordinate(2.5, 8, 0.1)));
         scene.addSourceEmission(1L, "T0", createFlatSpectrum(profileBuilder, 120.0));
