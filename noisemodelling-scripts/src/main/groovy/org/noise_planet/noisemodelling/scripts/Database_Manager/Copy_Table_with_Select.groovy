@@ -42,6 +42,15 @@ inputs = [
                 name       : 'ID(s) of row to be copied',
                 title      : 'ID(s) of row to be copied',
                 description: 'Comma separated list of IDs from the source table to be copied to the target table.',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        wktString : [
+                name       : 'WKT string',
+                title      : 'WKT string',
+                description: 'WKT string of geometry (polygon) that encloses features to be copied. It should have ' +
+                             'the same SRID as the source table.',
+                min        : 0, max: 1,
                 type       : String.class
         ]
 ]
@@ -72,7 +81,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
     // print to command window
-    logger.info('Start : Import File')
+    logger.info('Start : Copy table with selection')
     logger.info("inputs {}", input) // log inputs of the run
 
     // Get name of the table
@@ -90,18 +99,29 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         throw new Exception('ERROR : ' + resultString)
     }
     geomColumn = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection,sourceTableLocation).first()
+    srid = GeometryTableUtilities.getSRID(connection, sourceTableLocation)
 
-
-    // Get the list of IDs
-    String idList = input["copyID"]
-
-    // Copy table with where clause and set index, PK and spatial index
     Statement stmt = connection.createStatement()
     stmt.execute("DROP TABLE IF EXISTS " + tableName + "_SELECT;")
-    sqlString = "CREATE TABLE " + tableName + "_SELECT " +
+
+    if ("copyID" in input.keySet()) {
+        // Get the list of IDs
+        String idList = input["copyID"]
+
+        // Copy table with where clause and set index, PK and spatial index
+        sqlString = "CREATE TABLE " + tableName + "_SELECT " +
                 "AS SELECT * FROM " + tableName + " " +
                 "WHERE " + pkName + " IN (" + idList + " );"
-    stmt.execute(sqlString)
+        stmt.execute(sqlString)
+    }
+
+    if (input["wktString"]){
+        wkt = input['wktString']
+        sqlString = "CREATE TABLE " + tableName + "_SELECT " +
+                "AS SELECT * FROM " + tableName + " " +
+                "WHERE ST_WITHIN(THE_GEOM, ST_GeomFromText('" + wkt + "'," + srid + "));"
+        stmt.execute(sqlString)
+    }
 
     stmt.execute("ALTER TABLE " + tableName + "_SELECT ALTER COLUMN " + pkName + " SET NOT NULL;")
     stmt.execute("ALTER TABLE " + tableName + "_SELECT ADD PRIMARY KEY (" + pkName + ");")
@@ -109,6 +129,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     if (!geomColumn.isEmpty()) {
         JDBCUtilities.createSpatialIndex(connection, tableName + "_SELECT", geomColumn);
     }
+
+    // Output the name of the output table
+    return [outputTable: tableName + "_SELECT"]
 }
 
 def exec(Connection connection, Map input) {
