@@ -119,7 +119,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         wkt = input['wktString']
         sqlString = "CREATE TABLE " + tableName + "_SELECT " +
                 "AS SELECT * FROM " + tableName + " " +
-                "WHERE ST_WITHIN(THE_GEOM, ST_GeomFromText('" + wkt + "'," + srid + "));"
+                "WHERE ST_WITHIN(" + geomColumn + ", ST_GeomFromText('" + wkt + "'," + srid + "));"
         stmt.execute(sqlString)
     }
 
