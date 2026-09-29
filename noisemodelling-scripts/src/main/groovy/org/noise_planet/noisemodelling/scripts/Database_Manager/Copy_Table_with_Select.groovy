@@ -87,6 +87,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // Get name of the table
     String tableName = input["tableName"] as String
     if (tableName.isEmpty()) {
+        logger.error("tableName is a required input parameter.")
         resultString = "tableName is not found."
         throw new Exception('ERROR : ' + resultString)
     }
@@ -95,6 +96,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     pkName = pkObject.first()
     pkIndex = pkObject.second()
     if(pkIndex == 0){
+        logger.error("table " + tableName + " should have a Primary Key.")
         resultString = "table should have one Primary Key."
         throw new Exception('ERROR : ' + resultString)
     }
@@ -113,6 +115,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
                 "AS SELECT * FROM " + tableName + " " +
                 "WHERE " + pkName + " IN (" + idList + " );"
         stmt.execute(sqlString)
+        resultString = "Selection of table " + tableName + " is copied to new table " + tableName + "_SELECT."
     }
 
     if (input["wktString"]){
@@ -121,6 +124,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
                 "AS SELECT * FROM " + tableName + " " +
                 "WHERE ST_WITHIN(" + geomColumn + ", ST_GeomFromText('" + wkt + "'," + srid + "));"
         stmt.execute(sqlString)
+        resultString = "Selection of table " + tableName + " is copied to new table " + tableName + "_SELECT."
     }
 
     stmt.execute("ALTER TABLE " + tableName + "_SELECT ALTER COLUMN " + pkName + " SET NOT NULL;")
@@ -128,7 +132,11 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     if (!geomColumn.isEmpty()) {
         JDBCUtilities.createSpatialIndex(connection, tableName + "_SELECT", geomColumn);
+        resultString += " Spatial index is created."
     }
+
+    logger.info(resultString)
+    logger.info('End : Copy table with selection')
 
     // Output the name of the output table
     return [outputTable: tableName + "_SELECT"]
