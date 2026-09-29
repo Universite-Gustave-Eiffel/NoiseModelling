@@ -29,7 +29,9 @@ title = 'Copy a table with a select'
 description = '&#10145;&#65039; Copy a (subset) of table to a new table. </br>' +
               '<hr>' +
               'This script copies a table with a `WHERE` query to a new table. It can be used to make a quick ' +
-              'selection of receiver points, or select to include or exclude screens.'
+              'selection of receiver points, or select a specific set of sources. The selection is based on either a ' +
+              'set of IDs, or a WKT string. When the WKT string is used, it selects all the elements WITHIN the WKT ' +
+              'string.'
 
 inputs = [
         tableName : [
@@ -49,7 +51,8 @@ inputs = [
                 name       : 'WKT string',
                 title      : 'WKT string',
                 description: 'WKT string of geometry (polygon) that encloses features to be copied. It should have ' +
-                             'the same SRID as the source table.',
+                             'the same SRID as the source table.</br>' +
+                             'Make sure to use double quote (") around the WKT string.',
                 min        : 0, max: 1,
                 type       : String.class
         ]
