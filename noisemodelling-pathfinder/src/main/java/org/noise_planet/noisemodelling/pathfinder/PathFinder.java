@@ -123,37 +123,39 @@ public class PathFinder {
      * @param computeRaysOut Result output.
      */
     public void run(CutPlaneVisitorFactory computeRaysOut) {
-        ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
-        // Create the list of receivers index to compute
-        ConcurrentLinkedDeque<Integer> receiverQueue = IntStream.range(0, data.receivers.size()).boxed().collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
-        //Launch execution of computation by batch
-        List<Future<Boolean>> tasks = new ArrayList<>();
-        ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
-        for(int threadId = 0; threadId < threadCount; threadId++) {
-            //Break if the progress visitor is canceled
-            if (cellProgress.isCanceled()) {
-                break;
-            }
-            ThreadPathFinder batchThread = new ThreadPathFinder(receiverQueue,
-                    this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
-            if (threadCount != 1) {
-                tasks.add(threadManager.submitBlocking(batchThread));
-            } else {
-                try {
-                    batchThread.call();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<Future<Boolean>> tasks;
+        try (ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS)) {
+            // Create the list of receivers index to compute
+            ConcurrentLinkedDeque<Integer> receiverQueue = IntStream.range(0, data.receivers.size()).boxed().collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
+            //Launch execution of computation by batch
+            tasks = new ArrayList<>();
+            ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
+            for (int threadId = 0; threadId < threadCount; threadId++) {
+                //Break if the progress visitor is canceled
+                if (cellProgress.isCanceled()) {
+                    break;
+                }
+                ThreadPathFinder batchThread = new ThreadPathFinder(receiverQueue,
+                        this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
+                if (threadCount != 1) {
+                    tasks.add(threadManager.submitBlocking(batchThread));
+                } else {
+                    try {
+                        batchThread.call();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
-        }
-        //Once the execution ends, shutdown the thread manager and await termination
-        threadManager.shutdown();
-        try {
-            if(!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
-                LOGGER.warn("Timeout elapsed before termination.");
+            //Once the execution ends, shutdown the thread manager and await termination
+            threadManager.shutdown();
+            try {
+                if (!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
+                    LOGGER.warn("Timeout elapsed before termination.");
+                }
+            } catch (InterruptedException ex) {
+                LOGGER.error(ex.getLocalizedMessage(), ex);
             }
-        } catch (InterruptedException ex) {
-            LOGGER.error(ex.getLocalizedMessage(), ex);
         }
         // Must raise an exception if one the thread raised an exception
         for (Future<Boolean> task : tasks) {

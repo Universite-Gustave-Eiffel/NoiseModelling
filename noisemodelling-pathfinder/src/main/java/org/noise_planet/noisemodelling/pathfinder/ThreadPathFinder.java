@@ -52,7 +52,6 @@ public final class ThreadPathFinder implements Callable<Boolean> {
      */
     @Override
     public Boolean call() throws Exception {
-        LOGGER.info("Batch thread #{} started", Thread.currentThread().threadId());
         try {
             Integer idReceiver;
             while((idReceiver = receivers.poll()) != null) {
@@ -81,7 +80,6 @@ public final class ThreadPathFinder implements Callable<Boolean> {
             }
             throw ex;
         }
-        LOGGER.info("Batch thread #{} completed", Thread.currentThread().threadId());
         return true;
     }
 }
