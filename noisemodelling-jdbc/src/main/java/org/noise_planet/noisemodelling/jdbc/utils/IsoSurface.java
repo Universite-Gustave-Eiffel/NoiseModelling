@@ -784,11 +784,9 @@ public class IsoSurface {
                                 Map<Integer, Coordinate> receiverCoordinates) throws SQLException {
         String receiverSql = """
                 SELECT %s, %s, THE_GEOM
-                FROM %s
-                WHERE %s IN (
-                    SELECT PK_%d FROM %s WHERE CELL_ID = ?
-                )
-                """.formatted(pkField, pointTableField, pointTable, pkField, vertex, triangleTable);
+                FROM %s p INNER JOIN %s t ON p.%s = t.PK_%d
+                WHERE CELL_ID = ?
+                """.formatted(pkField, pointTableField, pointTable, triangleTable, pkField, vertex);
         if (aggregateByPeriod) {
             receiverSql += " AND PERIOD = ?";
         }
