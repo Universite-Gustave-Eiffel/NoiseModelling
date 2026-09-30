@@ -322,6 +322,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     }
 
     /**
+     * Compute estimated gain to apply to a FreeField attenuation corresponding to favorable conditions
+     * Return between 3 and 10 dB, estimated by @pierromond
      * @param distance Distance in meters
      * @return Gain to apply to the direct field computation with the most favorable conditions of the noise propagation
      */
