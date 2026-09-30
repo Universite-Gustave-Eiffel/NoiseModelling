@@ -222,6 +222,10 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 }
                 if(!keepRunning) {
                     strategy = PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER;
+                    // Add distance from this source to receiver in order to get the statistics of the average ignores sources distance
+                    // The distance should increase if maxErrorDb is increased
+                    multiThread.resultsCache.statisticsSumDistanceCutSourceCount.addAndGet(1);
+                    multiThread.resultsCache.statisticsSumDistanceCutSource.addAndGet((long) receiver.coordinate.distance(source.coordinate));
                 }
             }
         }
@@ -346,6 +350,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             }
             maximumWjExpectedSplAtReceiver.clear();
             maximumWjExpectedSplAtReceiverTotal.clear();
+            multiThread.resultsCache.statisticsSumSourcesCount.addAndGet(sourceList.size());
 
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
@@ -502,6 +507,14 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 pushInStack(multiThread.resultsCache.receiverLevels,
                         new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(), receiver, period, levels));
             }
+        }
+        if(dbSettings.isMaximumErrorPruningEnabled()) {
+            long uniqueSourcePkCount = maximumWjExpectedSplAtReceiver.values().stream()
+                    .flatMap(map -> map.keySet().stream())
+                    .map(key -> key.sourcePk)
+                    .distinct()
+                    .count();
+            multiThread.resultsCache.statisticsSumSourcesCountIgnored.addAndGet(uniqueSourcePkCount);
         }
         receiverAttenuationList.clear();
         maximumWjExpectedSplAtReceiver.clear();

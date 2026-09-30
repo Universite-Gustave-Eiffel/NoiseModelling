@@ -34,6 +34,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -435,6 +436,14 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 // ignore
                 break;
             }
+        }
+        // Log statistics
+        if(noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().maximumError > 0) {
+            double sourceAverageDistance = resultsCache.getAverageCutSourceDistance();
+            double sourceIgnoredPercentage = resultsCache.getPercentageIgnoredSources();
+            DecimalFormat df = new DecimalFormat("#.##");
+            LOGGER.info("With a maxDbError of {} dB, the average distance at which noise sources are ignored for all receivers is {} meters.",df.format(noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().maximumError), df.format(sourceAverageDistance));
+            LOGGER.info("The percentage of ignored sources is {}%.", df.format(sourceIgnoredPercentage));
         }
     }
 
