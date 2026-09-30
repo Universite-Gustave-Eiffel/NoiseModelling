@@ -40,6 +40,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     private static final int UNKNOWN_SOURCE_ID = -1;
     // When estimating the maximum noise level contribution from a sound source (without information on the propagation profile)
     // apply this gain in order to take account of reflective surfaces and potential atmospheric favorable conditions
+    // Pierre Aumond : rough estimate ranging from 3 dB at 10 m to 8 dB at 800 m, assuming a log10 decay.
     public static final double GAIN_ESTIMATED_FREE_FIELD_PATH_A = 2.627;
     public static final double GAIN_ESTIMATED_FREE_FIELD_PATH_B = 0.373;
     AttenuationOutputMultiThread multiThread;
