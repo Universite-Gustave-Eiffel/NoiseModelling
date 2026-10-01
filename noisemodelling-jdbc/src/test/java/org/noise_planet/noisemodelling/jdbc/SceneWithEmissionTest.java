@@ -31,10 +31,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.DiscreteFavourableProbability;
-import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,10 +144,11 @@ public class SceneWithEmissionTest {
         return spectrum;
     }
 
-    private static AttenuationParameters createPeriodParameters(SceneWithEmission scene) {
+    private static AttenuationParameters createPeriodParameters(SceneWithEmission scene, FavourableProbability favourableProbability) {
         AttenuationParameters parameters = new AttenuationParameters(scene.defaultCnossosParameters);
         parameters.setHumidity(HUMIDITY);
         parameters.setTemperature(TEMPERATURE);
+        parameters.setWindRose(favourableProbability);
         return parameters;
     }
 
@@ -601,8 +599,8 @@ public class SceneWithEmissionTest {
         scene.maxSrcDist = 500;
         scene.defaultCnossosParameters.setHumidity(HUMIDITY);
         scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
-        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene));
-        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene));
+        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene, new DiscreteFavourableProbability()));
+        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene, new DiscreteFavourableProbability(0)));
 
         scene.addSource(1L, factory.createPoint(new Coordinate(5, 0, 0.05)));
         scene.addSourceEmission(1L, "T0", createFlatSpectrum(builder, 120.0));
@@ -652,8 +650,8 @@ public class SceneWithEmissionTest {
         scene.maxRefDist = 500;
         scene.defaultCnossosParameters.setHumidity(HUMIDITY);
         scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
-        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene));
-        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene));
+        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene, new DiscreteFavourableProbability()));
+        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene, new DiscreteFavourableProbability(0)));
 
         scene.addSource(1L, factory.createPoint(new Coordinate(2.5, 8, 0.1)));
         scene.addSourceEmission(1L, "T0", createFlatSpectrum(profileBuilder, 120.0));

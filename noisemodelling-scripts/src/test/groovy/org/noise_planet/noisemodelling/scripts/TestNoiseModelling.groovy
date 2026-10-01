@@ -323,9 +323,14 @@ class TestNoiseModelling extends JdbcTestCase {
 
     @Test
     void testRaysTableAndLineSourceSpacingRatio() {
-        String RAYS_TABLE = "RAYS"
         Double LINE_SOURCE_RATIO = 4.0
-        Integer EXPECTED_NB_RAYS = 125716
+
+        def parameters = ["tableBuilding"             : "BUILDINGS",
+                          "tableSources"              : "LW_ROADS",
+                          "tableReceivers"            : "RECEIVERS",
+                          "confReflOrder"             : 0,
+                          "confDiffVertical"          : false,
+                          "confDiffHorizontal"        : true]
 
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
@@ -346,19 +351,19 @@ class TestNoiseModelling extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         new Noise_level_from_source().exec(connection,
-                ["tableBuilding"             : "BUILDINGS",
-                 "tableSources"              : "LW_ROADS",
-                 "tableReceivers"            : "RECEIVERS",
-                 "confRaysName"              : RAYS_TABLE,
-                 "confLineSourceSpacingRatio": LINE_SOURCE_RATIO,
-                 "confReflOrder"             : 0,
-                 "confDiffVertical"          : false,
-                 "confDiffHorizontal"        : false])
+                parameters)
 
-        assertTrue(JDBCUtilities.tableExists(connection, RAYS_TABLE))
-        int raysCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + RAYS_TABLE)["CPT"] as Integer
-        LOGGER.info("number or rays with confLineSourceSpacingRatio = " + LINE_SOURCE_RATIO + " : " + raysCount)
-        assertEquals(raysCount, EXPECTED_NB_RAYS)
+        sql.execute("ALTER TABLE ${NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME} RENAME TO " +
+                "REFERENCE_RECEIVERS;" as String)
+
+        parameters["confLineSourceSpacingRatio"] = LINE_SOURCE_RATIO
+
+        new Noise_level_from_source().exec(connection, parameters)
+
+        // Check if changing line space ratio does not change the noise level much
+        def diffMax = sql.firstRow("SELECT AVG(ABS(a.LAEQ - b.LAEQ)) diffres FROM REFERENCE_RECEIVERS a," +
+                "${NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME} b WHERE a.IDRECEIVER = b.IDRECEIVER AND a.PERIOD = b.PERIOD")[0] as Double
+
+        assertEquals(0, diffMax, 1.0)
     }
-
 }
