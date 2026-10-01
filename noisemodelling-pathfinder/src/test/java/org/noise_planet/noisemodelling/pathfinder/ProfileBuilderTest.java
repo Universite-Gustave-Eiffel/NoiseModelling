@@ -25,10 +25,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinderTest.assertZProfil;
 
 /**
@@ -67,19 +64,19 @@ public class ProfileBuilderTest {
     }
 
     /**
-     * Test the finish of {@link ProfileBuilder} feeding.
+     * Test that we can't add more buildings after the profileBuilder is initialized.
+     * A java.lang.UnsupportedOperationException is expected to be thrown
      * @throws ParseException JTS WKT parsing exception.
      */
     @Test
+
     public void finishBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
         profileBuilder.addBuilding(READER.read("POLYGON((1 1 10,5 1 10,5 5 10,1 5 10,1 1 10))"), -1);
         assertNotNull(profileBuilder.finishFeeding());
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8 56,8 10 56,8 4 56,6 8 56))"), -1);
-
-        List<Building> list = profileBuilder.getBuildings();
-        assertEquals(1, list.size());
+        assertThrows(UnsupportedOperationException.class, () -> {
+            profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
+        });
     }
 
     /**
