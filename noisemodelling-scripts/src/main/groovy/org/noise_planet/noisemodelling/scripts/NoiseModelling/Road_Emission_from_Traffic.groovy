@@ -189,9 +189,14 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
         def tupMeta = GeometryTableUtilities.getFirstColumnMetaData(connection, sourceTableIdentifier)
         if (tupMeta != null) {
+            boolean hasZ = tupMeta.second().hasZ()
             tupMeta.second().setHasZ(true)
             createDefinitions << "$geomName ${tupMeta.second().SQL}"
-            logger.warn("The geometry field ${geomName} z value will be forced to 0.05m height.")
+            if(hasZ) {
+                logger.warn("The geometry field ${geomName} z value of the roads will be forced to 0.05m height. If you had the altitude on the roads, consider using the script Enrich_DEM_with_road in order to provide a precise road platform.")
+            } else {
+                logger.info("The roads geometry field ${geomName} does not have z values, a default height of 0.05m will be used.")
+            }
         }
     }
 

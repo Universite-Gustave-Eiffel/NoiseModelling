@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
@@ -110,6 +111,65 @@ public class NoiseMapByReceiverMakerTest {
         DemTableLoader tableLoader = initDemTableLoader("POINTZ", "POINTZ (1 1 12)");
         assertDoesNotThrow(() -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
     }
+
+    /**
+     * Check if the altitude of the roofs of buildings are well constructed from the DEM when height is provided
+     * but the buildings polygons are in 2D.
+     */
+    @Test
+    public void testBuildingsAltitudeFromDemAndHeight() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/SourceSi.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'RECEIVERS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/RCVS20.shp").getFile()));
+            st.execute("ALTER TABLE BUILDINGS ALTER COLUMN THE_GEOM GEOMETRY;");
+            st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SetSRID(ST_Force2D(THE_GEOM), 2154);");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.initialize(connection);
+
+            NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
+            SceneWithEmission sceneWithEmission = tableLoader.create(connection, new CellIndex(0, 0), new HashSet<>());
+
+            assertFalse(sceneWithEmission.profileBuilder.getBuildings().isEmpty());
+            for (Building building : sceneWithEmission.profileBuilder.getBuildings()) {
+                // Check altitude of the building
+                assertTrue(building.getAverageZ() > 100);
+            }
+        }
+    }
+
+    /**
+     * Check if the altitude of the roofs of buildings are well read from the geometry, ignoring the HEIGHT field of the buildings table
+     */
+    @Test
+    public void testBuildingsAltitudeFromBuildingsGeometry() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/SourceSi.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'RECEIVERS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/RCVS20.shp").getFile()));
+            st.execute("DELETE FROM BUILDINGS WHERE ST_ZMIN(THE_GEOM) < 0");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.initialize(connection);
+
+            NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
+            SceneWithEmission sceneWithEmission = tableLoader.create(connection, new CellIndex(0, 0), new HashSet<>());
+
+            assertFalse(sceneWithEmission.profileBuilder.getBuildings().isEmpty());
+            for (Building building : sceneWithEmission.profileBuilder.getBuildings()) {
+                // Check altitude of the building
+                assertTrue(building.getAverageZ() > 100);
+            }
+        }
+    }
+
 
     /**
      * Check if ground surface are split according to {@link GridMapMaker#groundSurfaceSplitSideLength}

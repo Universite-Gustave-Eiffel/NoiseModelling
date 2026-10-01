@@ -17,7 +17,7 @@ Table definition
 	In the list below, the columns noted with ``*`` are mandatory
 
 * ``THE_GEOM`` *
-	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
+	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Buildings geometry modelling` section below)
 	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON`` or ``LINESTRING``)
 * ``HEIGHT``
 	* Description: building's height above the ground *(in meters)*. Optional, used only if the geometry is defined in 2D, ignored otherwise
@@ -32,7 +32,7 @@ Table definition
 .. note::
 	If you want to generate a scene without buildings, create two fictitious buildings, placed in two corners of the scene, and assign them a height of 0 meter.
 
-Geometry modelling
+Buildings geometry modelling
 ---------------------
 
 In NoiseModelling, the geometry of the building is used to calculate the 3D ray path of the acoustic wave. Therefore, we need to know the footprint of the building as well as the points in height (at the roof, the gutter, ...)
