@@ -190,7 +190,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
             ps.setString(parameterIndex++, row.getMeteoType());
-            ps.setString(parameterIndex++, String.valueOf(row.getProbability()));
+            ps.setDouble(parameterIndex++, row.getProbability());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
