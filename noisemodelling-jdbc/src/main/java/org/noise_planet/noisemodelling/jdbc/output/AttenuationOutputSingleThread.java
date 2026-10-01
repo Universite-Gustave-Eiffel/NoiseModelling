@@ -145,7 +145,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         }
         // export attenuation output (only the rays/propagation path export is requested)
         if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
-                .TO_RAYS_TABLE && this.attenuationOutputs.isEmpty()) {
+                .TO_RAYS_TABLE) {
             // Use only one ray as the ray is the same if we not keep absorption values
             this.attenuationOutputs.addAll(attenuationList);
         }
