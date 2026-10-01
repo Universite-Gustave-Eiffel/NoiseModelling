@@ -574,7 +574,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE METEO='homogeneous' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE METEO='homogeneous' AND PERIOD='D' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
@@ -642,7 +642,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);

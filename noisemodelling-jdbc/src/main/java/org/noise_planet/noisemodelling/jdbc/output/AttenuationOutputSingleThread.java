@@ -133,21 +133,16 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         } else {
             attenuationList = propagationModel.computeAttenuation(scene, cutProfile, data,
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
-            // export attenuation output per period if required
-            if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
-                    multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
-                for (AttenuationOutput attenuationOutput : attenuationList) {
-                    attenuationOutput.setTimePeriod(period);
-                    this.attenuationOutputs.add(attenuationOutput);
-                }
-            }
             defaultAttenuation.addAll(attenuationList);
         }
         // export attenuation output (only the rays/propagation path export is requested)
         if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
                 .TO_RAYS_TABLE) {
-            // Use only one ray as the ray is the same if we not keep absorption values
-            this.attenuationOutputs.addAll(attenuationList);
+            for (AttenuationOutput attenuationOutput : attenuationList) {
+                AttenuationOutput output = attenuationOutput.deepCopy();
+                output.setTimePeriod(period);
+                this.attenuationOutputs.add(output);
+            }
         }
         for (AttenuationOutput attenuationOutput : attenuationList) {
             double[] attenuationDb = attenuationOutput.getaGlobal();

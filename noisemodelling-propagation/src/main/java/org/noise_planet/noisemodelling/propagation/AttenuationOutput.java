@@ -96,4 +96,8 @@ public class AttenuationOutput {
     public void setMeteoType(MeteoType meteoType){
         this.meteoType = meteoType;
     }
+
+    public AttenuationOutput deepCopy() {
+        return new AttenuationOutput(this);
+    }
 }
