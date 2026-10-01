@@ -23,6 +23,7 @@ public class AttenuationOutput {
     public String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     public LineString lineString; // ray from src to rcv through potential reflexion and diffraction points
     public MeteoType meteoType; // Type of meteo parameters used to obtain the attenuation
+    public double probability; // Probability for this meteotype
 
     /**
      * Final attenuation (dB)
@@ -46,6 +47,7 @@ public class AttenuationOutput {
         this.timePeriod = other.timePeriod;
         this.lineString = other.lineString;
         this.meteoType = other.meteoType;
+        this.probability = other.probability;
     }
 
     /**
@@ -95,6 +97,14 @@ public class AttenuationOutput {
 
     public void setMeteoType(MeteoType meteoType){
         this.meteoType = meteoType;
+    }
+
+    public double getProbability() {
+        return probability;
+    }
+
+    public void setProbability(double probability) {
+        this.probability = probability;
     }
 
     public AttenuationOutput deepCopy() {
