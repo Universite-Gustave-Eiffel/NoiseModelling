@@ -77,8 +77,10 @@ class TestNoiseLevelFromBridge extends JdbcTestCase {
                       "confReceiversZIsAltitude": true,
                       "confMaxSrcDist"          : 250,
                       "confReflOrder"           : 0,
-                      // NB: Noise_level_from_source currently swaps its two diffraction setters,
-                      // so confDiffHorizontal is what actually enables vertical (over-the-edge) diffraction.
+                      // NB: confDiffHorizontal names the edge orientation (diffraction on
+                      // horizontal edges, e.g. this deck edge); Scene's setter names the plane
+                      // the path bends in (vertical diffraction = over a horizontal edge). Not a
+                      // bug - the two naming conventions are just inverse of each other.
                       "confDiffHorizontal"      : true]
         inputs.putAll(extraInputs)
         new Noise_level_from_source().exec(connection, inputs)
