@@ -13,6 +13,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Bridge;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.BridgePoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointBridgeWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -93,6 +96,50 @@ public class BridgePropagationTest {
         int maxPoints = withDeckPaths.stream().mapToInt(p -> p.getPointList().size()).max().orElse(0);
         assertTrue(maxPoints > 2,
                 "the deck edge should introduce at least one diffraction point (got " + maxPoints + " points)");
+    }
+
+    /**
+     * Source on the deck, receiver below AND beside it (off-axis, inside the bridge footprint):
+     * the deck's lateral ("OTHER") edge pivot is found by a shortest-path search along the edge,
+     * so the resulting source -&gt; pivot -&gt; receiver path is not collinear with the straight
+     * source/receiver line. The CutProfile's 2D-unfolded distance ({@code d}) therefore no longer
+     * matches the true source/receiver distance ({@code dc}), and the CNOSSOS delta must be
+     * computed from {@code dc}.
+     */
+    @Test
+    public void sourceOnDeckToReceiverBelowAndBesideUsesTrueDirectDistance() {
+        ProfileBuilder withDeck = flatGround();
+        addDeck(withDeck);
+        withDeck.finishFeeding();
+
+        Coordinate src = new Coordinate(30, 20, 10.6); // on the deck
+        Coordinate rcv = new Coordinate(70, 22, 2.0);  // below and beside the deck
+
+        List<CnossosPath> withDeckPaths = paths(withDeck, src, rcv);
+        assertFalse(withDeckPaths.isEmpty(), "a valid path is expected");
+
+        double dc = src.distance3D(rcv);
+        boolean foundPathUsingTrueDirectDistance = false;
+        for (CnossosPath path : withDeckPaths) {
+            assertEquals(dc, path.getSRSegment().dc, 1e-6,
+                    "dc must always be the true source-receiver distance");
+            assertTrue(Math.abs(path.getSRSegment().d - dc) > 0.5,
+                    "this off-axis geometry should make the 2D-unfolded distance diverge from the true one");
+
+            CutPoint pivotPoint = path.getCutPoints().get(1);
+            assertTrue(pivotPoint instanceof CutPointBridgeWall
+                            && ((CutPointBridgeWall) pivotPoint).getWallDirection() == CutPointBridgeWall.WallDirection.OTHER,
+                    "expected the deck's off-axis (OTHER) edge to be the pivot for this scenario");
+
+            Coordinate pivot = pivotPoint.getCoordinate();
+            double expectedDeltaUsingDc = src.distance3D(pivot) + path.e + pivot.distance3D(rcv) - dc;
+            if (Math.abs(expectedDeltaUsingDc - path.delta) < 1e-6) {
+                foundPathUsingTrueDirectDistance = true;
+            }
+        }
+        assertTrue(foundPathUsingTrueDirectDistance,
+                "at least one path's delta must be computed from the true direct distance dc, "
+                        + "not the invalid 2D-unfolded distance d");
     }
 
     @Test
