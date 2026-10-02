@@ -66,8 +66,6 @@ public class DefaultCutPlaneProcessing implements IComputeRaysOutFactory {
             profilerThread.addMetric(new ReceiverStatsMetric());
             profilerThread.setWriteInterval(noiseMapDatabaseParameters.CSVProfilerWriteInterval);
             profilerThread.setFlushInterval(noiseMapDatabaseParameters.CSVProfilerWriteInterval);
-            // The PathFinder only feeds the profile metrics (ReceiverStatsMetric) when it is given the
-            // profiler thread. Without this call the receiver_* columns stay empty/zero in the csv file.
             noiseMapByReceiverMaker.setProfilerThread(profilerThread);
         }
     }
@@ -103,7 +101,6 @@ public class DefaultCutPlaneProcessing implements IComputeRaysOutFactory {
                 noiseMapWriterFuture.get();
             }
             if(profilerThread != null) {
-                // Stop the profiler loop so it writes its final complete csv row before shutdown
                 profilerThread.stop();
                 if(profilerThreadFuture != null) {
                     profilerThreadFuture.get();

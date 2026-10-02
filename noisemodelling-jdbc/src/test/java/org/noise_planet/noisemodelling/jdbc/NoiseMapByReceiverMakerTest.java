@@ -291,11 +291,6 @@ public class NoiseMapByReceiverMakerTest {
 
 
 
-    /**
-     * Check that the internal profiler (CSVProfilerOutputPath) is connected to the path finder so the receiver
-     * statistics (number of cut profiles) are written in the csv file instead of staying at zero.
-     * @throws Exception
-     */
     @Test
     public void testRecordProfile() throws Exception {
         try (Statement st = connection.createStatement()) {

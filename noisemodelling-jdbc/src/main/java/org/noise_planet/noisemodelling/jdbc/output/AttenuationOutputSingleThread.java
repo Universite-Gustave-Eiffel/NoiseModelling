@@ -257,11 +257,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         // Create a PropagationModel instance
         propagationModel = multiThread.propagationModelCreator.create();
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
-        // Count the cut profiles for the cell and for the current receiver. The per receiver counter is the one
-        // reported to the profiler (ReceiverStatsMetric, column receiver_median_profiles_count). Since v6.0.1 only
-        // the cell counter was incremented, so the profiler always reported zero cut profiles per receiver.
         cutProfileCount.addAndGet(1);
-        multiThread.cutProfileCount.addAndGet(1);
+        multiThread.resultsCache.cutProfileCount.addAndGet(1);
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {

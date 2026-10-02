@@ -18,8 +18,6 @@ import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class is built on each new computation cell area. It will create for each thread (range of receivers) an instance
@@ -31,7 +29,6 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
     public NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
-    public AtomicInteger cutProfileCount = new AtomicInteger();
     public PropagationModelCreator propagationModelCreator;
 
     /**
