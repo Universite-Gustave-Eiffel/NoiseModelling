@@ -142,6 +142,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             query.append(", PERIOD");
         }
         query.append(", METEO");
+        query.append(", PROBABILITY");
         query.append(") VALUES (?, ?, ?");
         if(databaseParameters.exportAttenuationOutput) {
             query.append(", ?");
@@ -152,6 +153,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         if(exportPeriod) {
             query.append(", ?");
         }
+        query.append(", ?");
         query.append(", ?");
         query.append(");");
         // PK, GEOM, ID_RECEIVER, ID_SOURCE
@@ -188,6 +190,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
             ps.setString(parameterIndex++, row.getMeteoType());
+            ps.setDouble(parameterIndex++, row.getProbability());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
@@ -403,6 +406,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 sb.append(", PERIOD VARCHAR");
             }
             sb.append(", METEO VARCHAR");
+            sb.append(", PROBABILITY DOUBLE");
             sb.append(");");
             processQuery(sb.toString());
         }
