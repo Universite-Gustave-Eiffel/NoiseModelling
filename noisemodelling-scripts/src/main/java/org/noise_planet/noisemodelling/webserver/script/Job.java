@@ -12,11 +12,17 @@ package org.noise_planet.noisemodelling.webserver.script;
 import groovy.lang.GroovyShell;
 import groovy.lang.MetaMethod;
 import groovy.lang.Script;
+import org.apache.log4j.Layout;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.WriterAppender;
+import org.apache.log4j.spi.Filter;
+import org.apache.log4j.spi.LoggingEvent;
 import org.h2gis.api.ProgressVisitor;
 import org.jetbrains.annotations.NotNull;
 import org.noise_planet.noisemodelling.webserver.Configuration;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
+import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +54,7 @@ public class Job<T> implements Callable<T> {
     protected ProgressVisitor progressVisitor;
     protected ExecutionPlan executionPlan;
     protected Exception jobException = null;
+    protected WriterAppender jobLogAppender;
 
     public Job(int userId, ExecutionPlan executionPlan,
                DataSource serverDataSource, DataSource userDataSource, Configuration configuration) throws SQLException {
@@ -104,6 +111,63 @@ public class Job<T> implements Callable<T> {
         this.future = future;
     }
 
+
+    private void initializeLogWritter() throws SQLException {
+        Layout layout = new PatternLayout(Logging.DEFAULT_LOG_FORMAT);
+        jobLogAppender = new WriterAppender();
+        jobLogAppender.setLayout(layout);
+        jobLogAppender.setWriter(new java.io.Writer() {
+            @Override
+            public void write(char[] cbuf, int off, int len) {
+                String message = new String(cbuf, off, len);
+                try(Connection logConnection = serverDataSource.getConnection()) {
+                    DatabaseManagement.insertLogMessage(logConnection, jobId, message);
+                } catch (SQLException e) {
+                    logger.error("Error inserting log message for job {}", jobId, e);
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        });
+        jobLogAppender.setName("JobAppender-" + jobId);
+
+        // Filter to only capture logs from this job's thread
+        setLogFilter(jobLogAppender, jobId);
+
+        jobLogAppender.activateOptions();
+        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        rootLogger.addAppender(jobLogAppender);
+    }
+
+    /**
+     * Sets the log filter for the writer appender based on the job ID
+     * @param writerAppender The writer appender to set the filter for
+     * @param jobId The job ID to filter logs by
+     */
+    public static void setLogFilter(WriterAppender writerAppender, int jobId) {
+        final String threadName = getThreadName(jobId);
+        writerAppender.addFilter(new Filter() {
+            @Override
+            public int decide(LoggingEvent event) {
+                if (event.getThreadName().equals(threadName) || event.getLoggerName().equals(threadName)) {
+                    return Filter.ACCEPT;
+                }
+                return Filter.DENY;
+            }
+        });
+    }
+
+    private void releaseLogWritter() {
+        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        rootLogger.removeAppender(jobLogAppender);
+    }
+
     @Override
     public T call() throws Exception {
         // Change the Thread name to match the logging filter to the logging messages of this job
@@ -118,6 +182,7 @@ public class Job<T> implements Callable<T> {
         Stack<String> parentPlanInputName = new Stack<>();
         T returnData = null;
         try {
+            initializeLogWritter();
             while (currentPlan != null) {
                 // Check inputs of the current plan to find the next plan to execute
                 // If one of the input is an ExecutionPlan and not a literal value, it is the next plan to execute
@@ -158,6 +223,7 @@ public class Job<T> implements Callable<T> {
             jobException = ex;
             throw new RuntimeException(ex);
         } finally {
+            releaseLogWritter();
             isRunning = false;
             onJobEnd();
         }

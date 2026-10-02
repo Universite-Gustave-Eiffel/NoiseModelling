@@ -14,13 +14,12 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
 import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class is built on each new computation cell area. It will create for each thread (range of receivers) an instance

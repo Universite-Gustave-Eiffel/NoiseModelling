@@ -38,6 +38,16 @@ public class DiscreteFavourableProbability implements FavourableProbability {
     }
 
     /**
+     * Create a discrete favourable probability with the same favourable probability for all directions
+     * @param favourableProbability the favourable probability for all directions
+     */
+    public DiscreteFavourableProbability(double favourableProbability) {
+        double[] allDirections = new double[DEFAULT_WIND_ROSE.length]; // Assuming 16 directions
+        Arrays.fill(allDirections, favourableProbability);
+        this(allDirections);
+    }
+
+    /**
      * The north slice is the last array index not the first one
      * Ex for slice width of 20°:
      *      - The first column 20° contain winds between 10 to 30 °

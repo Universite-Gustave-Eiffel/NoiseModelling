@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -91,7 +92,7 @@ public class ProfileBuilder {
     private List<Triangle> topoNeighbors = new ArrayList<>();
     /** Topographic Vertices .*/
     private List<Coordinate> vertices = new ArrayList<>();
-    /** Topographic RTree. */
+    /** Query structure for DEM triangles */
     private STRtree topoTree;
 
     /** List of ground effects. */
@@ -175,34 +176,27 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null || building.poly.isEmpty()) {
-            throw  new IllegalArgumentException(
-                String.format(Locale.ROOT,
-                    "Building with PK : %s is not valid, it has a null or empty geometry.",
-                    building.primaryKey)
+            throw new IllegalArgumentException(
+                    String.format(Locale.ROOT,
+                            "Building with PK : %s is not valid, it has a null or empty geometry.",
+                            building.primaryKey)
             );
-        }
-        else if (!building.isValid) {
-            throw  new IllegalArgumentException(
-                String.format(Locale.ROOT,
-                    "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
-                    building.primaryKey)
+        } else if (!building.isValid) {
+            throw new IllegalArgumentException(
+                    String.format(Locale.ROOT,
+                            "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
+                            building.primaryKey)
             );
-        }
-        else if(!isFeedingFinished) {
-            if(envelope == null) {
+        } else {
+            if (envelope == null) {
                 envelope = building.poly.getEnvelopeInternal();
-            }
-            else {
+            } else {
                 envelope.expandToInclude(building.poly.getEnvelopeInternal());
             }
             buildings.add(building);
             buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
             return this;
         }
-        else{
-            LOGGER.warn("Cannot add building, feeding is finished.");
-        }
-        return this;
     }
 
     /**
@@ -404,13 +398,14 @@ public class ProfileBuilder {
     }
 
     private void logWarningIfCoordinatesIntoBuildings(Coordinate... coordinates) {
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
         for (Coordinate coordinate : coordinates) {
             // Check if the source is into a building
             Building building = getBuildingAtCoordinate(coordinate);
             if (building != null && building.getAverageZ() >= coordinate.z) {
                 LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
-                                " (building average altitude : {} m), it should be moved higher Geometry: {}",
-                        building.getAverageZ(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
+                                " (building roof average altitude : {} m), it should be moved higher Geometry: {}",
+                       decimalFormat.format(building.getAverageZ()), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
                 break;
             }
         }
@@ -709,6 +704,58 @@ public class ProfileBuilder {
         return groundAbsorptions;
     }
 
+
+    /**
+     * Convert points and line
+     * @throws LayerDelaunayError
+     */
+    public void buildDemQueryStructure() throws LayerDelaunayError{
+        if(!topoPoints.isEmpty() || !topoLines.isEmpty()) {
+            //Feed the Delaunay layer
+            LayerDelaunay layerDelaunay = new LayerTinfour();
+
+            // We use triangles neighbors information to navigate through triangles quickly
+            layerDelaunay.setRetrieveNeighbors(true);
+
+            for (Coordinate topoPoint : topoPoints) {
+                layerDelaunay.addVertex(topoPoint);
+            }
+
+            for (LineString topoLine : topoLines) {
+                // Attribute parameter (-1) is not used in ProfileBuilder for DEM
+                layerDelaunay.addLineString(topoLine, -1);
+            }
+
+            //Process Delaunay
+            layerDelaunay.processDelaunay();
+            topoTriangles = layerDelaunay.getTriangles();
+            topoNeighbors = layerDelaunay.getNeighbors();
+
+            //Feed the RTree
+            topoTree = new STRtree(topoNodeCapacity);
+            vertices = layerDelaunay.getVertices();
+
+            // wallIndex set will merge shared triangle segments
+            Set<IntegerTuple> wallIndex = new HashSet<>();
+            for (int i = 0; i < topoTriangles.size(); i++) {
+                final Triangle tri = topoTriangles.get(i);
+                wallIndex.add(new IntegerTuple(tri.getA(), tri.getB(), i));
+                wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
+                wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
+                // Insert triangle in rtree
+                final Coordinate vA = vertices.get(tri.getA());
+                final Coordinate vB = vertices.get(tri.getB());
+                final Envelope triangleEnvelope = new Envelope(vA, vB);
+                final Coordinate vC = vertices.get(tri.getC());
+                triangleEnvelope.expandToInclude(vC);
+                topoTree.insert(triangleEnvelope, i);
+            }
+            topoTree.build();
+            topoPoints.clear();
+            topoLines.clear();
+        }
+    }
+
     /**
      * Finish the data feeding. Once called, no more data can be added and process it in order to prepare the
      * profile retrieving.
@@ -721,64 +768,10 @@ public class ProfileBuilder {
         isFeedingFinished = true;
 
         //Process topographic points and lines
-        if(topoPoints.size()+topoLines.size() > 1) {
-            //Feed the Delaunay layer
-            LayerDelaunay layerDelaunay = new LayerTinfour();
-            layerDelaunay.setRetrieveNeighbors(true);
-            try {
-                for (Coordinate topoPoint : topoPoints) {
-                    layerDelaunay.addVertex(topoPoint);
-                }
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while adding topographic points to Delaunay layer.", e);
-                return null;
-            }
-            try {
-                for (LineString topoLine : topoLines) {
-                    //TODO ensure the attribute parameter is useless
-                    layerDelaunay.addLineString(topoLine, -1);
-                }
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while adding topographic points to Delaunay layer.", e);
-                return null;
-            }
-            //Process Delaunay
-            try {
-                layerDelaunay.processDelaunay();
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while processing Delaunay.", e);
-                return null;
-            }
-            try {
-                topoTriangles = layerDelaunay.getTriangles();
-                topoNeighbors = layerDelaunay.getNeighbors();
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while getting triangles", e);
-                return null;
-            }
-            //Feed the RTree
-            topoTree = new STRtree(topoNodeCapacity);
-            try {
-                vertices = layerDelaunay.getVertices();
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while getting vertices", e);
-                return null;
-            }
-            // wallIndex set will merge shared triangle segments
-            Set<IntegerTuple> wallIndex = new HashSet<>();
-            for (int i = 0; i < topoTriangles.size(); i++) {
-                final Triangle tri = topoTriangles.get(i);
-                wallIndex.add(new IntegerTuple(tri.getA(), tri.getB(), i));
-                wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
-                wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
-                // Insert triangle in rtree
-                Coordinate vA = vertices.get(tri.getA());
-                Coordinate vB = vertices.get(tri.getB());
-                Coordinate vC = vertices.get(tri.getC());
-                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                topoTree.insert(env, i);
-            }
-            topoTree.build();
+        try {
+            buildDemQueryStructure();
+        } catch (LayerDelaunayError e) {
+            throw new IllegalStateException("Error while building DEM query structure", e);
         }
 
         for (Building b : buildings) {
@@ -1536,6 +1529,9 @@ public class ProfileBuilder {
      */
     public double getZGround(Coordinate coordinate, AtomicInteger triangleHint) {
         if(topoTree == null) {
+            if(!topoPoints.isEmpty()) {
+                throw new IllegalStateException("Delaunay triangulation of DEM is not done but a z ground was requested");
+            }
             return 0.0;
         }
         int i = triangleHint.get();

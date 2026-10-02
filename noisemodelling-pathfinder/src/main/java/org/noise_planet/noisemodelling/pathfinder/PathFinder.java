@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
+import org.apache.commons.math3.util.IntegerSequence;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
@@ -32,11 +33,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
@@ -119,39 +123,39 @@ public class PathFinder {
      * @param computeRaysOut Result output.
      */
     public void run(CutPlaneVisitorFactory computeRaysOut) {
-        ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
-        int endReceiverRange = 0;
-        //Launch execution of computation by batch
-        List<Future<Boolean>> tasks = new ArrayList<>();
-        ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
-        while (endReceiverRange < data.receivers.size()) {
-            //Break if the progress visitor is cancelled
-            if (cellProgress.isCanceled()) {
-                break;
-            }
-            int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-            ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
-                    this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
-            if (threadCount != 1) {
-                tasks.add(threadManager.submitBlocking(batchThread));
-            } else {
-                try {
-                    batchThread.call();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<Future<Boolean>> tasks;
+        try (ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS)) {
+            // Create the list of receivers index to compute
+            ConcurrentLinkedDeque<Integer> receiverQueue = IntStream.range(0, data.receivers.size()).boxed().collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
+            //Launch execution of computation by batch
+            tasks = new ArrayList<>();
+            ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
+            for (int threadId = 0; threadId < threadCount; threadId++) {
+                //Break if the progress visitor is canceled
+                if (cellProgress.isCanceled()) {
+                    break;
+                }
+                ThreadPathFinder batchThread = new ThreadPathFinder(receiverQueue,
+                        this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
+                if (threadCount != 1) {
+                    tasks.add(threadManager.submitBlocking(batchThread));
+                } else {
+                    try {
+                        batchThread.call();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
-            endReceiverRange = newEndReceiver;
-        }
-        //Once the execution ends, shutdown the thread manager and await termination
-        threadManager.shutdown();
-        try {
-            if(!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
-                LOGGER.warn("Timeout elapsed before termination.");
+            //Once the execution ends, shutdown the thread manager and await termination
+            threadManager.shutdown();
+            try {
+                if (!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
+                    LOGGER.warn("Timeout elapsed before termination.");
+                }
+            } catch (InterruptedException ex) {
+                LOGGER.error(ex.getLocalizedMessage(), ex);
             }
-        } catch (InterruptedException ex) {
-            LOGGER.error(ex.getLocalizedMessage(), ex);
         }
         // Must raise an exception if one the thread raised an exception
         for (Future<Boolean> task : tasks) {
@@ -161,7 +165,6 @@ public class PathFinder {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
     /**

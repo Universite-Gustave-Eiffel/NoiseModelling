@@ -78,6 +78,11 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
         this.keepAbsorption = other.keepAbsorption;
     }
 
+    @Override
+    public AttenuationOutput deepCopy() {
+        return new CnossosAttenuationOutput(this);
+    }
+
     public static class ABoundary {
         public double[] deltaDiffSR;
         public double[] aGroundSO;

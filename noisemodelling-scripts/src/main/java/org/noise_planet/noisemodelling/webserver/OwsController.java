@@ -72,6 +72,7 @@ public class OwsController {
     public static final int MAXIMUM_POOL_SIZE = 5;
     public static final long KEEP_ALIVE_TIME = 0L;
     public static final int MAXIMUM_LINES_TO_FETCH = 1_000;
+    public static final int LOG_MESSAGES_PER_PAGE = 200;
     // After the user cancel the job, the WPS script should detect the progressLogger.isCancel() and terminate
     // the computation. However, the script does not respond with this delay,
     // NoiseModelling will force shutdown the database then kill the processing thread.
@@ -308,7 +309,7 @@ public class OwsController {
         try(Connection connection = serverDataSource.getConnection()) {
             int userIdFilter = -1;
             User user = ctx.attribute("user");
-            if(user != null && !user.isAdministrator()) {
+            if(user != null) {
                 userIdFilter = user.getIdentifier();
             }
             ctx.render("job_list", Map.of("jobs", DatabaseManagement.getJobs(connection, userIdFilter)));
@@ -623,6 +624,9 @@ public class OwsController {
      *            request attributes, and response handling methods.
      */
     public void jobLogs(@NotNull Context ctx) {
+        int page = ctx.queryParamAsClass("page", Integer.class).getOrDefault(1);
+        int offset = (page - 1) * LOG_MESSAGES_PER_PAGE;
+
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
             try {
@@ -631,18 +635,28 @@ public class OwsController {
                 if(hasUnauthorizedJobAccess(ctx, user, jobData)) {
                     return;
                 }
-                // Parse the current server logs
-                // we could store the logs into the database when the job complete or failed, maybe another time.
-                String lastLines = Logging.getLastLines(new File(configuration.workingDirectory,
-                        NoiseModellingServer.LOGGING_FILE_NAME), MAXIMUM_LINES_TO_FETCH, Job.getThreadName(jobId), new AtomicInteger());
-                ctx.render("job_logs", Map.of("jobId", jobId, "rows", lastLines));
+                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, LOG_MESSAGES_PER_PAGE, 0);
+
+                int messageCount = DatabaseManagement.getLogMessagesCount(connection, jobId);
+                int totalPages = (int) Math.ceil((double) messageCount / LOG_MESSAGES_PER_PAGE);
+
+                ctx.render("job_logs", Map.of(
+                        "jobId", jobId,
+                        "logs", logs,
+                        "currentPage", page,
+                        "limit", LOG_MESSAGES_PER_PAGE,
+                        "messageCount", messageCount,
+                        "totalPages", totalPages,
+                        "lastTimestamp", !logs.isEmpty() ? logs.getFirst().getEpochTime() : 0,
+                        "isLive", page == 1
+                ));
             } catch (NumberFormatException ex) {
                 logger.error("Invalid job id {}", ctx.body(), ex);
                 ctx.render("blank", Map.of(
                         "redirectUrl", ctx.contextPath() + "/jobs",
                         "message", "Wrong job id parameter"));
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             logger.error(e.getLocalizedMessage(), e);
             throw new InternalServerErrorResponse();
         }
@@ -790,12 +804,13 @@ public class OwsController {
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
             int jobId = Integer.parseInt(ctx.pathParam("job_id"));
+            // Retrieve the last received message index to send lost messages
+            long lastReceivedMessageEpoch = ctx.queryParamAsClass("lastReceivedMessageEpoch", Long.class).getOrDefault(0L);
             Map<String, Object> jobData = DatabaseManagement.getJob(connection, jobId);
             if(hasUnauthorizedJobAccess(ctx.getUpgradeCtx$javalin(), user, jobData)) {
                 return;
             }
-            logger.info("WebSocket connection established for job {}", jobId);
-            String threadName = Job.getThreadName(jobId);
+            logger.info("WebSocket connection established for job {} requesting logs since {}", jobId, lastReceivedMessageEpoch);
 
             // Create a custom appender that sends logs to WebSocket
             WriterAppender wsAppender = getWriterAppender(ctx, jobId);
@@ -803,19 +818,19 @@ public class OwsController {
             websocketLoggers.put(ctx, wsAppender);
 
             // Filter to only capture logs from this job's thread
-            wsAppender.addFilter(new Filter() {
-                @Override
-                public int decide(LoggingEvent event) {
-                    if (event.getThreadName().equals(threadName)) {
-                        return Filter.ACCEPT;
-                    }
-                    return Filter.DENY;
-                }
-            });
+            Job.setLogFilter(wsAppender, jobId);
 
             wsAppender.activateOptions();
             org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
             rootLogger.addAppender(wsAppender);
+
+            // Push lost messages
+            if(lastReceivedMessageEpoch > 0) {
+                List<DatabaseManagement.Message> lostMessages = DatabaseManagement.getLogMessages(connection, jobId, 0, OwsController.MAXIMUM_LINES_TO_FETCH, lastReceivedMessageEpoch);
+                for(DatabaseManagement.Message message : lostMessages) {
+                    ctx.send(message.getEpochTime() + ":" + message.message());
+                }
+            }
 
         } catch (NumberFormatException ex) {
             logger.error("Invalid job id in WebSocket connection", ex);
@@ -844,7 +859,7 @@ public class OwsController {
             public void write(char[] cbuf, int off, int len) {
                 String message = new String(cbuf, off, len);
                 if(ctx.session.isOpen()) {
-                    ctx.send(message);
+                    ctx.send(System.currentTimeMillis() + ":" + message);
                 }
             }
 
@@ -857,7 +872,6 @@ public class OwsController {
             }
         });
         wsAppender.setName("WebSocketAppender-" + jobId);
-        wsAppender.setLayout(layout);
         return wsAppender;
     }
 

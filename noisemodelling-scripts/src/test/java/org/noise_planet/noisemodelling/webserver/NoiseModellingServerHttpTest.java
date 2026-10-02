@@ -159,7 +159,8 @@ public class NoiseModellingServerHttpTest {
     public void clearInstance() throws SQLException {
         if (app != null) {
             try(Connection connection = app.getServerDataSource().getConnection()) {
-                connection.createStatement().execute("TRUNCATE TABLE JOBS");
+                connection.createStatement().execute("TRUNCATE TABLE LOGS");
+                connection.createStatement().execute("DELETE FROM JOBS CASCADE");
             }
         }
     }

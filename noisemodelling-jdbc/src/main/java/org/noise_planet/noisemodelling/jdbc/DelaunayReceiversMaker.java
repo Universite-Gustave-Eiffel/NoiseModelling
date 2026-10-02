@@ -54,10 +54,9 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
-    private AtomicInteger constraintId = new AtomicInteger(1);
+    private final AtomicInteger constraintId = new AtomicInteger(1);
     private double epsilon = 1e-6;
-    private double geometrySimplificationDistance = 1;
-    private boolean isoSurfaceInBuildings = false;
+    private double geometrySimplificationDistance = 0.1;
     private boolean exportTrianglesGeometries = false;
 
     /**
@@ -87,19 +86,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      */
     public void setExportTrianglesGeometries(boolean exportTrianglesGeometries) {
         this.exportTrianglesGeometries = exportTrianglesGeometries;
-    }
-
-    /**
-     * @return True if isosurface will be placed into buildings
-     */
-    public boolean isIsoSurfaceInBuildings() {
-        return isoSurfaceInBuildings;
-    }
-    /**
-     * @param isoSurfaceInBuildings Set true in order to place isosurface in buildings
-     */
-    public void setIsoSurfaceInBuildings(boolean isoSurfaceInBuildings) {
-        this.isoSurfaceInBuildings = isoSurfaceInBuildings;
     }
 
     /**
@@ -148,6 +134,15 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                     throw new SQLException(ex);
                 }
             }
+        }
+        try(Statement s = connection.createStatement()) {
+            // Create index on pk_1, pk_2, pk_3
+            s.executeUpdate("CREATE INDEX ON " + triangleTableName + "(pk_1);");
+            s.executeUpdate("CREATE INDEX ON " + triangleTableName + "(pk_2);");
+            s.executeUpdate("CREATE INDEX ON " + triangleTableName + "(pk_3);");
+        }
+        if(!sourcesTableName.isEmpty() && !Double.isNaN(minimalSourceGeometriesDistanceToComputeCell)) {
+            filterReceiversFarAwayFromSources(connection, verticesTableName, triangleTableName, sourcesTableName, minimalSourceGeometriesDistanceToComputeCell);
         }
     }
     /**
@@ -329,8 +324,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                 Envelope ptEnv = sourceGeometry.getEnvelopeInternal();
                 if (ptEnv.intersects(expandedCellEnvelop)) {
                     if (sourceGeometry instanceof Point) {
-                        // Add square in rendering
-                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist, BufferParameters.CAP_SQUARE)), 1);
+                        // Add point source in rendering
+                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist)), 1);
                     } else {
                         if (sourceGeometry instanceof LineString) {
                             delaunaySegments.add((LineString) (sourceGeometry));
@@ -467,6 +462,58 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         }
     }
 
+    public static void filterReceiversFarAwayFromSources(Connection connection, String receiverTableName, String trianglesTableName, String sourcesTableName, double minimalSourceGeometriesDistanceToComputeCell) {
+        // Delete triangles far away from the sources
+        Logger logger = LoggerFactory.getLogger(Thread.currentThread().getName());
+        try(PreparedStatement ps = connection.prepareStatement("""
+                DELETE FROM %s t
+                WHERE EXISTS (
+                    SELECT 1\s
+                    FROM %s r1, %s r2, %s r3
+                    WHERE t.pk_1 = r1.pk AND t.pk_2 = r2.pk AND t.pk_3 = r3.pk
+                    AND NOT EXISTS (
+                        SELECT 1 FROM %s s\s
+                        WHERE (s.the_geom && ST_Expand(r1.the_geom, ?) AND ST_DWithin(r1.the_geom, s.the_geom, ?))
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM %s s\s
+                        WHERE (s.the_geom && ST_Expand(r2.the_geom, ?) AND ST_DWithin(r2.the_geom, s.the_geom, ?))
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM %s s\s
+                        WHERE (s.the_geom && ST_Expand(r3.the_geom, ?) AND ST_DWithin(r3.the_geom, s.the_geom, ?))
+                    )
+                );
+                """.formatted(trianglesTableName, receiverTableName, receiverTableName, receiverTableName, sourcesTableName, sourcesTableName, sourcesTableName))) {
+            ps.setDouble(1, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(2, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(3, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(4, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(5, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(6, minimalSourceGeometriesDistanceToComputeCell);
+            int deletedRows = ps.executeUpdate();
+            logger.info("Deleted {} triangles from {} because they are too far from sources", deletedRows, trianglesTableName);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        // remove receivers not linked with triangles
+        try(Statement s = connection.createStatement()) {
+            String query = """
+                DELETE FROM %s r
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM %s t WHERE t.pk_1 = r.pk
+                    UNION ALL
+                    SELECT 1 FROM %s t WHERE t.pk_2 = r.pk
+                    UNION ALL
+                    SELECT 1 FROM %s t WHERE t.pk_3 = r.pk
+                );
+            """.formatted(receiverTableName, trianglesTableName, trianglesTableName, trianglesTableName);
+            s.executeUpdate(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * @param epsilon Merge points that are closer that this epsilon value
      */
@@ -582,40 +629,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             translatedVertex.setOrdinate(2, z);
             vertices.add(translatedVertex);
         }
-        // Do not add triangles associated with buildings
-        List<Triangle> triangles;
-        if (!isoSurfaceInBuildings) {
-            triangles = new ArrayList<>(cellMesh.getTriangles().size());
-            boolean removedTriangles = false;
-            for (Triangle triangle : cellMesh.getTriangles()) {
-                if (triangle.getAttribute() == 0) {
-                    // Keep only triangles that aren't associated with a building
-                    triangles.add(triangle);
-                } else {
-                    removedTriangles = true;
-                }
-            }
-            if(removedTriangles) {
-                // Some triangles have been removed, we may have to remove vertices
-                Map<Coordinate, Integer> uniqueVertices = new HashMap<>();
-                for(Triangle triangle : triangles) {
-                    for(int i = 0; i < 3; i++) {
-                        int newIndex = updateMap(uniqueVertices,vertices.get(triangle.get(i)));
-                        triangle.set(i, newIndex);
-                    }
-                }
-                if(uniqueVertices.size() != vertices.size()) {
-                    vertices = new ArrayList<>(Arrays.asList(new Coordinate[uniqueVertices.size()]));
-                    for (Map.Entry<Coordinate, Integer> entry : uniqueVertices.entrySet()) {
-                        Coordinate key = entry.getKey();
-                        Integer value = entry.getValue();
-                        vertices.set(value, key);
-                    }
-                }
-            }
-        } else {
-            triangles = cellMesh.getTriangles();
-        }
+        List<Triangle> triangles = cellMesh.getTriangles();
+
         receiversCount += vertices.size();
 
         generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,

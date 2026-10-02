@@ -53,24 +53,4 @@ public class TemplatePropagationModel implements PropagationModel {
         return attenuationOutputs;
     }
 
-    /**
-     * Compute attenuation along direct path between source and receiver
-     *
-     * @param source source point information
-     * @param receiver receiver point information
-     * @param scene Geometrical information about the propagation scene
-     * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @return Attenuation
-     */
-    public AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
-                                             SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
-                                             boolean isExportAttenuationMatrix){
-        // Direct attenuation computation here
-        AttenuationOutput attenuationOutput = new AttenuationOutput();
-        attenuationOutput.aGlobal = new double[0];
-        //
-        return attenuationOutput;
-    }
-
 }

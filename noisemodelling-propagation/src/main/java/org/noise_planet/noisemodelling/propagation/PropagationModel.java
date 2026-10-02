@@ -36,19 +36,4 @@ public interface PropagationModel {
     List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                       AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix);
-
-    /**
-     * Compute attenuation along direct path between source and receiver
-     *
-     * @param source source point information
-     * @param receiver receiver point information
-     * @param scene Geometrical information about the propagation scene
-     * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return AttenuationOutput object
-     */
-    AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
-                                      SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
-                                      boolean isExportAttenuationMatrix);
-
 }

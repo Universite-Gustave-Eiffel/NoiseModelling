@@ -224,4 +224,11 @@ public class NoiseMapDatabaseParameters {
     public void setReceiversLevelTable(String receiversLevelTable) {
         this.receiversLevelTable = receiversLevelTable;
     }
+
+    /**
+      * @return True if non-relevant sound source during propagation may be ignored
+     */
+    public boolean isMaximumErrorPruningEnabled() {
+        return maximumError > 0;
+    }
 }
