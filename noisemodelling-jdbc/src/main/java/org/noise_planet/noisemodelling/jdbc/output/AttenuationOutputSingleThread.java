@@ -26,7 +26,6 @@ import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDb;
@@ -74,8 +73,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      * to sum the values of all the remaining sources for every propagation path.
      */
     Map<String, Double> maximumWjExpectedSplAtReceiverTotal = new HashMap<>();
-
-    public AtomicInteger cutProfileCount = new AtomicInteger(0);
 
     ProgressVisitor progressVisitor;
 
@@ -257,7 +254,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         // Create a PropagationModel instance
         propagationModel = multiThread.propagationModelCreator.create();
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
-        cutProfileCount.addAndGet(1);
         multiThread.resultsCache.cutProfileCount.addAndGet(1);
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
@@ -332,9 +328,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
-            AtomicInteger cutProfileCount) {
-        this.cutProfileCount = cutProfileCount;
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
         // Create a PropagationModel instance
         propagationModel = multiThread.propagationModelCreator.create();
         // Quickly evaluate the maximum expected power level at receiver location
