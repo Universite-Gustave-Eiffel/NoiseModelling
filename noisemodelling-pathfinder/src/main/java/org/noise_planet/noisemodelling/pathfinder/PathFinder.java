@@ -261,7 +261,8 @@ public class PathFinder {
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
         AtomicInteger cutProfileCount = new AtomicInteger(0);
-        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+        CutPlaneVisitor countingDataOut = new CutProfileCounter(dataOut, cutProfileCount);
+        countingDataOut.startReceiver(receiverPointInfo, sourceList);
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {
@@ -271,7 +272,7 @@ public class PathFinder {
         AtomicInteger processedSources = new AtomicInteger(0);
         // For each Pt Source - Pt Receiver
         for (SourcePointInfo sourcePointInfo : sourceList) {
-            CutPlaneVisitor.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, receiverMirrorIndex);
+            CutPlaneVisitor.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, countingDataOut, receiverMirrorIndex);
             processedSources.addAndGet(1);
             // If the delta between already received power and maximal potential power received is inferior to data.maximumError
             if ((visitor != null && visitor.isCanceled()) ||
@@ -293,7 +294,36 @@ public class PathFinder {
         }
 
         // No more rays for this receiver
-        dataOut.finalizeReceiver(receiverPointInfo);
+        countingDataOut.finalizeReceiver(receiverPointInfo);
+    }
+
+    /**
+     * Count the cut profiles pushed for a receiver without exposing the counter in the visitor api.
+     */
+    private static class CutProfileCounter implements CutPlaneVisitor {
+        private final CutPlaneVisitor delegate;
+        private final AtomicInteger cutProfileCount;
+
+        CutProfileCounter(CutPlaneVisitor delegate, AtomicInteger cutProfileCount) {
+            this.delegate = delegate;
+            this.cutProfileCount = cutProfileCount;
+        }
+
+        @Override
+        public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+            cutProfileCount.incrementAndGet();
+            return delegate.onNewCutPlane(cutProfile);
+        }
+
+        @Override
+        public void startReceiver(ReceiverPointInfo receiver, Collection<SourcePointInfo> sourceList) {
+            delegate.startReceiver(receiver, sourceList);
+        }
+
+        @Override
+        public void finalizeReceiver(ReceiverPointInfo receiver) {
+            delegate.finalizeReceiver(receiver);
+        }
     }
 
     /**
