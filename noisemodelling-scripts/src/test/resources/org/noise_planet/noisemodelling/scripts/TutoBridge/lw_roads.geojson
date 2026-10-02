@@ -1,0 +1,41 @@
+{
+ "type": "FeatureCollection",
+ "name": "lw_roads",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:EPSG::2154"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 1,
+    "HZD63": 95.0,
+    "HZD125": 95.0,
+    "HZD250": 95.0,
+    "HZD500": 95.0,
+    "HZD1000": 95.0,
+    "HZD2000": 95.0,
+    "HZD4000": 95.0,
+    "HZD8000": 95.0
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      20,
+      50,
+      8.1
+     ],
+     [
+      100,
+      50,
+      8.1
+     ]
+    ]
+   }
+  }
+ ]
+}

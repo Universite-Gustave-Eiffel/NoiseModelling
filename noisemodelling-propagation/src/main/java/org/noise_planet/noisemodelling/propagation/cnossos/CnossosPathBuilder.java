@@ -7,6 +7,7 @@ import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointBridgeWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointVEdgeDiffraction;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointWall;
@@ -550,7 +551,19 @@ public class CnossosPathBuilder {
         if(!favourable || !(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT || cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION)) {
             long difVPointCount = cnossosPath.getPointList().stream().
                     filter(pointPath -> pointPath.type.equals(DIFV)).count();
-            double distance = difVPointCount == 0 ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
+            // A bridge deck's outer edge (source on the deck, receiver below/beside it) is
+            // located by a shortest-path search along the edge, like a vertical-edge pivot, so it
+            // is not guaranteed to lie on the straight source-receiver line. "d" is a cumulative
+            // 2D distance through the cut-profile points and is only valid when they are all
+            // collinear with source and receiver (see JTSUtility#getNewCoordinateSystem); for
+            // this edge that assumption can be violated even though the point is typed DIFH, not
+            // DIFV, so it is not caught by the check above. Route it through the same "dc" (true
+            // 3D source-receiver distance) fallback.
+            boolean hasOffAxisBridgeEdge = cutProfile.cutPoints.stream()
+                    .anyMatch(cutPoint -> cutPoint instanceof CutPointBridgeWall
+                            && ((CutPointBridgeWall) cutPoint).getWallDirection() == CutPointBridgeWall.WallDirection.OTHER);
+            double distance = (difVPointCount == 0 && !hasOffAxisBridgeEdge)
+                    ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
             cnossosPath.delta = sr.orientationIndex(c0) * (dSO0 + cnossosPath.e + dOnR - distance);
         } else {
             if (sr.orientationIndex(c0) == 1) {

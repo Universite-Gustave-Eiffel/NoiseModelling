@@ -1,0 +1,46 @@
+{
+ "type": "FeatureCollection",
+ "name": "buildings",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:EPSG::2154"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 1,
+    "HEIGHT": 6.0
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       150,
+       30
+      ],
+      [
+       170,
+       30
+      ],
+      [
+       170,
+       70
+      ],
+      [
+       150,
+       70
+      ],
+      [
+       150,
+       30
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

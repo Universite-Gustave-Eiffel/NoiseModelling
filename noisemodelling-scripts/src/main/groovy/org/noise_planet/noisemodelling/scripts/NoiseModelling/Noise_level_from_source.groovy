@@ -77,7 +77,8 @@ inputs = [
                         '<li> <b> YAW </b> : Source horizontal orientation in degrees. For points 0&#176; North, 90&#176; East. For lines 0&#176; line direction, 90&#176; right of the line direction.  (FLOAT) </li> ' +
                         '<li> <b> PITCH </b> : Source vertical orientation in degrees. 0&#176; front, 90&#176; top, -90&#176; bottom. (FLOAT) </li> ' +
                         '<li> <b> ROLL </b> : Source roll in degrees (FLOAT) </li> ' +
-                        '<li> <b> DIR_ID </b> : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER) </li> </ul> ' +
+                        '<li> <b> DIR_ID </b> : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER) </li> ' +
+                        '<li> <b> BRIDGE_PK </b> : optional, identifies the bridge deck (from tableBridgePoints) this source sits on. When confSourcesZIsAltitude is false, its relative Z is resolved against that deck instead of the ground below it </li> </ul> ' +
                         '&#128161; This table can be generated from the WPS Block "Road_Emission_from_Traffic"',
                 type       : String.class
         ],
@@ -109,6 +110,21 @@ inputs = [
                         'The table must contain: </br> <ul>' +
                         '<li> <b> THE_GEOM </b> : the 3D geometry of the elevation points (POINTZ) </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Block "Import_Asc_File"',
+                min        : 0, max: 1,
+                type: String.class
+        ],
+        tableBridgePoints       : [
+                name       : 'Bridge deck points table name',
+                title      : 'Bridge deck points table name',
+                description: 'Name of the bridge deck points table (elevated road structures). Optional. </br> </br>' +
+                        'One bridge deck is built per <b>BRIDGE_PK</b> value from its ordered <b>PK</b> points. The table must contain: </br> <ul>' +
+                        '<li> <b> PK </b>: point identifier (INTEGER) </li>' +
+                        '<li> <b> BRIDGE_PK </b>: identifier of the bridge this point belongs to (INTEGER) </li>' +
+                        '<li> <b> THE_GEOM </b>: 2D point on the deck centre line (POINT) </li>' +
+                        '<li> <b> ABSOLUTE_DECK_HEIGHT </b> / <b> RELATIVE_DECK_HEIGHT </b>: deck top height, absolute or relative to the ground (DOUBLE, one of the two) </li>' +
+                        '<li> <b> DECK_THICKNESS, RIGHT_WIDTH, LEFT_WIDTH, RIGHT_BARRIER_HEIGHT, LEFT_BARRIER_HEIGHT </b> (DOUBLE) </li>' +
+                        '<li> <b> POSITION </b>: CENTER | LEFT | RIGHT </li>' +
+                        '<li> <b> GIRDER_TYPE, SLAB_TYPE </b> (VARCHAR) </li> </ul>',
                 min        : 0, max: 1,
                 type: String.class
         ],
@@ -385,6 +401,17 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
     }
 
+    String bridge_points_table_name = ""
+    if (input['tableBridgePoints']) {
+        bridge_points_table_name = input['tableBridgePoints']
+
+        // Check if srid are in metric projection and are all the same.
+        int sridBridge = GeometryTableUtilities.getSRID(connection, TableLocation.parse(bridge_points_table_name, dbType))
+        if (!DataBaseUtilities.isSridMetric(connection, sridBridge)) throw new IllegalArgumentException("Error : Please use a metric projection for "+bridge_points_table_name+".")
+        if (sridBridge == 0) throw new IllegalArgumentException("Error : The table "+bridge_points_table_name+" does not have an associated SRID.")
+        if (sridBridge != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+bridge_points_table_name+" are not the same.")
+    }
+
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
@@ -546,6 +573,10 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // Point cloud height above sea level POINT(X Y Z)
     if (dem_table_name != "") {
         pointNoiseMap.setDemTable(dem_table_name)
+    }
+    // Bridge deck points (elevated road structures)
+    if (bridge_points_table_name != "") {
+        pointNoiseMap.setBridgePointsTableName(bridge_points_table_name)
     }
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)

@@ -53,6 +53,7 @@ inputs = [
                         " This function recognize the following columns (* mandatory) : </br><ul>" +
                         '<li> <b> PK </b> : If there is a primary key defined, it will be copied with the same name and set as a primary for the output table </li> ' +
                         '<li><b> IDSOURCE </b> : an identifier, if present will be copied as is. It is expected if you will use LW_ROADS as SOURCES_EMISSION in the Noise_Level_From_Source script input (INTEGER)</li>' +
+                        '<li><b> BRIDGE_PK </b> : optional, if present will be copied as is. Identifies the bridge deck (see tableBridgePoints in Noise_level_from_source) this road segment sits on, so its relative Z is resolved against the deck instead of the ground below it (INTEGER)</li>' +
                         "<li><b> PERIOD </b> : Any text that could be time period ex. D, E, N, DEN (Varchar), if present will be copied as is</li>" +
                         '<li><b> LV </b> : Hourly average light vehicle count (DOUBLE)</li>' +
                         '<li><b> MV </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (DOUBLE)</li>' +
@@ -164,6 +165,10 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // If there is a period field, it means that we will not found the D E N fields before traffic fields names
     boolean hasPeriodField = lowerCaseColumnNames.contains("period")
     boolean hasIdSourceField = lowerCaseColumnNames.contains("idsource")
+    // Optional: sources sitting on a bridge deck carry the bridge they belong to, so
+    // Noise_level_from_source can resolve their relative height against the deck rather
+    // than the ground below it.
+    boolean hasBridgePkField = lowerCaseColumnNames.contains("bridge_pk")
 
     // drop table LW_ROADS if exists and the create and prepare the table
     sql.execute("drop table if exists $outputTableName;" as String)
@@ -181,6 +186,11 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     if (hasIdSourceField) {
         createDefinitions << "IDSOURCE integer"
         columnNames << "IDSOURCE"
+    }
+
+    if (hasBridgePkField) {
+        createDefinitions << "BRIDGE_PK integer"
+        columnNames << "BRIDGE_PK"
     }
 
     if (geomFields.size() > 0) {
@@ -248,7 +258,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         st.setFetchSize(500);
         st.setFetchDirection(ResultSet.FETCH_FORWARD)
         SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
-        convertTrafficToEmission(rs, progress, primaryKeyColumn, hasIdSourceField, geomFields, hasPeriodField,
+        convertTrafficToEmission(rs, progress, primaryKeyColumn, hasIdSourceField, hasBridgePkField, geomFields, hasPeriodField,
                 coefficientVersion, ps, subProgress)
     }
 
@@ -275,6 +285,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 @CompileStatic
 private static void convertTrafficToEmission(SpatialResultSet rs, ProgressVisitor progress,
                                              Tuple<String, Integer> primaryKeyColumn, boolean hasIdSourceField,
+                                             boolean hasBridgePkField,
                                              List<String> geomFields, boolean hasPeriodField, int coefficientVersion,
                                              BatchingPreparedStatementWrapper ps, ProgressVisitor subProgress) {
     Map<String, Integer> sourceFieldsCache = new HashMap<>()
@@ -285,6 +296,10 @@ private static void convertTrafficToEmission(SpatialResultSet rs, ProgressVisito
         }
         if (hasIdSourceField) {
             parameters.add(rs.getInt("IDSOURCE"))
+        }
+        if (hasBridgePkField) {
+            int bridgePk = rs.getInt("BRIDGE_PK")
+            parameters.add(rs.wasNull() ? null : bridgePk)
         }
         if (geomFields.size() > 0) {
             parameters.add(ST_UpdateZ.updateZ(rs.getGeometry(geomFields.get(0)), 0.05d))

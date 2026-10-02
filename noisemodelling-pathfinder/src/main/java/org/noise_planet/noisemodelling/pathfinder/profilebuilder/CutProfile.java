@@ -45,6 +45,10 @@ public class CutProfile {
     @JsonIgnore
     public boolean hasTopographyIntersection = false;
 
+    /** True if the Source-Receiver ray is blocked by a bridge deck, only used at the generation of the profile. */
+    @JsonIgnore
+    public boolean hasBridgeIntersection = false;
+
     /** True if the path between source and receiver is curved, the coordinates are the original,
      *  only the cutting planes for left and right are not the same */
     public boolean curvedPath = false;
@@ -98,6 +102,24 @@ public class CutProfile {
      */
     public ArrayList<CutPoint> getCutPoints() {
         return cutPoints;
+    }
+
+    /**
+     * Replace the cut point list.
+     * @param cutPoints new cut points
+     */
+    public void setCutPoints(ArrayList<CutPoint> cutPoints) {
+        this.cutPoints = cutPoints;
+    }
+
+    /**
+     * @return the cut point coordinates projected onto the 2D source-receiver plane (x = distance from source).
+     */
+    public List<Coordinate> generateCutPointCoordinates2D() {
+        List<Coordinate> cutPointCoordinates = cutPoints.stream()
+                .map(CutPoint::getCoordinate)
+                .collect(Collectors.toList());
+        return JTSUtility.getNewCoordinateSystem(cutPointCoordinates);
     }
 
     /**
@@ -231,7 +253,7 @@ public class CutProfile {
      */
     @JsonIgnore
     public boolean isFreeField() {
-        return !hasBuildingIntersection && !hasTopographyIntersection;
+        return !hasBuildingIntersection && !hasTopographyIntersection && !hasBridgeIntersection;
     }
 
     /**
@@ -433,6 +455,12 @@ public class CutProfile {
                 }
             }
         }
+        // Bridge deck support (v1): while the acoustic ray runs on top of a deck the ground
+        // reference is the deck surface, not the terrain far below. lastGroundZ carries that
+        // reference forward; bridgePkOn is the deck the source currently sits on. Both stay
+        // inert (NaN / -1) for any profile that carries no bridge cut point.
+        double lastGroundZ = Double.NaN;
+        long bridgePkOn = -1;
         for (CutPoint cut : pts) {
             if (cut instanceof CutPointGroundEffect) {
                 if (index != null) {
@@ -440,7 +468,36 @@ public class CutProfile {
                 }
                 continue;
             }
-            if (cut instanceof CutPointWall) {
+            if (cut instanceof CutPointBridgeWall) {
+                CutPointBridgeWall bridgePoint = (CutPointBridgeWall) cut;
+                double bridgeHeight = bridgePoint.getBridgeHeight();
+                Long cutPointBridgePk = bridgePoint.getBridgePk();
+                boolean entering = bridgePoint.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER);
+                boolean exiting = bridgePoint.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT);
+                if (cutPointBridgePk != null && cutPointBridgePk == bridgePkOn) {
+                    if (exiting) {
+                        // step off the deck: deck level -> next deck level or terrain
+                        pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, bridgeHeight));
+                        if (cut.getCoordinate().z > bridgeHeight) {
+                            pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z));
+                        }
+                        double nextGround = bridgePoint.getNextBridgePk() >= 0 ? bridgePoint.getNextBridgeHeight() : cut.getzGround();
+                        pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, nextGround));
+                        bridgePkOn = bridgePoint.getNextBridgePk();
+                        lastGroundZ = bridgePoint.getNextBridgePk() >= 0 ? bridgePoint.getNextBridgeHeight() : Double.NaN;
+                    }
+                } else {
+                    // deck the source is not on: treat its near edge as a raised screen sitting on terrain
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z));
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    if (entering) {
+                        // ray continues on top of this deck
+                        bridgePkOn = cutPointBridgePk != null ? cutPointBridgePk : -1;
+                        lastGroundZ = bridgeHeight;
+                    }
+                }
+            } else if (cut instanceof CutPointWall) {
                 // Z ground profile must add intermediate ground points before adding the top level of building/wall
                 CutPointWall cutPointWall = (CutPointWall) cut;
                 if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER) ||
@@ -459,10 +516,18 @@ public class CutProfile {
                 pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
                 pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
                 pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+            } else if (cut instanceof CutPointSource && !Double.isNaN(((CutPointSource) cut).getBridgeHeight())) {
+                // Source sitting on a bridge deck: its ground reference is the deck surface.
+                CutPointSource src = (CutPointSource) cut;
+                double deckZ = src.getBridgeHeight();
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, deckZ));
+                lastGroundZ = deckZ;
+                bridgePkOn = src.getBridgeRelationship() != null ? src.getBridgeRelationship().getBridgePkOn() : -1;
             } else {
                 // we will ignore topographic point if we are over a building
                 if (!(overArea && cut instanceof CutPointTopography)) {
-                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    double groundZ = !Double.isNaN(lastGroundZ) ? lastGroundZ : cut.getzGround();
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, groundZ));
                 }
             }
             if (index != null) {
