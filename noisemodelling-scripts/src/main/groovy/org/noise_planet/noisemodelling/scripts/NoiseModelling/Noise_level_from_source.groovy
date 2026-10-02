@@ -36,6 +36,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.SQLException
+import java.sql.Statement
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -363,7 +364,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     //Get the primary key field of the receiver table
     int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name, dbType))
     if (pkIndexRecv < 1) {
-        throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
+        throw new IllegalArgumentException(String.format("Receiver table %s does not contain a primary key", receiverTableIdentifier))
     }
 
     String building_table_name = input['tableBuilding']
