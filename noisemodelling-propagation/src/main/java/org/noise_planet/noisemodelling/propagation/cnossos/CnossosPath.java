@@ -52,7 +52,6 @@ public class CnossosPath {
     public double deltaSPrimeR= Double.MAX_VALUE;
     public double deltaSRPrime= Double.MAX_VALUE;
     public double e=0;
-    public double probability = Double.MAX_VALUE; // store fav/hom. probability for debug purposes
 
     public CnossosPath() {
     }
