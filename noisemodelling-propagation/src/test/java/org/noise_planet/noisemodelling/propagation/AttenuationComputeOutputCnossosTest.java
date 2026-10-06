@@ -6228,36 +6228,36 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(0, propDataOut.getAttenuationOutputs().size(), "The receiver is under the DEM and no propagation paths should be found");
     }
+
     /**
      * Test body-barrier multi-reflection effect (train-barrier interaction).
      * Reference: NMPB – Railway Emission Model, Programmers Guide,
-     *            Van Maercke Dirk, CSTB Grenoble, 24/10/2011
-     *            TestRailwayInteraction.xml worked example.
-     *
+     * Van Maercke Dirk, CSTB Grenoble, 24/10/2011
+     * TestRailwayInteraction.xml worked example.
+     * <p>
      * Geometry (from guide):
-     *   - Source at head of track (x=0, z=0)
-     *   - Barrier top: 3m from track, 2m above head of track (x=3, z=2)
-     *   - Receiver: 25m from barrier (x=28), 3.5m above head of track (z=3.5)
-     *
+     * - Source at head of track (x=0, z=0)
+     * - Barrier top: 3m from track, 2m above head of track (x=3, z=2)
+     * - Receiver: 25m from barrier (x=28), 3.5m above head of track (z=3.5)
+     * <p>
      * Four scenarios:
-     *   0) Hard barrier (α=0), with interaction (Cref=1)
-     *   1) Barrier, no interaction (Cref=0)
-     *   2) Soft barrier (α=0.5), with interaction (Cref=1)
-     *   3) No barrier (wall height=0, Cref=0)
-     *
+     * 0) Hard barrier (α=0), with interaction (Cref=1)
+     * 1) Barrier, no interaction (Cref=0)
+     * 2) Soft barrier (α=0.5), with interaction (Cref=1)
+     * 3) No barrier (wall height=0, Cref=0)
+     * <p>
      * NMPB guide reference values (dB(A)):
-     *                                3 interactions  10 interactions
-     *   No barrier                       96.1            96.1
-     *   Barrier, no interaction          76.9            76.9
-     *   Hard barrier                     88.6            91.5
-     *   Soft barrier (α=0.5)             83.5            84.0
-     *
+     * 3 interactions  10 interactions
+     * No barrier                       96.1            96.1
+     * Barrier, no interaction          76.9            76.9
+     * Hard barrier                     88.6            91.5
+     * Soft barrier (α=0.5)             83.5            84.0
+     * <p>
      * Expected deltas for N=3:  r3A-r1A=19.2, r0A-r1A=11.7, r2A-r1A=6.6
      * Expected deltas for N=10: r3A-r1A=19.2, r0A-r1A=14.6, r2A-r1A=7.1
-     */
-
-    /**
+     * <p>
      * Run the 4 body-barrier scenarios and return per-frequency levels for each.
+     *
      * @param nMax maximum reflection order
      * @return double[4][8] — levels for scenarios 0 (hard+inter), 1 (no inter), 2 (soft+inter), 3 (no barrier)
      */
@@ -6306,7 +6306,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         // Scenario 2: Soft barrier (α=0.5 at all frequencies), with interaction (Cref=1)
         List<Double> softAlphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
-        scene.profileBuilder.processedWalls.get(0).setAlpha(softAlphas);
+        scene.profileBuilder.getProcessedObstructions().getFirst().setAlpha(softAlphas);
         scene.sourceCref.put(0L, 1.0);
 
         AttenuationComputeOutput propDataOut2 = new AttenuationComputeOutput(true, true, scene);
@@ -6315,8 +6315,8 @@ public class AttenuationComputeOutputCnossosTest {
         double[] values2 = propDataOut2.receiversAttenuationLevels.pop().levels;
 
         // Scenario 3: No barrier (wall height=0, Cref=0)
-        scene.profileBuilder.processedWalls.get(0).p0.z = 0;
-        scene.profileBuilder.processedWalls.get(0).p1.z = 0;
+        scene.profileBuilder.getProcessedObstructions().getFirst().p0().z = 0;
+        scene.profileBuilder.getProcessedObstructions().getFirst().p1().z = 0;
         scene.sourceCref.put(0L, 0.0);
         AttenuationComputeOutput propDataOut3 = new AttenuationComputeOutput(true, true, scene);
         PathFinder computeRays3 = new PathFinder(scene);
@@ -6484,9 +6484,9 @@ public class AttenuationComputeOutputCnossosTest {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(3, -100, 0),
-                        new Coordinate(3, 100, 0)
-                }, 2.0, alphas, 1)
+                        new Coordinate(3, -100, 2),
+                        new Coordinate(3, 100, 2)
+                }, alphas, 1)
                 .finishFeeding();
 
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
@@ -6527,15 +6527,17 @@ public class AttenuationComputeOutputCnossosTest {
         }
 
         // Print comparison table (only 1k, 2k, 4k — valid for source height 0.00m)
-        System.out.println("=== ScreenBodyInteraction: Guide vs Code (source 0.00m, cumulative delta dB) ===");
+        LOGGER.info("=== ScreenBodyInteraction: Guide vs Code (source 0.00m, cumulative delta dB) ===");
         for (int ob = 0; ob < 3; ob++) {
-            System.out.printf("%nOctave %4s Hz:%n", octLabels[ob]);
-            System.out.printf("  nMax | Guide Δ | Code Δ  | Ecart%n");
+            StringBuilder msg = new StringBuilder();
+            msg.append(String.format("%nOctave %4s Hz:%n", octLabels[ob]));
+            msg.append(String.format("  nMax | Guide Δ | Code Δ  | Ecart%n"));
             for (int nMax = 1; nMax <= 8; nMax++) {
                 double gd = guideDelta[ob][nMax];
                 double cd = codeDelta[nMax][codeIdx[ob]];
-                System.out.printf("  %4d | %+7.2f | %+7.2f | %+6.2f%n", nMax, gd, cd, cd - gd);
+                msg.append(String.format("  %4d | %+7.2f | %+7.2f | %+6.2f%n", nMax, gd, cd, cd - gd));
             }
+            LOGGER.info(msg.toString());
         }
 
         // Assertions: guide vs code with 1.5 dB tolerance per octave band
@@ -7185,7 +7187,7 @@ public class AttenuationComputeOutputCnossosTest {
         List<CnossosPath> allPaths = new ArrayList<>();
         for (CutProfile cutProfile : propDataOut.getCutProfiles()) {
             allPaths.addAll(CnossosPathBuilder.computeCnossosPathsFromCutProfile(
-                    cutProfile, rayData.isBodyBarrier(),
+                    cutProfile,
                     builder.exactFrequencyArray, 0.0));
         }
 

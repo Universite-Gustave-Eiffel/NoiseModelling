@@ -35,10 +35,10 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
     public  double[] aGlobalRaw = new double[0];
     public double[] aDif = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation
-
+    /** Retro diffraction (Train) */
+    public double[] deltaBodyScreen = new double[0];
     public ABoundary aBoundary = new ABoundary();
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
-    public double deltaRetro= Double.MAX_VALUE;
     public boolean keepAbsorption = false;
 
     public CnossosPath propagationPath = new CnossosPath();
@@ -73,7 +73,7 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
         this.aSource = other.aSource;
         this.aBoundary = other.aBoundary;
         this.groundAttenuation = other.groundAttenuation;
-        this.deltaRetro = other.deltaRetro;
+        this.deltaBodyScreen = other.deltaBodyScreen;
         this.propagationPath = other.propagationPath;
         this.keepAbsorption = other.keepAbsorption;
     }

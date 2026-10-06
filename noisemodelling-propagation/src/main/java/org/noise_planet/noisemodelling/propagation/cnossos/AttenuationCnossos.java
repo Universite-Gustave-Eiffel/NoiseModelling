@@ -38,6 +38,10 @@ import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POIN
 public class AttenuationCnossos {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossos.class);
+    /**
+     * Default is 0.18m (rail above ballast; ballast is considered as ground reference)
+     */
+    public static final double DEFAULT_H_RAIL = 0.18;
 
     /**
      * Compute attenuation of sound energy by distance. Minimum distance is one
@@ -641,17 +645,17 @@ public class AttenuationCnossos {
 
         List<PointPath> ptList = cnossosPath.getPointList();
 
-        // Get hRail from CnossosPath (set by AttenuationVisitor/AttenuationOutputSingleThread from HRAIL column)
-        // Default is 0.18m (rail above ballast; ballast is considered as ground reference)
-        double hRail = proPathParameters.getHRail();
-        Coordinate src = ptList.get(0).coordinate;
+        Coordinate src = ptList.getFirst().coordinate;
         PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
 
         if (pDif != null && !pDif.alphaWall.isEmpty()) {
-            double Cref = proPathParameters.getCref();
-            if (Cref > 0){
-
-                int nMax = scene != null ? scene.bodyBarrierMaxReflectionOrder : 3; // maximum reflection order N
+            // Get Cref for this source (0 = no body barrier for road/open freight, 1 = fully reflecting)
+            double cref = scene == null ? 0.0 : scene.sourceCref.getOrDefault(cnossosPath.cutProfile.getSource().sourcePk, 0.0);
+            if (cref > 0){
+                // Get hRail for this source (rail-specific, default 0.18m)
+                // Default is 0.18m (rail above ballast; ballast is considered as ground reference)
+                double hRail = scene.sourceHRail.getOrDefault(cnossosPath.cutProfile.getSource().sourcePk, DEFAULT_H_RAIL);
+                int nMax = scene.bodyBarrierMaxReflectionOrder; // maximum reflection order N
                 Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
                 double[] deltaL = new double[data.getFrequencies().size()];
                 // Bug #6 fix: init to 0.0, not dBToW(0.0)=1.0 which would double-count n=0
@@ -719,7 +723,7 @@ public class AttenuationCnossos {
                                 deltaAbs[i][0] = 10.0 * i * log10(1 - pDif.alphaWall.get(idfreq));
 
                                 // (2.5.45) ΔLref,n = 10·n·lg(Cref)
-                                deltaRef[i][0] = 10.0 * i * log10(Cref);
+                                deltaRef[i][0] = 10.0 * i * log10(cref);
                             }
 
                             // --- Pass 2: compute retrodiffraction ΔLretrodif,n ---
@@ -850,6 +854,7 @@ public class AttenuationCnossos {
         }
         // Keep global attenuation
         attenuationOutput.aGlobal = aGlobalMeteoRay.clone();
+        attenuationOutput.deltaBodyScreen = deltaBodyScreen;
     }
 
 }

@@ -57,11 +57,6 @@ public class SceneWithAttenuation extends Scene {
     public static final String CREF_DATABASE_FIELD = "CREF";
 
     /**
-     * Cached source table fields
-     */
-    public Map<String, Integer> sourceFieldNames = new HashMap<>();
-
-    /**
      * If {@link #cnossosParametersPerPeriod} is empty, attenuation visitor will use this default settings and output
      * empty period
      */
@@ -88,13 +83,21 @@ public class SceneWithAttenuation extends Scene {
 
     /**
      * Retrieves the ground speed of the noise source at the specified index.
-     * @param srcIndex
+     * @param srcIndex Source index
      * @return the ground speed of the noise source at the specified index.
      */
     public double getSourceGs(int srcIndex){
-        return sourceGs.get(sourcesPk.get(srcIndex));
+        return sourceGs.getOrDefault(sourcesPk.get(srcIndex), SceneWithAttenuation.DEFAULT_GS);
     }
 
+    /**
+     * Retrieves the ground speed of the noise source at the specified index.
+     * @param srcPrimaryKey Source primary key
+     * @return the ground speed of the noise source at the specified index.
+     */
+    public double getSourceGs(long srcPrimaryKey){
+        return sourceGs.getOrDefault(srcPrimaryKey, SceneWithAttenuation.DEFAULT_GS);
+    }
     /**
      * Add geometry with additional attributes
      * @param pk Unique source identifier

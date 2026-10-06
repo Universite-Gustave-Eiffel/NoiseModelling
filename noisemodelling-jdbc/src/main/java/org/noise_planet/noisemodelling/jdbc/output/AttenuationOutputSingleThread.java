@@ -263,10 +263,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
             return strategy;
         }
-        // Get hRail for this source (rail-specific, default 0.18m)
-        double hRail = scene.sourceHRail.getOrDefault(cutProfile.getSource().sourcePk, 0.18);
-        // Get Cref for this source (0 = no body barrier for road/open freight, 1 = fully reflecting)
-        double cref = scene.sourceCref.getOrDefault(cutProfile.getSource().sourcePk, 0.0);
         CutPointSource source = cutProfile.getSource();
         long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
         if(scene.wjSources.isEmpty()) {

@@ -53,19 +53,6 @@ public class CnossosPath {
     public double deltaSPrimeR= Double.MAX_VALUE;
     public double deltaSRPrime= Double.MAX_VALUE;
     public double e=0;
-    public double deltaRetro = Double.MAX_VALUE;
-
-    /**
-     * Height of the rail above ballast (m), used in body barrier calculation.
-     * Ballast is considered as ground reference. Default = 0.18m.
-     */
-    private double hRail = 0.18;
-
-    /** Vehicle body reflection coefficient (Cref), used in body barrier calculation.
-     *  0 = no body barrier (road sources, or open freight), 1 = fully reflecting body.
-     *  Computed as length-weighted average of ReflectingBarrierEffect from vehicle JSON. */
-    private double cref = 0;
-
 
     public CnossosPath() {
     }
@@ -81,31 +68,43 @@ public class CnossosPath {
         this.segmentList = other.segmentList;
         this.favourable = other.favourable;
         this.gs = other.gs;
-        this.hRail = other.hRail;
-        this.cref = other.cref;
-    }
-
-    public double getHRail() {
-        return hRail;
-    }
-
-    public void setHRail(double hRail) {
-        this.hRail = hRail;
     }
 
     /**
-     * @return Vehicle body reflection coefficient (0-1) for body barrier calculation
+     * 3D intersections points of the ray
+     * @return
      */
-    public double getCref() {
-        return cref;
+    public List<CutPoint> getCutPoints() {
+        if(cutProfile == null) {
+            return new ArrayList<>();
+        } else {
+            return cutProfile.cutPoints;
+        }
     }
 
     /**
-     * Set the vehicle body reflection coefficient.
-     * @param cref 0 = no reflection (road/open freight), 1 = full reflection
+     * @return Get vertical plane between source and receiver used to compute the propagation ray path attributes
      */
-    public void setCref(double cref) {
-        this.cref = cref;
+    public CutProfile getCutProfile() {
+        return cutProfile;
+    }
+
+    /**
+     * @param cutProfile vertical plane between source and receiver used to compute the propagation ray path attributes
+     */
+    public void setCutProfile(CutProfile cutProfile) {
+        this.cutProfile = cutProfile;
+    }
+
+    /**
+     * @return Ground factor of the source area. Gs=0 for road platforms, slab tracks. Gs=1 for rail tracks on ballast
+     */
+    public double getGs() {
+        return gs;
+    }
+
+    public void setGs(double gs) {
+        this.gs = gs;
     }
 
 
