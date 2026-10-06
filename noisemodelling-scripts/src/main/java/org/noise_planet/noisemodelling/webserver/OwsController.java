@@ -27,6 +27,7 @@ import org.geotools.wps.WPSConfiguration;
 import org.geotools.xsd.Encoder;
 import org.geotools.xsd.Parser;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
@@ -71,6 +72,7 @@ public class OwsController {
     public static final int MAXIMUM_POOL_SIZE = 5;
     public static final long KEEP_ALIVE_TIME = 0L;
     public static final int MAXIMUM_LINES_TO_FETCH = 1_000;
+    public static final int LOG_MESSAGES_PER_PAGE = 200;
     // After the user cancel the job, the WPS script should detect the progressLogger.isCancel() and terminate
     // the computation. However, the script does not respond with this delay,
     // NoiseModelling will force shutdown the database then kill the processing thread.
@@ -124,8 +126,7 @@ public class OwsController {
      */
     public OwsController(DataSource serverDataSource, JWTProvider<User> provider, Configuration configuration) throws IOException {
         wpsScriptWrapper = new WpsScriptWrapper(Path.of(configuration.scriptPath));
-        Map<String, List<File>> groupedScripts = wpsScriptWrapper.loadScripts();
-        wpsScripts = WpsScriptWrapper.buildScriptWrappers(groupedScripts);
+        wpsScripts = WpsScriptWrapper.scanScriptsGrouped(getClass().getClassLoader(), configuration.scriptPath);
         this.provider = provider;
         this.configuration = configuration;
         this.serverDataSource = serverDataSource;
@@ -135,16 +136,11 @@ public class OwsController {
     /**
      * Reloads the WPS (Web Processing Service) scripts by reloading them from the file system
      * and rebuilding the corresponding script wrappers.
-     * <p>
-     * This method uses {@link WpsScriptWrapper#loadScripts()} to scan and organize script files into
-     * groups. The results are then processed by {@link WpsScriptWrapper#buildScriptWrappers(Map)} to
-     * create a new set of script wrappers, which replace the existing ones.
      *
      * @throws IOException if an error occurs while loading or rebuilding the scripts.
      */
     public void reloadScripts() throws IOException {
-        Map<String, List<File>> groupedScripts = wpsScriptWrapper.loadScripts();
-        wpsScripts = WpsScriptWrapper.buildScriptWrappers(groupedScripts);
+        wpsScripts = WpsScriptWrapper.scanScriptsGrouped(getClass().getClassLoader(), configuration.scriptPath);
     }
 
     /**
@@ -313,7 +309,7 @@ public class OwsController {
         try(Connection connection = serverDataSource.getConnection()) {
             int userIdFilter = -1;
             User user = ctx.attribute("user");
-            if(user != null && !user.isAdministrator()) {
+            if(user != null) {
                 userIdFilter = user.getIdentifier();
             }
             ctx.render("job_list", Map.of("jobs", DatabaseManagement.getJobs(connection, userIdFilter)));
@@ -420,7 +416,7 @@ public class OwsController {
                                 ScriptInput scriptInput = scriptMetadata.inputs.get(inputId);
                                 // found expected input, try to cast to expect type if not null
                                 Class<?> expectedInputType = scriptInput.type;
-                                Object convertedInputValue = castInputUsingExpectedInputType(expectedInputType, input.getData().getLiteralData().getValue());
+                                Object convertedInputValue = ScriptMetadata.castInputUsingExpectedInputType(expectedInputType, input.getData().getLiteralData().getValue());
                                 queryInputs.put(inputId, convertedInputValue);
                             } else {
                                 Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
@@ -442,63 +438,24 @@ public class OwsController {
                 }
             }
         }
-        // Provide default inputs specified in the WPS that are not provided by the request
-        scriptMetadata.inputs.entrySet( ).stream().filter(
-                entry -> entry.getValue().defaultValue != null
-                        && !queryInputs.containsKey(entry.getKey()))
-                .forEach(entry -> {
-                    Object defaultValue = entry.getValue().defaultValue;
-                    Class<?> expectedType = entry.getValue().type;
-                    // Groovy may generate BigDecimal instead of expected class
-                    // So cast/convert to the expected type
-                    if(expectedType != null && !expectedType.isAssignableFrom(defaultValue.getClass())) {
-                        try {
-                            defaultValue = castInputUsingExpectedInputType(expectedType, defaultValue.toString());
-                        } catch (Exception ex) {
-                            Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
-                            logger.info("Warning, failed to cast default value for input '{}', use the original value. Exception: {}",
-                                    entry.getKey(), ex.getMessage());
-                        }
-                    }
-                    queryInputs.put(entry.getKey(), defaultValue);
-                });
         // Expected output
+        return fetchChainedOutputIdentifier(execute, scriptMetadata, queryInputs);
+    }
+
+    private static @NonNull ExecutionPlan fetchChainedOutputIdentifier(ExecuteType execute, ScriptMetadata scriptMetadata, Map<String, Object> queryInputs) {
+        String outputIdentifier = "";
         if(execute.getResponseForm() != null) {
             OutputDefinitionType outputDefinitionType = execute.getResponseForm().getRawDataOutput();
             if (outputDefinitionType != null) {
-                String outputIdentifier = outputDefinitionType.getIdentifier().getValue();
-                if (scriptMetadata.outputs.containsKey(outputIdentifier)) {
-                    return new ExecutionPlan(queryInputs, scriptMetadata, outputIdentifier);
+                String outputIdentifierValue = outputDefinitionType.getIdentifier().getValue();
+                if (scriptMetadata.outputs.containsKey(outputIdentifierValue)) {
+                    outputIdentifier = outputIdentifierValue;
                 }
             }
         }
-        return new ExecutionPlan(queryInputs, scriptMetadata);
-    }
-
-    /**
-     * Cast the input content to the expected input type defined in the script metadata.
-     *
-     * @param expectedInputType the expected type of the input as defined in the script metadata
-     * @param inputValue the string input value containing the literal data to be cast
-     * @return the cast input content if successful, otherwise returns the original input content
-     * @throws org.locationtech.jts.io.ParseException if there is an error parsing a Geometry input
-     */
-    private static Object castInputUsingExpectedInputType(Class<?> expectedInputType, String inputValue) throws org.locationtech.jts.io.ParseException {
-        String typeName = expectedInputType.getName();
-        if (typeName.equals(Long.class.getName())) {
-            return Long.parseLong(inputValue);
-        } else if (typeName.equals(Integer.class.getName())) {
-            return Integer.parseInt(inputValue);
-        } else if (typeName.equals(Float.class.getName())) {
-            return Float.parseFloat(inputValue);
-        } else if (typeName.equals(Double.class.getName())) {
-            return Double.parseDouble(inputValue);
-        } else if (typeName.equals(Boolean.class.getName())) {
-            return Boolean.parseBoolean(inputValue);
-        } else if (typeName.equals(Geometry.class.getName())) {
-            return new org.locationtech.jts.io.WKTReader().read(inputValue);
-        }
-        return inputValue;
+        ExecutionPlan executionPlan = new ExecutionPlan(queryInputs, scriptMetadata, outputIdentifier);
+        executionPlan.fillInputsWithDefaultValues();
+        return executionPlan;
     }
 
     /**
@@ -667,6 +624,9 @@ public class OwsController {
      *            request attributes, and response handling methods.
      */
     public void jobLogs(@NotNull Context ctx) {
+        int page = ctx.queryParamAsClass("page", Integer.class).getOrDefault(1);
+        int offset = (page - 1) * LOG_MESSAGES_PER_PAGE;
+
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
             try {
@@ -675,18 +635,28 @@ public class OwsController {
                 if(hasUnauthorizedJobAccess(ctx, user, jobData)) {
                     return;
                 }
-                // Parse the current server logs
-                // we could store the logs into the database when the job complete or failed, maybe another time.
-                String lastLines = Logging.getLastLines(new File(configuration.workingDirectory,
-                        NoiseModellingServer.LOGGING_FILE_NAME), MAXIMUM_LINES_TO_FETCH, Job.getThreadName(jobId), new AtomicInteger());
-                ctx.render("job_logs", Map.of("jobId", jobId, "rows", lastLines));
+                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, LOG_MESSAGES_PER_PAGE, 0);
+
+                int messageCount = DatabaseManagement.getLogMessagesCount(connection, jobId);
+                int totalPages = (int) Math.ceil((double) messageCount / LOG_MESSAGES_PER_PAGE);
+
+                ctx.render("job_logs", Map.of(
+                        "jobId", jobId,
+                        "logs", logs,
+                        "currentPage", page,
+                        "limit", LOG_MESSAGES_PER_PAGE,
+                        "messageCount", messageCount,
+                        "totalPages", totalPages,
+                        "lastTimestamp", !logs.isEmpty() ? logs.getFirst().getEpochTime() : 0,
+                        "isLive", page == 1
+                ));
             } catch (NumberFormatException ex) {
                 logger.error("Invalid job id {}", ctx.body(), ex);
                 ctx.render("blank", Map.of(
                         "redirectUrl", ctx.contextPath() + "/jobs",
                         "message", "Wrong job id parameter"));
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             logger.error(e.getLocalizedMessage(), e);
             throw new InternalServerErrorResponse();
         }
@@ -774,9 +744,11 @@ public class OwsController {
                 }
 
                 // After a specified delay, abort the process if it can't handle the progress monitor cancel
+                final Logger jobLogger = LoggerFactory.getLogger(Job.getThreadName(jobId));
+                jobLogger.info("Job {} cancellation requested, will abort the job after {} seconds if it is still running.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
                 scheduledExecutorService.schedule(() -> {
                     if (job.isRunning() && job.getFuture() != null) {
-                        logger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
+                        jobLogger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
                         // Release/Close the connections of this datasource
                         // to avoid corruption of the database
                         if(userDataSources.get(job.getUserId()) instanceof Closeable) {
@@ -832,12 +804,13 @@ public class OwsController {
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
             int jobId = Integer.parseInt(ctx.pathParam("job_id"));
+            // Retrieve the last received message index to send lost messages
+            long lastReceivedMessageEpoch = ctx.queryParamAsClass("lastReceivedMessageEpoch", Long.class).getOrDefault(0L);
             Map<String, Object> jobData = DatabaseManagement.getJob(connection, jobId);
             if(hasUnauthorizedJobAccess(ctx.getUpgradeCtx$javalin(), user, jobData)) {
                 return;
             }
-            logger.info("WebSocket connection established for job {}", jobId);
-            String threadName = Job.getThreadName(jobId);
+            logger.info("WebSocket connection established for job {} requesting logs since {}", jobId, lastReceivedMessageEpoch);
 
             // Create a custom appender that sends logs to WebSocket
             WriterAppender wsAppender = getWriterAppender(ctx, jobId);
@@ -845,19 +818,19 @@ public class OwsController {
             websocketLoggers.put(ctx, wsAppender);
 
             // Filter to only capture logs from this job's thread
-            wsAppender.addFilter(new Filter() {
-                @Override
-                public int decide(LoggingEvent event) {
-                    if (event.getThreadName().equals(threadName)) {
-                        return Filter.ACCEPT;
-                    }
-                    return Filter.DENY;
-                }
-            });
+            Job.setLogFilter(wsAppender, jobId);
 
             wsAppender.activateOptions();
             org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
             rootLogger.addAppender(wsAppender);
+
+            // Push lost messages
+            if(lastReceivedMessageEpoch > 0) {
+                List<DatabaseManagement.Message> lostMessages = DatabaseManagement.getLogMessages(connection, jobId, 0, OwsController.MAXIMUM_LINES_TO_FETCH, lastReceivedMessageEpoch);
+                for(DatabaseManagement.Message message : lostMessages) {
+                    ctx.send(message.getEpochTime() + ":" + message.message());
+                }
+            }
 
         } catch (NumberFormatException ex) {
             logger.error("Invalid job id in WebSocket connection", ex);
@@ -886,7 +859,7 @@ public class OwsController {
             public void write(char[] cbuf, int off, int len) {
                 String message = new String(cbuf, off, len);
                 if(ctx.session.isOpen()) {
-                    ctx.send(message);
+                    ctx.send(System.currentTimeMillis() + ":" + message);
                 }
             }
 
@@ -899,7 +872,6 @@ public class OwsController {
             }
         });
         wsAppender.setName("WebSocketAppender-" + jobId);
-        wsAppender.setLayout(layout);
         return wsAppender;
     }
 

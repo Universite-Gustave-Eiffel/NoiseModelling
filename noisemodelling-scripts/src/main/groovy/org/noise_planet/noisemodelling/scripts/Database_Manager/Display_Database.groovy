@@ -14,7 +14,6 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
 import org.h2gis.api.ProgressVisitor
@@ -25,7 +24,6 @@ import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Display the list of tables (and their attributes).'
@@ -38,10 +36,10 @@ inputs = [
         showColumns: [
                 name       : 'Display columns of the tables',
                 title      : 'Display columns of the tables',
-                description: 'Do you want to display also the column of the tables ? </br></br>' +
-                        '&#128161; Note : A small yellow key symbol (&#128273;) will appear if the column as a Primary Key constraint.',
-                type       : Boolean.class,
-                min        : 0, max: 1
+                description: 'Would you also like to display the column name in the tables?</br></br>' +
+                             '&#128161; Note : A small yellow key symbol (&#128273;) will appear if the column as a Primary Key constraint.',
+                default    : true,
+                type       : Boolean.class                
         ]
 ]
 
@@ -53,9 +51,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
 
 def exec(Connection connection, Map input) {
 
@@ -69,11 +64,7 @@ def exec(Connection connection, Map input) {
     logger.info('Start : Display database')
     logger.info("inputs {}", input) // log inputs of the run
 
-    Boolean showColumnName = false
-
-    if(input['showColumns']) {
-        showColumnName = input['showColumns'].toBoolean()
-    }
+    Boolean showColumnName = input['showColumns'].toBoolean()
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
@@ -131,4 +122,3 @@ def exec(Connection connection, Map input) {
     // print to WPS Builder
     return sb.toString()
 }
-

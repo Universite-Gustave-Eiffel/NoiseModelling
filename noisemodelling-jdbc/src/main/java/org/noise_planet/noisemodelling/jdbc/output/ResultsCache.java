@@ -11,9 +11,10 @@ package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -26,18 +27,41 @@ public class ResultsCache implements ProfilerThread.Metric {
     public final AtomicLong queueSize = new AtomicLong(0);
     public final AtomicLong totalRaysInserted = new AtomicLong(0);
     public final ConcurrentLinkedDeque<ReceiverNoiseLevel> receiverLevels = new ConcurrentLinkedDeque<>();
-    public final ConcurrentLinkedDeque<CnossosPath> cnossosPaths = new ConcurrentLinkedDeque<>();
-
+    public final ConcurrentLinkedDeque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
+    public final AtomicLong statisticsSumDistanceCutSource = new AtomicLong(0);
+    public final AtomicInteger statisticsSumDistanceCutSourceCount = new AtomicInteger(0);
+    public final AtomicLong statisticsSumSourcesCount = new AtomicLong(0);
+    public final AtomicLong statisticsSumSourcesCountIgnored = new AtomicLong(0);
 
     @Override
     public String[] getColumnNames() {
-        return new String[] {"jdbc_stack"};
+        return new String[] {"jdbc_stack", "average_cut_source_distance"};
     }
 
     @Override
     public String[] getCurrentValues() {
         // Metric that return unprocessed data (not yet recorded in the database)
-        return new String[] {Long.toString(queueSize.get())};
+        return new String[] {Long.toString(queueSize.get()), Double.toString(getAverageCutSourceDistance())};
+    }
+
+    /**
+     * Get the average distance at which noise sources are ignored for all receivers
+     * @return the average distance at which noise sources are ignored for all receivers
+     */
+    public double getAverageCutSourceDistance() {
+        long count = statisticsSumDistanceCutSourceCount.get();
+        long sum = statisticsSumDistanceCutSource.get();
+        return count > 0 ? (double) sum / count : 0;
+    }
+
+    /**
+     * Get the percentage of ignored sources.
+     * @return Percentage of ignored sources.
+     */
+    public double getPercentageIgnoredSources() {
+        long totalSources = statisticsSumSourcesCount.get();
+        long ignoredSources = statisticsSumSourcesCountIgnored.get();
+        return totalSources > 0 ? (double) ignoredSources / totalSources * 100 : 0;
     }
 
     @Override

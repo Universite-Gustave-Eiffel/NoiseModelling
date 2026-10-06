@@ -15,10 +15,7 @@
 
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
@@ -26,10 +23,9 @@ import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
-title = 'Create 0db Source From Roads'
+title = 'Create 0 dB Source From Roads'
 description = '&#10145;&#65039; Creates a SOURCE table from a ROAD table.' +
               '<hr>' +
               'The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block with the "confExportSourceId" set to true. </br></br>' +
@@ -47,7 +43,8 @@ inputs = [
         ],
         gridStep : [name : 'gridStep',
                     title : "gridStep",
-                    description : "Distance between location of vehicle along the network in meters.</br> <b> Default value : 10 </b>",
+                    description : "Distance between location of vehicle along the network in meters.",
+                    default : 10,
                     type: Integer.class]
 ]
 
@@ -59,12 +56,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
-
-
-
 
 def exec(connection,Map input) {
 
@@ -105,4 +96,3 @@ def exec(connection,Map input) {
     logger.info('Result : ' + resultString)
     return resultString
 }
-

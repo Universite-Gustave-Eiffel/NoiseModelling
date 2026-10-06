@@ -19,10 +19,7 @@ import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderHeaderAware
 import com.opencsv.CSVReaderHeaderAwareBuilder
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.matsim.api.core.v01.Id
 import org.matsim.api.core.v01.Scenario
@@ -32,33 +29,32 @@ import org.matsim.core.population.io.PopulationReader
 import org.matsim.core.scenario.ScenarioUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import groovy.transform.CompileStatic
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.sql.*
 import java.util.zip.GZIPInputStream
 
-title = 'Calculate Mastim agents exposure'
-description = "Loads a Matsim plans.xml file and calculate agents noise exposure, based on previously claculated timesliced noisemap at receiver positions, linked with matsim activities (facilities)"
+title = 'Calculate Matsim agents exposure'
+description = "Loads a Matsim plans.xml file and calculate agents noise exposure, based on previously calculated timesliced noisemap at receiver positions, linked with matsim activities (facilities)"
 
 inputs = [
         plansFile: [
                 name: 'Path of the Matsim output_plans file',
                 title: 'Path of the Matsim output_plans file',
-                description: 'Path of the Matsim output_plans file </br> For example : /home/mastim/simulation_output/output_plans.xml.gz',
+                description: 'Path of the Matsim output_plans file </br> For example : /home/matsim/simulation_output/output_plans.xml.gz',
                 type: String.class
         ],
         experiencedPlansFile: [
                 name: 'Path of the Matsim output_experienced_plans file',
                 title: 'Path of the Matsim output_experienced_plans file',
-                description: 'Path of the Matsim output_plans file </br> For example : /home/mastim/simulation_output/output_experienced_plans.xml.gz',
+                description: 'Path of the Matsim output_plans file </br> For example : /home/matsim/simulation_output/output_experienced_plans.xml.gz',
                 type: String.class
         ],
         personsCsvFile: [
                 name: 'personsCsvFile',
                 title: 'personsCsvFile',
-                description: 'Path of the Matsim output_persons csv file </br> For example : /home/mastim/simulation_output/output_persons.csv.gz',
+                description: 'Path of the Matsim output_persons csv file </br> For example : /home/matsim/simulation_output/output_persons.csv.gz',
                 min: 0,
                 max: 1,
                 type: String.class
@@ -92,8 +88,7 @@ inputs = [
                 name: 'Projection identifier',
                 title: 'Projection identifier',
                 description: 'Original projection identifier (also called SRID) of your tables.' +
-                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
-                        '</br><b> Default value : 4326 </b> ',
+                        'It should be an EPSG code; an integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).',
                 min: 0,
                 max: 1,
                 type: Integer.class
@@ -116,9 +111,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
 
 
 // main function of the script

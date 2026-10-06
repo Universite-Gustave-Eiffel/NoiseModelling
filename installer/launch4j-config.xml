@@ -1,0 +1,37 @@
+<launch4jConfig>
+    <headerType>console</headerType>
+
+    <dontWrapJar>true</dontWrapJar>
+
+    <outfile>NoiseModelling.exe</outfile>
+
+    <icon>noisemodelling.ico</icon>
+
+    <chdir>.</chdir>
+
+    <classPath>
+        <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
+        <cp>lib/*.jar</cp>
+    </classPath>
+
+    <cmdLine>-u -s scripts</cmdLine>
+
+    <jre>
+        <path>jre</path>
+        <minVersion>11</minVersion>
+    </jre>
+    <versionInfo>
+        <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
+        <productVersion>APP_VERSION_PLACEHOLDER</productVersion>
+
+        <txtFileVersion>APP_VERSION_TXT_PLACEHOLDER</txtFileVersion>
+        <txtProductVersion>APP_VERSION_TXT_PLACEHOLDER</txtProductVersion>
+
+        <fileDescription>NoiseModelling</fileDescription>
+        <internalName>NoiseModelling</internalName>
+        <originalFilename>NoiseModelling.exe</originalFilename>
+        <copyright>© 2026 Noise-Planet</copyright>
+        <productName>NoiseModelling</productName>
+    </versionInfo>
+
+</launch4jConfig>

@@ -10,17 +10,17 @@
  *
  */
 
+/**
+ * @Author DIAGNE Ndeye-Maguette, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.scripts.Data_Assimilation
-
-
 
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Dynamic Road Traffic Emission'
@@ -68,5 +68,3 @@ static def exec(Connection connection,inputs){
     logger.info('End Traffic calibration')
     return "Calculation Done ! The table LW_ROADS_best has been created."
 }
-
-

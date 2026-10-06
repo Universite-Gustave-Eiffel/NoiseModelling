@@ -10,13 +10,15 @@
  *
  */
 
-package org.noise_planet.noisemodelling.scripts.Import_and_Export
+ /**
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ */
 
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
 import org.h2gis.api.ProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Linked Table'
@@ -33,7 +35,6 @@ inputs = [
                 name       : 'Driver name',
                 title      : 'Driver name',
                 description: 'Name of the class to connect to the external database.',
-                min          : 0, max: 1,
                 allowedValues: ["org.h2gis.postgis_jts.Driver", "org.h2.Driver"],
                 default      : "org.h2gis.postgis_jts.Driver",
                 type         : String.class
@@ -42,17 +43,17 @@ inputs = [
                 name       : 'Database URL',
                 title      : 'Database URL',
                 description: 'Connection url of the database. ' +
-                        'For PostGIS <pre>jdbc:postgresql_h2://hostname:5432/databaseName</pre>' +
-                        ' for H2 <pre>jdbc:h2:tcp://localhost/D:/data/test</pre>',
+                             'For PostGIS <pre>jdbc:postgresql_h2://hostname:5432/databaseName</pre>. </br>' +
+                             'For H2 <pre>jdbc:h2:tcp://localhost/D:/data/test</pre>',
                 type       : String.class
         ],
-        username: [
+        lt_username: [
                 name       : 'User name',
                 title      : 'User name',
                 description: 'User name when connecting to the external database',
                 type       : String.class
         ],
-        password: [
+        lt_password: [
                 name       : 'User password',
                 title      : 'User password',
                 description: 'User password when connecting to the external database',
@@ -62,16 +63,14 @@ inputs = [
                 name       : 'External table schema',
                 title      : 'External table schema',
                 description: 'External Table Schema ex: public',
-                min: 0,
-                max: 1,
                 default: 'public',
                 type       : String.class
         ],
         remoteTableName: [
                 name       : 'External table name',
                 title      : 'External table name',
-                description: 'External Table name or query. If a query is used instead of the original table name,' +
-                        ' the table is read only. Queries must be enclosed in parenthesis: (SELECT * FROM ORDERS).',
+                description: 'External Table name or query. If a query is used instead of the original table name, then' +
+                             ' the table is read only. Queries must be enclosed in parenthesis: (SELECT * FROM ORDERS).',
                 type       : String.class
         ],
         force: [
@@ -88,8 +87,7 @@ inputs = [
                 description: 'the number of rows fetched, a hint with non-negative number of rows to fetch from' +
                         ' the external table at once, may be ignored by the driver of external database.' +
                         ' 0 is default and means no hint. The value is passed to java.sql.Statement.setFetchSize() method.',
-                min: 0,
-                max: 1,
+                default: 0,
                 type       : Integer.class
         ]
 ]
@@ -116,8 +114,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     def localTableName = input['localTableName'] as String
     def driverClass = input.getOrDefault('driverClass', 'org.h2gis.postgis_jts.Driver')
     def databaseUrl = input['databaseUrl'] as String
-    def username = input['username'] as String
-    def password = input['password'] as String
+    def username = input['lt_username'] as String
+    def password = input['lt_password'] as String
     def remoteSchemaName = input['remoteSchemaName'] ? (input['remoteSchemaName'] as String) : "public"
     def remoteTableName = input['remoteTableName'] as String
     def force = input['force'] ? "FORCE" : ""

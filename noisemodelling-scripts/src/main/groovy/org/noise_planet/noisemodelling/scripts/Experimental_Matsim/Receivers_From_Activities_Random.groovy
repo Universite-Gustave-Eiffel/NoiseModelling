@@ -15,21 +15,17 @@
 
 package org.noise_planet.noisemodelling.scripts.Experimental_Matsim
 
-
-
 import groovy.sql.GroovyRowResult
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.*
 import groovy.sql.Sql
 
-title = 'Chose a Random Receivers For Matsim Activities'
-description = 'Chose the closest building for every Mastim Activity in an ACTIVITIES table, and then chose a random receiver previously generated around this building.'
+title = 'Choose a random receivers for Matsim activities'
+description = 'Choose the closest building for every Mastim activity in an ACTIVITIES table, and then chose a random receiver previously generated around this building.'
 
 inputs = [
         activitiesTable : [
@@ -59,9 +55,8 @@ inputs = [
         randomSeed : [
                 name: 'Random seed',
                 title: 'Random seed',
-                description: 'Random seed, default: 1234',
-                min : 0,
-                max : 1,
+                description: 'Random seed',
+                default : 1234,
                 type: Integer.class
         ],
         outTableName: [
@@ -82,10 +77,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
-
 
 
 // main function of the script

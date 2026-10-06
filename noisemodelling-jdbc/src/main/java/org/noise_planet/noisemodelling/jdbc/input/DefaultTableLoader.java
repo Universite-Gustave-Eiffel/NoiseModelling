@@ -8,6 +8,7 @@
  */
 package org.noise_planet.noisemodelling.jdbc.input;
 
+import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
@@ -24,6 +25,8 @@ import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosPa
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.jdbc.utils.CornerZCollector;
+import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
@@ -34,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 
@@ -84,19 +89,37 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
+        DBTypes dbType = DBUtils.getDBType(connection);
         SceneDatabaseInputSettings inputSettings = noiseMapByReceiverMaker.getSceneInputSettings();
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
             // Check fields to find appropriate expected data
-            inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
             if(!inputSettings.sourcesEmissionTableName.isEmpty()) {
                 List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
+                List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, inputSettings.sourcesEmissionTableName, TableLocation.capsIdentifier("period", dbType)).stream().map(String::toUpperCase).collect(Collectors.toList());
                 if(sourceFields.contains("LV_SPD")) {
-                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                    if(periods.contains("D") && periods.contains("E") && periods.contains("N")) {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN;
+                    } else {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                    }
                 } else {
-                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                    if(periods.contains("D") && periods.contains("E") && periods.contains("N")) {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN;
+                    } else {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                    }
                 }
             } else {
-                List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
+                List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName()).stream().map(String::toUpperCase).collect(Collectors.toList());
+                // Look for Emission/Traffic columns without periods
+                List<Integer> frequencyValuesWithoutPeriod = readFrequenciesFromLwTable(
+                        noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceFields);
+                if(!frequencyValuesWithoutPeriod.isEmpty()) {
+                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                } else if (sourceFields.contains("LV_SPD")) {
+                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                }
+                // Look for Emission/Traffic columns for each period
                 for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
                     String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                     List<Integer> frequencyValues = readFrequenciesFromLwTable(
@@ -114,11 +137,17 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 }
             }
         }
-
+        if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
+            // By default, we compute the attenuation
+            inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
+        }
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
-            List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
+            List<String> sourceField = JDBCUtilities.getColumnNames(connection,
+                    noiseMapByReceiverMaker.getSourcesEmissionTableName().isEmpty() ?
+                            noiseMapByReceiverMaker.getSourcesTableName() :
+                            noiseMapByReceiverMaker.getSourcesEmissionTableName());
             List<Integer> frequencyValues = readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceField);
             if(frequencyValues.isEmpty()) {
                 throw new SQLException("Source emission table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");
@@ -258,16 +287,16 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.defaultCnossosParameters = defaultParameters;
         scene.periodSet.addAll(cnossosParametersPerPeriod.keySet());
 
-
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query
         // optimization
-        // Fetch buildings in extendedEnvelope
-        fetchCellBuildings(connection, noiseMapByReceiverMaker.getBuildingTableParameters(), expandedCellEnvelop,
-                scene.profileBuilder, geometryFactory);
 
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, scene.profileBuilder);
+
+        // Fetch buildings in extendedEnvelope
+        fetchCellBuildings(connection, noiseMapByReceiverMaker.getBuildingTableParameters(), expandedCellEnvelop,
+                scene.profileBuilder, geometryFactory);
 
         // Fetch soil areas
         fetchCellSoilAreas(connection, expandedCellEnvelop, scene.profileBuilder);
@@ -277,6 +306,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.reflexionOrder = noiseMapByReceiverMaker.getSoundReflectionOrder();
         scene.maxRefDist = maximumReflectionDistance;
         scene.maxSrcDist = maximumPropagationDistance;
+        scene.setCloseReceiverReflectionWallDistance(noiseMapByReceiverMaker.getCloseReceiverReflectionWallDistance());
         scene.lineSourceSpacingRatio = noiseMapByReceiverMaker.getSceneInputSettings().getLineSourceSpacingRatio();
         scene.setComputeVerticalDiffraction(noiseMapByReceiverMaker.isComputeVerticalDiffraction());
         scene.setComputeHorizontalDiffraction(noiseMapByReceiverMaker.isComputeHorizontalDiffraction());
@@ -316,7 +346,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
-                        if(!noiseMapByReceiverMaker.isReceiverHasAbsoluteZCoordinates()) {
+                        if(!noiseMapByReceiverMaker.isReceiversZIsAltitude()) {
                             pt = scene.profileBuilder.makeGeometryRelativeZToAbsolute(pt, true);
                         }
                         scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
@@ -421,7 +451,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                           GeometryFactory geometryFactory) throws SQLException {
         List<Building> buildings = new LinkedList<>();
         List<Wall> walls = new LinkedList<>();
-        fetchCellBuildings(connection,buildingTableParameters, fetchEnvelope, buildings, walls, geometryFactory);
+        fetchCellBuildings(connection,buildingTableParameters, fetchEnvelope, buildings, walls, builder, geometryFactory);
         for(Building building : buildings) {
             builder.addBuilding(building);
         }
@@ -437,6 +467,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param fetchEnvelope   the envelope representing the cell to fetch building data for.
      * @param buildings       the list to which the fetched buildings will be added.
      * @param walls Wall list to feed
+     * @param builder        the profile builder, used here to get potential ground elevation data
      * @param geometryFactory geometry factory instance with SRID set.
      * @throws SQLException   if an SQL exception occurs while fetching the building data.
      */
@@ -445,21 +476,27 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                           Envelope fetchEnvelope,
                                           List<Building> buildings,
                                           List<Wall> walls,
+                                          ProfileBuilder builder,
                                           GeometryFactory geometryFactory) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName,
                 buildingTableParameters.alphaFieldName);
         String additionalQuery = "";
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        if(!buildingTableParameters.heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.quoteIdentifier(buildingTableParameters.heightField, dbType);
+        var heightField = buildingTableParameters.heightField;
+        boolean fetchHeight = false;
+        if(!heightField.isEmpty()) {
+            fetchHeight = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName, heightField);
+            if (fetchHeight) {
+                additionalQuery += ", " + TableLocation.capsIdentifier(heightField, dbType);
+            }
         }
         if(fetchAlpha) {
             additionalQuery += ", " + buildingTableParameters.alphaFieldName;
         }
         String pkBuilding = "";
         final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class),
-                new TableLocation(buildingTableParameters.buildingsTableName, dbType));
+                TableLocation.parse(buildingTableParameters.buildingsTableName, dbType));
         if(indexPk > 0) {
             pkBuilding = JDBCUtilities.getColumnName(connection, buildingTableParameters.buildingsTableName, indexPk);
             additionalQuery += ", " + pkBuilding;
@@ -479,14 +516,14 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 double oldAlpha = buildingTableParameters.defaultWallAbsorption;
                 while (rs.next()) {
                     //if we don't have height of building
-                    Geometry building = rs.getGeometry();
-                    if(building != null) {
+                    Geometry buildingGeom = rs.getGeometry();
+                    if(buildingGeom != null) {
                         Geometry intersectedGeometry = null;
                         try {
-                            intersectedGeometry = building.intersection(envGeo);
+                            intersectedGeometry = buildingGeom.intersection(envGeo);
                         } catch (TopologyException ex) {
                             WKTWriter wktWriter = new WKTWriter(3);
-                            LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
+                            LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(buildingGeom),wktWriter.write(envGeo)), ex);
                         }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
                             if(fetchAlpha) {
@@ -499,24 +536,34 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                             }
                             for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
                                 Geometry geometry = intersectedGeometry.getGeometryN(i);
-                                if(geometry instanceof Polygon && !geometry.isEmpty()) {
-                                    Building poly = new Building((Polygon) geometry,
-                                            buildingTableParameters.heightField.isEmpty() ?
-                                                    Double.MAX_VALUE :
-                                                    rs.getDouble(buildingTableParameters.heightField),
-                                            oldAlpha, pk, buildingTableParameters.zBuildings);
-                                    buildings.add(poly);
-                                } else if (geometry instanceof LineString) {
-                                    // decompose linestring into segments
-                                    LineString lineString = (LineString) geometry;
-                                    Coordinate[] coordinates = lineString.getCoordinates();
+                                Coordinate[] coordinates = geometry.getCoordinates();
+                                if (geometry.isEmpty()) {
+                                    continue;
+                                }
+                                boolean needsToUpdateZ = Arrays.stream(coordinates).anyMatch(c -> Double.isNaN(c.getZ()));
+                                if (needsToUpdateZ && !fetchHeight) {
+                                    throw new IllegalArgumentException("The table " + buildingTableParameters.buildingsTableName +
+                                            " contain at least one building without Z ordinate and without a " + buildingTableParameters.heightField + "column. " +
+                                            " You must specify X,Y,Z for each building OR specify X,Y and HEIGHT");
+                                }
+                                if (fetchHeight) {
+                                    double height = rs.getDouble(buildingTableParameters.heightField);
+                                    if (needsToUpdateZ) {
+                                        double minTopoZ = Arrays.stream(coordinates).mapToDouble(builder::getZGround).min().orElse(0.0);
+                                        geometry = ST_UpdateZ.updateZ(geometry, minTopoZ + height);
+                                    }
+                                }
+                                if (geometry instanceof Polygon) {
+                                    Building building = new Building((Polygon) geometry, oldAlpha, pk);
+                                    buildings.add(building);
+                                }
+                                else if (geometry instanceof LineString) {
+                                    coordinates = geometry.getCoordinates();
                                     for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
                                         Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
                                                 -1, ProfileBuilder.IntersectionType.WALL);
                                         wall.setG(oldAlpha);
                                         wall.setPrimaryKey(pk);
-                                        wall.setHeight(buildingTableParameters.heightField.isEmpty() ?
-                                                Double.MAX_VALUE : rs.getDouble(buildingTableParameters.heightField));
                                         walls.add(wall);
                                     }
                                 }
@@ -533,9 +580,6 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         public String heightField = "HEIGHT";
         public String alphaFieldName = "G";
         public double defaultWallAbsorption = 100000;
-        /** if true take into account z value on Buildings Polygons
-         * In this case, z represent the altitude (from the sea to the top of the wall) */
-        public boolean zBuildings = false;
 
         public BuildingTableParameters() {
         }
@@ -581,7 +625,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param profileBuilder the profile builder mesh to which the DEM data will be added.
      * @throws SQLException if an SQL exception occurs while fetching the DEM data.
      */
-    protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder profileBuilder) throws SQLException {
+    public void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder profileBuilder) throws SQLException {
         String demTable = noiseMapByReceiverMaker.getDemTable();
         if(!demTable.isEmpty()) {
             GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
@@ -591,9 +635,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             if(geomFields.isEmpty()) {
                 throw new SQLException("Digital elevation model table \""+ demTable +"\" must exist and contain a POINT field");
             }
-            String topoGeomName = geomFields.get(0);
-            double sumZ = 0;
-            int topoCount = 0;
+            String topoGeomName = geomFields.getFirst();
+            CornerZCollector cornerZCollector = new CornerZCollector();
+            AtomicInteger topoCount = new AtomicInteger(0);
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
                             demTable + " WHERE " +
@@ -601,30 +645,60 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
-                        Geometry pt = rs.getGeometry();
-                        if(pt != null) {
-                            Coordinate ptCoordinate = pt.getCoordinate();
-                            profileBuilder.addTopographicPoint(ptCoordinate);
-                            if(!Double.isNaN(ptCoordinate.z)) {
-                                sumZ+=ptCoordinate.z;
-                                topoCount+=1;
-                            }
-                        }
+                        Geometry geometry = rs.getGeometry();
+                        processDemGeometry(profileBuilder, geometry, demTable, cornerZCollector, topoCount);
                     }
                 }
-                double averageZ = 0;
-                if(topoCount > 0) {
-                    averageZ = sumZ / topoCount;
-                }
-                // add corners of envelope to guaranty topography continuity
-                Envelope extentedEnvelope = new Envelope(fetchEnvelope);
-                extentedEnvelope.expandBy(fetchEnvelope.getDiameter());
-                Coordinate[] coordinates = geometryFactory.toGeometry(extentedEnvelope).getCoordinates();
-                for (int i = 0; i < coordinates.length - 1; i++) {
-                    Coordinate coordinate = coordinates[i];
-                    profileBuilder.addTopographicPoint(new Coordinate(coordinate.x, coordinate.y, averageZ));
+                // add corners of extended envelope to guaranty topography continuity in the simulation
+                cornerZCollector.expandEnvelope(fetchEnvelope.getDiameter());
+                for (Coordinate coordinate : cornerZCollector.getCorners()) {
+                    profileBuilder.addTopographicPoint(coordinate);
                 }
             }
+        }
+        try {
+            profileBuilder.buildDemQueryStructure();
+        } catch (LayerDelaunayError e) {
+            throw new SQLException("Error while building DEM query structure", e);
+        }
+    }
+
+    /**
+     * Push a geometry into the profile builder
+     * @param profileBuilder the profile builder mesh to which the DEM data will be added.
+     * @param geometry Dem geometry, POINT, LineString or geometry collection
+     * @param demTable Name of the DEM table
+     * @param cornerZCollector Collect Z values for dem points envelope
+     * @param topoCount Return the number of DEM points
+     */
+    private static void processDemGeometry(ProfileBuilder profileBuilder, Geometry geometry, String demTable,
+                                           CornerZCollector cornerZCollector, AtomicInteger topoCount) {
+        if (geometry instanceof Point) {
+            Coordinate ptCoordinate = geometry.getCoordinate();
+            if (Double.isNaN(ptCoordinate.getZ())) {
+                throw new IllegalArgumentException("The table " + demTable +
+                        " contains at least one DEM geometry without Z ordinate." +
+                        " You must specify X,Y,Z for each DEM point/linestring vertex.");
+            }
+            cornerZCollector.addCoordinate(ptCoordinate);
+            topoCount.addAndGet(1);
+            profileBuilder.addTopographicPoint(ptCoordinate);
+        } else if (geometry instanceof GeometryCollection) {
+            for(int i = 0; i < geometry.getNumGeometries(); i++) {
+                processDemGeometry(profileBuilder, geometry.getGeometryN(i), demTable, cornerZCollector, topoCount);
+            }
+        } else if (geometry instanceof LineString) {
+            Coordinate[] lineStringCoordinates = geometry.getCoordinates();
+            topoCount.addAndGet(lineStringCoordinates.length);
+            for(Coordinate coordinate : geometry.getCoordinates()) {
+                if (Double.isNaN(coordinate.getZ())) {
+                    throw new IllegalArgumentException("The table " + demTable +
+                            " contains at least one DEM geometry without Z ordinate." +
+                            " You must specify X,Y,Z for each DEM point/linestring vertex.");
+                }
+                cornerZCollector.addCoordinate(coordinate);
+            }
+            profileBuilder.addTopographicLine((LineString) geometry);
         }
     }
 
@@ -704,6 +778,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      */
     public void fetchCellSource(Connection connection, Envelope fetchEnvelope, SceneWithEmission scene, boolean doIntersection)
             throws SQLException {
+        Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
+        Map<String, Integer> sourceFieldNames = new HashMap<>();
         String sourcesTableName = noiseMapByReceiverMaker.getSourcesTableName();
         GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
@@ -715,7 +791,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String sourceGeomName = geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
         Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
-                connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
+                connection.unwrap(Connection.class), TableLocation.parse(sourcesTableName, dbType));
         if (primaryKey == null) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
@@ -730,6 +806,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             }
             st.setFetchDirection(ResultSet.FETCH_FORWARD);
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                EmissionTableGenerator.cacheFields(sourceFieldNames, rs);
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
@@ -746,14 +823,14 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                             " You must specify X,Y,Z for each source");
                                 }
                             }
-                            if(!noiseMapByReceiverMaker.isSourceHasAbsoluteZCoordinates()) {
+                            if(!noiseMapByReceiverMaker.isSourcesZIsAltitude()) {
                                 if(scene.profileBuilder.hasDem()) {
                                     // Coordinates are supposed to be relative to the digital elevation model
                                     // So we must compute the altitude values
                                     geo = scene.profileBuilder.makeGeometryRelativeZToAbsolute(geo, true);
                                 }
                             }
-                            scene.addSource(rs.getLong(pkIndex), geo, rs);
+                            scene.addSource(rs.getLong(pkIndex), geo, rs, sourceFieldNames);
                         }
                     }
                 }
@@ -778,8 +855,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 }
                 st.setFetchDirection(ResultSet.FETCH_FORWARD);
                 try (ResultSet rs = st.executeQuery()) {
+                    EmissionTableGenerator.cacheFields(sourceEmissionFieldsCache, rs);
                     while (rs.next()) {
-                        scene.addSourceEmission(rs.getLong(scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField), rs);
+                        scene.addSourceEmission(rs.getLong(scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField), rs, sourceEmissionFieldsCache);
                     }
                 } finally {
                     if (autoCommit) {

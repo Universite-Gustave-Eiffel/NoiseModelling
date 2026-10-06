@@ -15,12 +15,10 @@
  * @Contributor Ignacio Soto Molina, Ministry for Ecological Transition (MITECO), Spain - Delete Receivers Inside Buildings
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Receivers
 
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
 import org.h2gis.functions.spatial.crs.ST_SetSRID
@@ -35,7 +33,6 @@ import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Buildings Grid'
@@ -88,27 +85,22 @@ inputs = [
         delta : [
                 name       : 'Receivers minimal distance',
                 title      : 'Distance between receivers',
-                description: 'Distance between receivers (in the Cartesian plane - in meter) (FLOAT) </br></br>'+
-                             '&#128736; Default value: <b>10 </b>',
-                min        : 0, 
-                max        : 1,
+                description: 'Distance between receivers (in the Cartesian plane - in meter) (FLOAT)',
+                default    : 10,
                 type       : Double.class
         ],
         height : [
                 name       : 'Height',
                 title      : 'Height',
-                description: 'Height of receivers (in meter) (FLOAT) </br></br>' +
-                             '&#128736; Default value: <b>4</b>',
-                min        : 0, 
-                max        : 1,
+                description: 'Height of receivers (in meter) (FLOAT)',
+                default    : 4,
                 type       : Double.class
         ],
         distance          : [
                 name       : 'Distance',
                 title      : 'Distance from wall',
-                description: 'Distance of receivers from the wall in meters (FLOAT) </br></br>' +
-                             '&#128736; Default value: <b>2 </b>',
-                min        : 0, max: 1,
+                description: 'Distance between the receivers and the wall, in metres (FLOAT)',
+                default    : 2,
                 type       : Double.class
         ]
 ]
@@ -121,7 +113,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
 
 
 def exec(Connection connection, Map input) {
@@ -214,9 +205,9 @@ def exec(Connection connection, Map input) {
     sql.execute("DROP TABLE IF EXISTS tmp_receivers_lines")
 
     if (fence != null) {
-        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
+        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall)), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
     } else {
-        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
+        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall)), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
     }
     sql.execute("CREATE SPATIAL INDEX ON tmp_receivers_lines(the_geom)")
 

@@ -69,7 +69,7 @@
  <script th:src="@{|/js/memory_ws.js|}"></script>
  <script th:inline="javascript">
      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-     const path = "[(@{/memory_stats_stream})]";
+     const path = "[(@{/ws/memory_stats_stream})]";
      openMemoryStatsStream(`${protocol}//${window.location.host}${path}`);
  </script>
  </body>

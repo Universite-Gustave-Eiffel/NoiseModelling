@@ -17,7 +17,6 @@
 
 package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.h2gis.functions.io.dbf.DBFDriverFunction
@@ -33,7 +32,6 @@ import org.h2gis.utilities.TableLocation
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Export table'
@@ -71,8 +69,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
 
 def exec(Connection connection, Map input, ProgressVisitor progress) {
 

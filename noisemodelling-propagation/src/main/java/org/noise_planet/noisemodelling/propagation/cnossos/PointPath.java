@@ -141,7 +141,7 @@ public class PointPath {
      * @throws java.io.IOException if an I/O-error occurs
      */
     public void writeStream( DataOutputStream out ) throws IOException {
-        Path.writeCoordinate(out, coordinate);
+        CnossosPath.writeCoordinate(out, coordinate);
         out.writeDouble(altitude);
         out.writeShort(alphaWall.size());
         for (Double bandAlpha : alphaWall) {
@@ -159,7 +159,7 @@ public class PointPath {
      * @throws IOException if an I/O-error occurs
      */
     public void readStream( DataInputStream in ) throws IOException {
-        coordinate = Path.readCoordinate(in);
+        coordinate = CnossosPath.readCoordinate(in);
         altitude = in.readDouble();
         int nbFreq = in.readShort();
         ArrayList<Double> readAlpha = new ArrayList<>(nbFreq);

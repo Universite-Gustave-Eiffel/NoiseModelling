@@ -14,15 +14,15 @@ package org.noise_planet.noisemodelling;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Locale;
 
 public class AssumptionLoggerExtension implements TestWatcher {
-    private static final Logger logger = LoggerFactory.getLogger(AssumptionLoggerExtension.class);
 
     @Override
     public void testAborted(ExtensionContext context, Throwable cause) {
         // This method is called when an Assumption fails
-        logger.warn("Test '{}' cancelled (Assumption failed) : {}", context.getDisplayName(), cause.getMessage());
+        System.err.printf(Locale.ROOT, "Test '%s' cancelled (Assumption failed) : %s%n", context.getDisplayName(),
+                cause.getMessage());
     }
 }

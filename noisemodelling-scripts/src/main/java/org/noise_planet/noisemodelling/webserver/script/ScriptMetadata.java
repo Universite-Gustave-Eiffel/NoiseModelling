@@ -13,14 +13,12 @@ package org.noise_planet.noisemodelling.webserver.script;
 
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
-import net.opengis.wps10.DataInputsType1;
-import net.opengis.wps10.ExecuteType;
-import net.opengis.wps10.InputType;
+import org.locationtech.jts.geom.Geometry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -32,21 +30,40 @@ public class ScriptMetadata {
     Logger logger = LoggerFactory.getLogger(ScriptMetadata.class);
     public static final int DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS = 60;
     final public String id;
+    final public String group;
     final public String title;
     final public String description;
-    final public Path path;
+    final public URI path;
+    final public URI scriptDirectory;
     final public int executionTimeoutSeconds;
 
     final public Map<String, ScriptInput> inputs = new HashMap<>();
     final public Map<String, ScriptOutput> outputs = new HashMap<>();
 
-    public ScriptMetadata(String group, File file) throws IOException {
+    /**
+     * Constructs a `ScriptMetadata` instance by parsing metadata from a specified Groovy script file.
+     * The constructor initializes the metadata fields such as `id`, `title`, `description`, `executionTimeoutSeconds`,
+     * and populates the `inputs` and `outputs` maps based on the content of the script. The `id` is generated
+     * using the provided group and the script file name, while the other fields are extracted from the script's
+     * metadata or assigned default values if not specified.
+     *
+     * @param group           a string representing the group or category to which the script belongs, used in generating the script's unique identifier
+     * @param file            a URI pointing to the Groovy script file from which to extract metadata
+     * @param scriptDirectory a URI representing the directory containing the script, used for mounting a special file system if the script is stored into a jar file
+     * @throws IOException if an error occurs while reading or parsing the script file for metadata extraction
+     */
+    public ScriptMetadata(String group, URI file, URI scriptDirectory) throws IOException {
+        this.scriptDirectory = scriptDirectory;
+        this.group = group;
         Map metadata = parseGroovyScriptMetadata(file);
-        id = group + ":" + file.getName().replace(".groovy", "");
+        if(metadata.isEmpty()) {
+            throw new IOException("Not a valid Function");
+        }
+        id = group + ":" + Path.of(file).getFileName().toString().replace(".groovy", "");
         title = metadata.getOrDefault("title", id).toString();
         description = metadata.getOrDefault("description", "").toString();
         executionTimeoutSeconds = (Integer) metadata.getOrDefault("executionTimeout", DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS);
-        path = file.toPath();
+        path = file;
 
         // Convert metadata inputs into ScriptInput instances
         Object inputsValue = metadata.get("inputs");
@@ -102,6 +119,32 @@ public class ScriptMetadata {
     }
 
     /**
+     * Cast the input content to the expected input type defined in the script metadata.
+     *
+     * @param expectedInputType the expected type of the input as defined in the script metadata
+     * @param inputValue the string input value containing the literal data to be cast
+     * @return the cast input content if successful, otherwise returns the original input content
+     * @throws org.locationtech.jts.io.ParseException if there is an error parsing a Geometry input
+     */
+    public static Object castInputUsingExpectedInputType(Class<?> expectedInputType, String inputValue) throws org.locationtech.jts.io.ParseException {
+        String typeName = expectedInputType.getName();
+        if (typeName.equals(Long.class.getName())) {
+            return Long.parseLong(inputValue);
+        } else if (typeName.equals(Integer.class.getName())) {
+            return Integer.parseInt(inputValue);
+        } else if (typeName.equals(Float.class.getName())) {
+            return Float.parseFloat(inputValue);
+        } else if (typeName.equals(Double.class.getName())) {
+            return Double.parseDouble(inputValue);
+        } else if (typeName.equals(Boolean.class.getName())) {
+            return Boolean.parseBoolean(inputValue);
+        } else if (typeName.equals(Geometry.class.getName())) {
+            return new org.locationtech.jts.io.WKTReader().read(inputValue);
+        }
+        return inputValue;
+    }
+
+    /**
      * Parses metadata from a provided Groovy script file and extracts details such as title,
      * description, inputs, and outputs defined within the script. The method analyzes the script
      * content to populate a metadata map, which includes blocks of inputs and outputs if defined.
@@ -111,11 +154,16 @@ public class ScriptMetadata {
      * where "inputs" and "outputs" are themselves maps with their respective properties
      * @throws IOException if an error occurs while reading the script file
      */
-    private static Map parseGroovyScriptMetadata(File scriptFile) throws IOException {
+    private static Map parseGroovyScriptMetadata(URI scriptFile) throws IOException {
         GroovyShell shell = new GroovyShell();
         Script script = shell.parse(scriptFile);
-        script.run();
-        return script.getBinding().getVariables();
+        // Expect at least an exec method
+        if(script.getMetaClass().getMethods().stream().anyMatch(m -> m.getName().equals("exec"))) {
+            script.run();
+            return script.getBinding().getVariables();
+        } else {
+            return Collections.EMPTY_MAP;
+        }
     }
 
 

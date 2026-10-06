@@ -38,7 +38,7 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportSymuvia() {
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("Database is Empty"))
 
@@ -47,7 +47,7 @@ class TestImportExport extends JdbcTestCase {
                 ["pathFile"   : TestImportExport.getResource("symuvia.xml").getPath(),
                  "defaultSRID": 2154])
 
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("SYMUVIA_TRAJ"))
 
@@ -161,7 +161,7 @@ class TestImportExport extends JdbcTestCase {
                 "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
                 "targetSRID"    : 2154
         ]);
-        String res = new Display_Database().exec(connection, [:])
+        String res = new Display_Database().exec(connection, ["showColumns":false])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>PEDESTRIAN_AREA</br></br>PEDESTRIAN_POIS</br></br>PEDESTRIAN_WAYS</br></br>", res)
 
@@ -178,7 +178,7 @@ class TestImportExport extends JdbcTestCase {
                 "ignoreRoads"   : false,
                 "removeTunnels" : true
         ]);
-        String res = new Display_Database().exec(connection, [:])
+        String res = new Display_Database().exec(connection, ["showColumns":false])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
 
@@ -196,7 +196,7 @@ class TestImportExport extends JdbcTestCase {
                 "ignoreRoads"   : false,
                 "removeTunnels" : true
         ]);
-        String res = new Display_Database().exec(connection, [:])
+        String res = new Display_Database().exec(connection, ["showColumns":false])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
 
@@ -218,8 +218,8 @@ class TestImportExport extends JdbcTestCase {
             new Linked_Table().exec(connection, [
                     localTableName: "RECEIVERS",
                     databaseUrl: "jdbc:postgresql_h2://$parameters.host:$parameters.port/$parameters.database",
-                    username: parameters.user,
-                    password: parameters.password,
+                    lt_username: parameters.user,
+                    lt_password: parameters.password,
                     remoteTableName: 'receivers'], new EmptyProgressVisitor())
 
             // Read on the H2GIS side the receivers table stored in the PostGIS database

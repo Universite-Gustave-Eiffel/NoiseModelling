@@ -13,10 +13,13 @@ import org.apache.log4j.Appender;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
+import groovy.sql.Sql;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,26 +31,100 @@ import java.util.regex.Pattern;
  */
 public class Logging {
 
-    public static final String DEFAULT_LOG_FORMAT = "[%t][%c] %-5p %d{dd MMM HH:mm:ss} - %m%n";
+    public static final String DEFAULT_LOG_FORMAT = "[%t][%c{1}] %-5p %d{dd MMM HH:mm:ss} - %m%n";
     public static final Pattern LOG_PATTERN =
             Pattern.compile("^\\[(?<thread>.+?)\\]\\[(?<logger>[^\\]]+)\\]");
+    public static final String LINE_SEPARATOR = System.lineSeparator();
 
-    public static Appender configureFileLogger(String workingDirectory, String loggingFileName) {
-        try {
-            // Create rolling file appender
-            RollingFileAppender rollingAppender = createRollingFileAppender(workingDirectory, loggingFileName);
 
-            // init stream
-            rollingAppender.activateOptions();
+    public static void initConsoleLogging() {
+        // Reset everything to clear hidden configs from JARs
+        org.apache.log4j.LogManager.resetConfiguration();
 
-            // Configure root logger
-            org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-            rootLogger.addAppender(rollingAppender);
-            return rollingAppender;
-        } catch (Exception e) {
-            System.err.println("Failed to configure logger: " + e.getMessage());
+        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        rootLogger.setLevel(org.apache.log4j.Level.INFO);
+
+        // Create the Console Appender
+        org.apache.log4j.ConsoleAppender console = new org.apache.log4j.ConsoleAppender();
+        console.setName("stdout");
+        console.setLayout(new org.apache.log4j.PatternLayout(DEFAULT_LOG_FORMAT));
+        console.setThreshold(org.apache.log4j.Level.INFO);
+        console.activateOptions();
+        rootLogger.addAppender(console);
+    }
+
+    public static void configureLoggerFromWorkingDirectory(String workingDirectory, String loggingFileName, boolean verbose) {
+        final org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+
+        // Check if there is a log4j configuration file in the working directory
+        File log4jConfigFile = new File(workingDirectory, "log4j.properties");
+        if (log4jConfigFile.exists()) {
+            // Replace our current configuration with the one from the file
+            org.apache.log4j.PropertyConfigurator.configure(log4jConfigFile.getAbsolutePath());
+            if(verbose) {
+                rootLogger.info("Logger initialized successfully from configuration file: " + log4jConfigFile.getAbsolutePath());
+            }
+        } else {
+            if(verbose) {
+                System.out.println("No log4j.properties found in working directory." + " Initializing default logger " +
+                        "configuration.");
+                System.out.println("You can place a log4j.properties file in the working directory to customize " +
+                        "logging behavior.");
+            }
+            try {
+                // Create rolling file appender
+                RollingFileAppender rollingAppender = createRollingFileAppender(workingDirectory, loggingFileName);
+
+                if (rollingAppender.getLayout() == null) {
+                    rollingAppender.setLayout(new org.apache.log4j.PatternLayout(DEFAULT_LOG_FORMAT));
+                }
+                rollingAppender.setImmediateFlush(true);
+
+                rollingAppender.setThreshold(org.apache.log4j.Level.TRACE);
+
+                // init stream
+                rollingAppender.activateOptions();
+
+                // Configure root logger
+                rootLogger.addAppender(rollingAppender);
+
+                rootLogger.info("Logger initialized successfully at: " + new File(workingDirectory, loggingFileName).getAbsolutePath());
+
+            } catch (Exception e) {
+                System.err.println("Failed to configure logger: " + e.getMessage());
+            }
         }
-        return null;
+
+        if(verbose) {
+            System.out.println("--- LOGGING DIAGNOSTIC ---");
+            System.out.println("Root Logger Class: " + rootLogger.getClass().getName());
+            System.out.println("Root Logger Level: " + rootLogger.getLevel());
+
+            Enumeration appenders = rootLogger.getAllAppenders();
+            if (!appenders.hasMoreElements()) {
+                System.out.println("!!! ERROR: No appenders attached to Root Logger !!!");
+            } else {
+                while (appenders.hasMoreElements()) {
+                    Appender app = (Appender) appenders.nextElement();
+                    System.out.println("Appender: " + app.getName() + " [" + app.getClass().getSimpleName() + "]");
+                }
+            }
+            System.out.println("--------------------------");
+        }
+    }
+
+    public static void clearAppenders() {
+        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        // Close file appenders to release file locks
+        Enumeration appenders = rootLogger.getAllAppenders();
+        while (appenders.hasMoreElements()) {
+            Appender app = (Appender) appenders.nextElement();
+            if (app instanceof RollingFileAppender) {
+                app.close();
+            }
+        }
+        // Remove all appenders to reset logger state
+        rootLogger.removeAllAppenders();
     }
 
     @NotNull
@@ -133,105 +210,117 @@ public class Logging {
         }
     }
 
-
     /**
-     * Return lines from the most recent to the old ones
-     * @param jobId
-     * @param numberOfLines
-     * @return
-     * @throws IOException
+     * Executes a SQL query and return the result set as an ASCII table.
+     *
+     * @param sql   An instance of groovy.sql.Sql
+     * @param query A String or GString (allows for parameter injection)
      */
-    public static String getAllLines(String jobId, File loggingFile, int numberOfLines) throws IOException {
-        List<File> logFiles = new ArrayList<>();
-        logFiles.add(loggingFile);
-        int logCounter = 1;
-        // Add rotating log files
-        while(true) {
-            File oldLogFile = new File(loggingFile + "." + (logCounter++));
-            if(oldLogFile.exists()) {
-                logFiles.add(oldLogFile);
-            } else {
-                break;
-            }
-        }
-        StringBuilder rows = new StringBuilder();
-        AtomicInteger fetchLines = new AtomicInteger(0);
-        for(File logFile : logFiles) {
-            rows.append(getLastLines(logFile,
-                    numberOfLines == -1 ? -1 : numberOfLines - fetchLines.get(),
-                    String.format("JOB_%s", jobId), fetchLines));
-            if(numberOfLines != -1 && fetchLines.get() >= numberOfLines) {
-                break;
-            }
-        }
-        return rows.toString();
+    public static String formatSqlQueryResult(Sql sql, Object query) {
+        return formatSqlQueryResult(sql, query, 30);
     }
 
     /**
-     * Equivalent to "tail -n x file" linux command.
-     * Retrieve the n last lines from a file but from the most recent to the oldest one.
-     * @param logFile
-     * @param maximumLinesToFetch
-     * @return
-     * @throws IOException
+     * Executes a SQL query and return the result set as an ASCII table.
+     *
+     * @param sql         An instance of groovy.sql.Sql
+     * @param query       A String or GString (allows for parameter injection)
+     * @param maxColWidth Maximum width of a column before truncation
      */
-    public static String getLastLines(File logFile, int maximumLinesToFetch, String jobId, AtomicInteger fetchedLines) throws IOException {
-        int pushedLines = 0;
-        StringBuilder sbMatch = new StringBuilder();
-        final int buffer = 8192;
-        long read = 0;
-        String tailCache = "";
-        int lastEndOfLine=0;
-        try(RandomAccessFile f = new RandomAccessFile(logFile.getAbsoluteFile(), "r")) {
-            long fileSize = f.length();
-            long lastCursor = fileSize;
-            while((maximumLinesToFetch == -1 || pushedLines < maximumLinesToFetch) && read < fileSize) {
-                long cursor = Math.max(0, fileSize - read - buffer);
-                read += buffer;
-                f.seek(cursor);
-                byte[] b = new byte[(int)(lastCursor - cursor)];
-                f.readFully(b);
-                lastCursor = cursor;
-                String remainingLines = "";
-                if(!tailCache.isEmpty() && lastEndOfLine > 0) {
-                    remainingLines = tailCache.substring(0, Math.min(tailCache.length(), lastEndOfLine + 1));
-                }
-                tailCache = new String(b, StandardCharsets.UTF_8);
-                if(!remainingLines.isEmpty()) {
-                    tailCache = tailCache + remainingLines;
-                }
-                int previousHookLocation = tailCache.length();
-                // Reverse search of end of line into the string buffer
-                lastEndOfLine = tailCache.lastIndexOf("\n");
-                while (lastEndOfLine != -1 && (maximumLinesToFetch == -1 || pushedLines < maximumLinesToFetch)) {
-                    int nextEndOfLine = tailCache.lastIndexOf("\n", Math.max(0, lastEndOfLine - 1));
-                    if(nextEndOfLine <= 0) {
-                        break;
-                    }
-                    String line = tailCache.substring(nextEndOfLine + 1, lastEndOfLine);
-                    if(!jobId.isEmpty()) {
-                        Matcher matcher = LOG_PATTERN.matcher(line);
-                        if (matcher.find()) {
-                            String threadName = matcher.group("thread");
-                            String loggerName = matcher.group("logger");
-                            if((threadName.equals(jobId) || loggerName.equals(jobId)) && lastEndOfLine < previousHookLocation) {
-                                // push other lines of this log
-                                String logLines = tailCache.substring(nextEndOfLine + 1, previousHookLocation);
-                                pushedLines += (int) logLines.lines().count();
-                                sbMatch.append(logLines);
-                            }
-                            previousHookLocation = nextEndOfLine + 1;
-                        }
-                    } else {
-                        sbMatch.append(line);
-                        sbMatch.append("\n");
-                        pushedLines++;
-                    }
-                    lastEndOfLine = nextEndOfLine;
+    public static String formatSqlQueryResult(Sql sql, Object query, int maxColWidth) {
+        List<Map<String, Object>> rawRows = new ArrayList<>();
+        try {
+            List<?> rows = sql.rows(query.toString());
+            for (Object row : rows) {
+                if (row instanceof Map) {
+                    rawRows.add((Map<String, Object>) row);
                 }
             }
+        } catch (Exception e) {
+            LoggerFactory.getLogger(Logging.class).error("Error executing SQL query: {}", query, e);
+            return "";
         }
-        fetchedLines.addAndGet(pushedLines);
-        return sbMatch.toString();
+
+        if (rawRows.isEmpty()) {
+            return String.format("Query returned 0 rows.\nSQL: %s", query);
+        }
+
+        List<String> columnNames = new ArrayList<>();
+        for (Object key : rawRows.get(0).keySet()) {
+            columnNames.add(key.toString());
+        }
+
+        // 1. Pre-format all data (Truncate strings and Round numbers)
+        List<Map<String, String>> formattedRows = new ArrayList<>();
+        for (Map<String, Object> row : rawRows) {
+            Map<String, String> formattedRow = new LinkedHashMap<>();
+            for (String col : columnNames) {
+                Object val = row.get(col);
+                String formattedVal;
+
+                if (val == null) {
+                    formattedVal = "null";
+                } else if (val instanceof Number && !(val instanceof Integer || val instanceof Long || val instanceof BigInteger)) {
+                    // Round numbers to 2 decimal places
+                    formattedVal = String.format(Locale.US, "%.2f", ((Number) val).doubleValue());
+                } else {
+                    // Truncate long strings (like Geometries)
+                    formattedVal = val.toString();
+                    if (formattedVal.length() > maxColWidth) {
+                        formattedVal = formattedVal.substring(0, maxColWidth - 3) + "...";
+                    }
+                }
+                formattedRow.put(col, formattedVal);
+            }
+            formattedRows.add(formattedRow);
+        }
+
+        // 2. Calculate column widths based on formatted data
+        Map<String, Integer> columnWidths = new HashMap<>();
+        for (String col : columnNames) {
+            int headerLen = col.length();
+            int maxDataLen = 0;
+            for (Map<String, String> row : formattedRows) {
+                String val = row.get(col);
+                if (val != null) {
+                    maxDataLen = Math.max(maxDataLen, val.length());
+                }
+            }
+            columnWidths.put(col, Math.max(headerLen, maxDataLen));
+        }
+
+        // 3. Build the ASCII Table
+        StringBuilder lineSeparatorBuilder = new StringBuilder("+");
+        for (String col : columnNames) {
+            int width = columnWidths.get(col);
+            lineSeparatorBuilder.append("-".repeat(Math.max(0, width + 2)));
+            lineSeparatorBuilder.append("+");
+        }
+        String lineSeparator = lineSeparatorBuilder.toString();
+
+        StringBuilder table = new StringBuilder();
+        table.append("\nSQL: ").append(query).append("\n");
+        table.append(lineSeparator).append("\n|");
+
+        // Header
+        for (String col : columnNames) {
+            int width = columnWidths.get(col);
+            table.append(String.format(" %-" + width + "s |", col));
+        }
+        table.append("\n").append(lineSeparator).append("\n");
+
+        // Rows
+        for (Map<String, String> row : formattedRows) {
+            table.append("|");
+            for (String col : columnNames) {
+                int width = columnWidths.get(col);
+                table.append(String.format(" %-" + width + "s |", row.get(col)));
+            }
+            table.append("\n");
+        }
+        table.append(lineSeparator);
+
+        return table.toString();
     }
+
 }

@@ -15,9 +15,7 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
-
 
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
@@ -27,14 +25,13 @@ import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Create isosurfaces from a NoiseModelling resulting table and its associated TRIANGLES table.'
 
 description = '&#10145;&#65039; Create isosurfaces from a NoiseModelling resulting table and its associated TRIANGLES table.'+
               '<hr>' +
-              '&#x1F6A8; The triangle table must have been created using the WPS block "<b>Receivers/Delaunay_Grid</b>". </br> </br> ' +
+              '&#x1F6A8; The triangle table must have been created using the "<b>Receivers/Delaunay_Grid</b>" WPS block. </br> </br> ' +
               '&#x2705; The output table is called <b>CONTOURING_NOISE_MAP</b> </br> </br> ' +
               '<img src="wps_images/create_isosurface.png" alt="Create isosurfaces" width="95%" align="center">'
 
@@ -42,14 +39,14 @@ inputs = [
         resultTable      : [
                 name       : 'Sound levels table',
                 title      : 'Sound levels table',
-                description: 'Name of the sound levels table, generated from "Noise_level_from_source". (STRING)</br> </br>' +
-                             'Example : RECEIVERS_LEVEL.',
+                description: 'Name of the sound levels table, generated from the "<b>Noise_level_from_source</b>" WPS block. (STRING)</br> </br>' +
+                             'Example : RECEIVERS_LEVEL',
                 type       : String.class
         ],
         isoClass         : [
                 name       : 'Iso levels in dB',
                 title      : 'Iso levels in dB',
-                description: 'Separation of sound levels for isosurfaces. First range is from -&#8734; to first value excluded. The first value included to next value excluded..</br> </br>' +
+                description: 'Separation of sound levels for isosurfaces. The first range is from -&#8734; to the first value (excluded). The next range is from the first value (included) to the next value (excluded).</br> </br>' +
                              'Read <a href="https://noisemodelling.readthedocs.io/en/latest/Noise_Map_Color_Scheme.html#creation-of-the-isosurfaces" target=_blank>this documentation</a> for more information about sound levels classes.',
                 default    : "35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0",
                 type       : String.class
@@ -65,17 +62,18 @@ inputs = [
                 name       : 'Keep triangles',
                 title      : 'Keep triangles',
                 description: 'Point inside areas with the same iso levels are kept so elevation variation into ' +
-                        'same iso level areas will be preserved but the output data size will be higher. Keeping triangles will reduce significantly the computation time.',
+                             'same iso level areas will be preserved but the output data size will be higher. Keeping triangles will reduce significantly the computation time.',
                 default    : false,
                 type       : Boolean.class
         ],
-        smoothCoefficient: [name       : 'Polygon smoothing coefficient',
-                            title      : 'Polygon smoothing coefficient',
-                            description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>' +
-                                    'If equal to 0, it disables the smoothing step and will keep the altitude of final polygons (3D geojson can be viewed on https://kepler.gl).' +
-                                    ' Use this option with keepTriangles to keep the altitude variation into same iso level areas.',
-                            default    : 0,
-                            type       : Double.class]
+        smoothCoefficient: [
+                name       : 'Polygon smoothing coefficient',
+                title      : 'Polygon smoothing coefficient',
+                description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>' +
+                             'If equal to 0, it disables the smoothing step and will keep the altitude of final polygons (3D geojson can be viewed on https://kepler.gl).' +
+                             'Use this option with keepTriangles to keep the altitude variation into same iso level areas.',
+                default    : 0,
+                type       : Double.class]
 ]
 
 outputs = [
@@ -86,9 +84,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
 
 def exec(Connection connection, Map input, ProgressVisitor progressVisitor) {
 
@@ -153,5 +148,3 @@ def exec(Connection connection, Map input, ProgressVisitor progressVisitor) {
 def exec(Connection connection, Map input) {
     return exec(connection, input, new RootProgressVisitor(1, true, 5))
 }
-
-

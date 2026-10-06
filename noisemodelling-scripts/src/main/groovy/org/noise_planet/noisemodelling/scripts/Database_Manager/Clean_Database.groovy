@@ -17,25 +17,32 @@
 
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.Statement
 
 title = 'Delete all database tables'
-description = '&#10145;&#65039; Delete all non-system tables of the database. </br> </br>'+
+description = '&#10145;&#65039; Delete all non-system tables of the database.</br> </br>'+
               '&#x1F6A8; Use with caution'
 
 inputs = [
         areYouSure: [
-                name: 'Are you sure ?',
+                name: 'Are you sure?',
                 title: 'Are you sure?',
                 description: 'Are you sure you want to delete all the tables in the database?',
                 type: Boolean.class
+        ],
+        schema: [
+                name: 'Schema',
+                title: 'Schema',
+                description: 'Database schema to clean. A schema is a container that organizes tables, views, and other database objects. If you are unsure, leave this set to the default schema, "public"',
+                type: String.class,
+                default: 'public'
         ]
 ]
 
@@ -48,9 +55,7 @@ outputs = [
         ]
 ]
 
-
-
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -64,6 +69,8 @@ def exec(Connection connection, input) {
 
     // Get name of the table
     Boolean areYouSure  = input['areYouSure'] as Boolean
+    DBTypes dbType = DBUtils.getDBType(connection)
+    String schema = TableLocation.capsIdentifier(input.getOrDefault('schema', 'public') as String, dbType)
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
@@ -73,10 +80,10 @@ def exec(Connection connection, input) {
         StringBuilder sb = new StringBuilder()
 
         // Get every table names
-        List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
+        List<String> tables = JDBCUtilities.getTableNames(connection, null, schema, "%", "TABLE")
         // Loop over the tables
         tables.each { t ->
-            TableLocation tab = TableLocation.parse(t)
+            TableLocation tab = TableLocation.parse(t, dbType)
             if (!ignorelst.contains(tab.getTable())) {
                 // Add the name of the table in the string builder
                 if (sb.size() > 0) {
@@ -103,4 +110,3 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-

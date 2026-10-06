@@ -12,7 +12,7 @@ The other tables are accessible via the left menu in the ``Input tables & parame
 	:align: center
 
 .. note::
-	If your DEM is in raster, please use the ``Import_Asc_File`` WPS script which will format your DEM in the right format
+	If your DEM is in raster, please use the ``Import_Asc_File`` script which will format your DEM in the right format
 	
 
 Table definition

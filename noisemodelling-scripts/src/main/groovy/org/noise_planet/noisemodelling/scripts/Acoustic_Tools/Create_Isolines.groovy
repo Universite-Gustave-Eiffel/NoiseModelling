@@ -17,17 +17,13 @@
 
 package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -35,7 +31,7 @@ import java.sql.SQLException
 // Create Isolines (Isophones) from TRIANGLES + RECEIVERS_LEVEL
 // ----------------
 
-title = 'Create Isolines (Isophones)'
+title = 'Create Isolines'
 
 description = 'Generate isolines (isophones) by linear interpolation on triangle edges (marching-triangles).' +
               '</br> One multilines map per <b>PERIOD</b> and per <b>LEVEL</b> is created.' +
@@ -54,7 +50,6 @@ inputs = [
                 title      : 'Triangles table',
                 description: '<b>Name of the triangles table.</b></br>' +
                              'Shall contain : PK, THE_GEOM, PK_1, PK_2, PK_3, CELL_ID.',
-                min        : 1, max: 1,
                 type       : String.class
         ],
         receiversTable : [
@@ -62,21 +57,20 @@ inputs = [
                 title      : 'Receivers level table',
                 description: '<b>Name of the receivers level table.</b></br>' +
                              'Shall contain : IDRECEIVER, PERIOD, THE_GEOM, LAEQ (or any field to contour).',
-                min        : 1, max: 1,
                 type       : String.class
         ],
         fieldName      : [
                 name       : 'Field to contour',
                 title      : 'Field to contour',
-                description: 'Receivers numeric field to contour (e.g. LAEQ). Default: LAEQ.',
-                min        : 0, max: 1,
+                description: 'Receivers numeric field to contour (e.g. LAEQ).',
+                default    : 'LAEQ',
                 type       : String.class
         ],
         isoClasses     : [
                 name       : 'Iso levels (dB)',
                 title      : 'Iso levels (dB)',
-                description: 'Comma-separated levels. Default: 35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0',
-                min        : 0, max: 1,
+                description: 'Comma-separated levels.', 
+                default    : '35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0',
                 type       : String.class
         ]
 ]
@@ -362,4 +356,3 @@ def exec(Connection connection, Map input) {
     // send resultString to WPS Builder
     return resultString
 }
-

@@ -15,11 +15,8 @@
 
 package org.noise_planet.noisemodelling.scripts.Experimental_Matsim
 
-
-
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.io.WKTWriter
@@ -45,24 +42,22 @@ import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.PreparedStatement
-
 import java.io.FileNotFoundException
 
-title = 'Import traffic data from Mastim simultaion output folder'
-description = 'Read Mastim events output file in order to get traffic NoiseModelling input'
+title = 'Import traffic data from Matsim simulation output folder'
+description = 'Read Matsim events output file in order to get traffic NoiseModelling input'
 
 inputs = [
         folder           : [
                 name       : 'Path of the Matsim output folder',
                 title      : 'Path of the Matsim output folder',
-                description: 'Path of the Matsim output folder </br> For example : /home/mastim/simulation_output' +
-                        '<br/>The folder must contain at least the following files: ' +
-                        '<br/><br/> - output_network.xml.gz' +
-                        '<br/><br/> - output_allVehicles.xml.gz' +
-                        '<br/><br/> - output_events.xml.gz',
+                description: 'Path of the Matsim output folder </br> For example : /home/matsim/simulation_output' +
+                            '<br/>The folder must contain at least the following files: ' +
+                            '<br/><br/> - output_network.xml.gz' +
+                            '<br/><br/> - output_allVehicles.xml.gz' +
+                            '<br/><br/> - output_events.xml.gz',
                 type       : String.class
         ],
         timeBinSize      : [
@@ -71,45 +66,39 @@ inputs = [
                 description: 'This parameter dictates the time resolution of the resulting data ' +
                         '<br/>The time information stored will be the starting time of the time bins ' +
                         '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
-                        '<br/>0, 3600, 7200, ..., 79200, 82800' +
-                        '<br/>Default: 3600',
-                min        : 0,
-                max        : 1,
+                        '<br/>0, 3600, 7200, ..., 79200, 82800',
+                default    : 3600,
                 type       : Integer.class
         ],
         timeBinMin : [
-                name       : 'The minimum of time bins in seconds.',
-                title      : 'The minimum of time bins in seconds.',
-                min        : 0,
-                max        : 1,
-                description: 'The minimum of time bins in seconds, default value: 0',
+                name       : 'The minimum of time bins in seconds',
+                title      : 'The minimum of time bins in seconds',
+                description: 'The minimum of time bins in seconds',
+                default    : 0,
                 type       : Integer.class
         ],
         timeBinMax : [
-                name       : 'The maximum of time bins in seconds.',
-                title      : 'The maximum of time bins in seconds.',
-                min        : 0,
-                max        : 1,
+                name       : 'The maximum of time bins in seconds',
+                title      : 'The maximum of time bins in seconds',
                 description: 'The maximum of time bins in seconds, default value: 86400 ',
+                default    : 86400,
                 type       : Integer.class
         ],
         populationFactor : [
                 name       : 'Population Factor',
                 title      : 'Population Factor',
                 description: 'Set the population factor of the MATSim simulation' +
-                        '<br/>Must be a decimal number between 0 and 1' +
-                        '<br/>Default: 1.0',
-                min        : 0,
-                max        : 1,
+                             '<br/>Must be a decimal number between 0 and 1',
+                default    : 1.0,
                 type       : Double.class
         ],
         link2GeometryFile: [
                 name       : 'Network CSV file',
                 title      : 'Network CSV file',
                 description: 'The path of the pt2matsim CSV file generated when importing OSM network. Ignored if not set.' +
-                        '<br/>The file must contain at least two columns : ' +
-                        '<br/><br/> - The link ID' +
-                        '<br/><br/> - The WKT geometry',
+                             '<br/>The file must contain at least two columns : ' +
+                             '<br/><br/> - The link ID' +
+                             '<br/><br/> - The WKT geometry',
                 min        : 0,
                 max        : 1,
                 type       : String.class
@@ -118,8 +107,7 @@ inputs = [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
                 description: 'Projection identifier (also called SRID) of the geometric data.' +
-                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
-                        '</br><b> Default value : 4326 </b> ',
+                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).',
                 min        : 0,
                 max        : 1,
                 type       : Integer.class
@@ -127,29 +115,25 @@ inputs = [
         exportTraffic    : [
                 name       : 'Export additionnal traffic data ?',
                 title      : 'Export additionnal traffic data ?',
-                description: 'Define if you want to output average speed and flow per vehicle category in an additional table' +
-                        '<br/>Default: False',
-                min        : 0,
-                max        : 1,
+                description: 'Define if you want to output average speed and flow per vehicle category in an additional table',
+                default    : false,
                 type       : Boolean.class
         ],
         skipUnused       : [
                 name       : 'Skip unused links ?',
                 title      : 'Skip unused links ?',
-                description: 'Define if links with unused traffic should be omitted in the output table.' +
-                        '<br/>Default: True',
-                min        : 0,
-                max        : 1,
+                description: 'Define if links with unused traffic should be omitted in the output table.',
+                default    : true,
                 type       : Boolean.class
         ],
         outTableName     : [
                 name       : 'Output table name',
                 title      : 'Output table name',
                 description: 'Name of the table you want to create.' +
-                        '<br/>A table with this name will be created plus another with a "_LW" suffix' +
-                        '<br/>For exemple if set to "MATSIM_ROADS (default value)":' +
-                        '<br/><br/> - the table MATSIM_ROADS, with the link ID and the geometry field' +
-                        '<br/><br/> - the table MATSIM_ROADS_LW, with the link ID and the traffic data',
+                            '<br/>A table with this name will be created plus another with a "_LW" suffix' +
+                            '<br/>For exemple if set to "MATSIM_ROADS (default value)":' +
+                            '<br/><br/> - the table MATSIM_ROADS, with the link ID and the geometry field' +
+                            '<br/><br/> - the table MATSIM_ROADS_LW, with the link ID and the traffic data',
                 min        : 0,
                 max        : 1,
                 type       : String.class

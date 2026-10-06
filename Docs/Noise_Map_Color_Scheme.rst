@@ -45,7 +45,7 @@ This ``.sld`` file can be loaded in many GIS applications, such as `QGIS`_. The 
 .. note::
     For those who are new to GIS and want to get started with QGIS, we advise you to follow `this tutorial`_ as a start.
 
-    To know how to load an ``.sld`` file, you can also consult the NoiseModelling tutorial :doc:`Noise_Map_From_Point_Source` in the section "``Step 3 - Apply a color palette adapted to acoustics``" 
+    To know how to load an ``.sld`` file, you can also consult the NoiseModelling tutorial :doc:`Tutorial_Noise_Map_From_Point_Source` in the section "``Step 3 - Apply a color palette adapted to acoustics``"
 
 .. _this tutorial : https://docs.qgis.org/3.22/en/docs/training_manual/basic_map/index.html
 

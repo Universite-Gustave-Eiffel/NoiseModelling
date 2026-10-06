@@ -17,10 +17,10 @@ Table definition
 	In the list below, the columns noted with ``*`` are mandatory
 
 * ``THE_GEOM`` *
-	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
+	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Buildings geometry modelling` section below)
 	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON`` or ``LINESTRING``)
-* ``HEIGHT`` *
-	* Description: building's height *(in meters)* 
+* ``HEIGHT``
+	* Description: building's height above the ground *(in meters)*. Optional, used only if the geometry is defined in 2D, ignored otherwise
 	* Type: Double
 * ``POP``
 	* Description: number of inhabitant in the building 
@@ -32,7 +32,7 @@ Table definition
 .. note::
 	If you want to generate a scene without buildings, create two fictitious buildings, placed in two corners of the scene, and assign them a height of 0 meter.
 
-Geometry modelling
+Buildings geometry modelling
 ---------------------
 
 In NoiseModelling, the geometry of the building is used to calculate the 3D ray path of the acoustic wave. Therefore, we need to know the footprint of the building as well as the points in height (at the roof, the gutter, ...)
@@ -52,6 +52,8 @@ In this context, geometry coordinates have to be in 3D, with:
 * ``Z`` = ``Zobject`` : coordinate corresponding to the gutter or the roof altitude(s), ...
 
 
+.. warning::
+	If the buildings geometries are defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
 
 Z coordinate deduction
 -----------------------
@@ -83,10 +85,13 @@ There is no DEM layer
 2. The geometry has a Z coordinate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+	If the buildings geometries are defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
+
 * The Z coordinate correspond to ``Zobject``
 	* It's ok, your data is already ready to be used by NoiseModelling
 * The Z coordinate correspond to ``Zground``
-	* You are invited to correct ``Z`` value(s) by changing the information by yourself or by using the dedicated WPS block called ``Correct_building_altitude``
+	* You are invited to correct ``Z`` value(s) by changing the information by yourself or by using the dedicated Block called ``Correct_building_altitude``
 
 Below is an example with a initial geometry (coordinates are exprimed in French Lambert 93 (`EPSG:2154`_) system) with a ``Zground`` value coupled with ``HEIGHT`` information. After correction, the geometry has a correct Z value, which corresponds to ``Zobject``.
 

@@ -54,7 +54,7 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${project.parent.basedir}/Docs/scripts</directory>
+            <directory>${project.basedir}/src/test/groovy/org/noise_planet/noisemodelling/scripts</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>get_started_tutorial_complex.groovy</include>

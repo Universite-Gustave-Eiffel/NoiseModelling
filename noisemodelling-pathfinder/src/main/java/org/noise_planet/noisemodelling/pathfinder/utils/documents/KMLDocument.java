@@ -28,6 +28,7 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 
 import javax.xml.stream.XMLOutputFactory;
@@ -256,7 +257,7 @@ public class KMLDocument {
         for(Building building : buildings) {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
-            double z = profileBuilder.getBuilding(idPoly ).getZ();
+            double z = profileBuilder.getBuilding( idPoly ).getAverageZ();
             // z is building height + average ground height
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
@@ -307,7 +308,7 @@ public class KMLDocument {
         wallWriter.setTesselate(true);
         wallWriter.setAltitudeMode(profileBuilder.hasDem() ? KMLWriter.ALTITUDE_MODE_ABSOLUTE : KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND);
         for(Wall wall : walls) {
-            Coordinate[] original = new Coordinate[]{wall.p0,wall.p1};
+            Coordinate[] original = new Coordinate[]{wall.line.p0,wall.line.p1};
             Coordinate[] coordinates = new Coordinate[original.length];
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(original[i]);
@@ -416,6 +417,77 @@ public class KMLDocument {
                 Logger.getLogger(KMLDocument.class.getName()).log(Level.SEVERE, (String)null, var3);
             }
 
+        }
+    }
+
+    public void exportSources(Scene scene) {
+        try {
+            // Create a style for sources (red lines and points)
+            xmlOut.writeStartElement("Style");
+            xmlOut.writeAttribute("id", "sourceStyle");
+            xmlOut.writeStartElement("LineStyle");
+            xmlOut.writeStartElement("color");
+            xmlOut.writeCharacters("ff0000ff"); // Red
+            xmlOut.writeEndElement();//color
+            // set width of the line
+            xmlOut.writeStartElement("width");
+            xmlOut.writeCharacters("12"); // px
+            xmlOut.writeEndElement();//width
+            xmlOut.writeEndElement();//LineStyle
+            xmlOut.writeEndElement();//Style
+
+            xmlOut.writeStartElement("Schema");
+            xmlOut.writeAttribute("name", "Sources");
+            xmlOut.writeAttribute("id", "sources");
+            xmlOut.writeEndElement();//Write schema
+            // Create a folder for sources
+            xmlOut.writeStartElement("Folder");
+            xmlOut.writeStartElement("name");
+            xmlOut.writeCharacters("sources");
+            xmlOut.writeEndElement();//Name
+            for(int sourceIndex = 0; sourceIndex < scene.sourceGeometries.size(); sourceIndex++) {
+                xmlOut.writeStartElement("Placemark");
+                xmlOut.writeStartElement("name");
+                xmlOut.writeCharacters(String.format(Locale.ROOT, "Source %d", scene.sourcesPk.get(sourceIndex)));
+                xmlOut.writeEndElement();//Name
+                //Write geometry
+                Geometry source = scene.sourceGeometries.get(sourceIndex);
+                doTransform(source);
+                KMLWriter writer = new KMLWriter();
+                StringBuffer stringBuffer = new StringBuffer();
+                writer.write(source, stringBuffer);
+                writeRawXml(stringBuffer.toString());
+                //Set style for source
+                xmlOut.writeStartElement("styleUrl");
+                xmlOut.writeCharacters("#sourceStyle");
+                xmlOut.writeEndElement();//styleUrl
+                xmlOut.writeEndElement();//Write Placemark
+            }
+            xmlOut.writeEndElement();//Folder
+        } catch (XMLStreamException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Export processed input data of the ProfileBuilder
+     * @param outputStream Ready stream of data
+     * @param scene initialized scene
+     * @param srid Input projection system (will be transformed to 4326)
+     * @throws IOException Exception
+     */
+    public static void exportProfileBuilderData(OutputStream outputStream, Scene scene, int srid) throws IOException {
+        try {
+            KMLDocument kmlDocument = new KMLDocument(outputStream);
+            kmlDocument.setInputCRS("EPSG:" + srid);
+            kmlDocument.writeHeader();
+            kmlDocument.writeTopographic(scene.profileBuilder.getTriangles(), scene.profileBuilder.getVertices());
+            kmlDocument.writeBuildings(scene.profileBuilder);
+            kmlDocument.writeWalls(scene.profileBuilder);
+            kmlDocument.exportSources(scene);
+            kmlDocument.writeFooter();
+        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
+            throw new IOException(ex);
         }
     }
 }

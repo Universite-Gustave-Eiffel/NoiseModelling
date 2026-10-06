@@ -1,11 +1,11 @@
-# Use a Maven image that already includes JDK 21
-FROM maven:3.9.9-eclipse-temurin-21 AS builder
+# Use a Maven image that already includes JDK
+FROM maven:3.9.16-eclipse-temurin-25-noble AS builder
 
 # Set working directory
 WORKDIR /build
 
 # Install bsdtar (found in libarchive-tools on Debian/Ubuntu-based images)
-RUN apt-get update && apt-get install -y libarchive-tools && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libarchive-tools python3 && rm -rf /var/lib/apt/lists/*
 
 # Copy your project files
 COPY . /build/

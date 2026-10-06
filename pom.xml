@@ -5,10 +5,12 @@
     <name>noisemodelling-parent</name>
     <artifactId>noisemodelling-parent</artifactId>
     <groupId>org.noise-planet</groupId>
-    <version>5.0.2-SNAPSHOT</version>
+    <version>6.0.2-SNAPSHOT</version>
     <description>NoiseModelling is an extension of H2GIS</description>
     <properties>
         <groovy-version>5.0.3</groovy-version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
     </properties>
     <organization>
         <name>UMRAE, CEREMA, Univ Gustave Eiffel</name>
@@ -26,7 +28,6 @@
         <module>noisemodelling-pathfinder</module>
         <module>noisemodelling-propagation</module>
         <module>noisemodelling-jdbc</module>
-        <module>noisemodelling-tutorial-01</module>
         <module>noisemodelling-scripts</module>
     </modules>
     <scm>
@@ -61,10 +62,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.15.0</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>25</source>
+                    <target>25</target>
                 </configuration>
             </plugin>
             <!-- Sign -->
@@ -232,6 +233,17 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <!-- Override the 'jogl' repo introduced by matsim, in the future with maven 4, <repositories> tags will be stripped out before being published into maven -->
+        <repository>
+            <id>jogl</id>
+            <url>https://repo1.maven.org/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled> <!-- Disable snapshots to stop it from checking for updates every build -->
+            </snapshots>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -304,7 +316,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.21.1</version>
+                <version>2.21.4</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -324,12 +336,17 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>[2.0.17, 3)</version>
+                <version>2.0.13</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-reload4j</artifactId>
-                <version>[2.0.17, 3)</version>
+                <version>2.0.13</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.reload4j</groupId>
+                <artifactId>reload4j</artifactId>
+                <version>1.2.25</version>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>
@@ -499,7 +516,13 @@
             <dependency>
                 <groupId>org.matsim</groupId>
                 <artifactId>matsim</artifactId>
-                <version>14.0</version>
+                <version>2026.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.graphhopper.external</groupId>
+                <artifactId>jackson-datatype-jts</artifactId>
+                <version>2.21.0</version>
+                <scope>compile</scope>
             </dependency>
             <!-- Test dependencies -->
             <dependency>

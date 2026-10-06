@@ -15,21 +15,17 @@
 
 package org.noise_planet.noisemodelling.scripts.Experimental_Matsim
 
-
-
 import groovy.sql.GroovyRowResult
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.*
 import groovy.sql.Sql
 
-title = 'Chose Closest Receivers For Matsim Activities'
-description = 'Chose the closest receiver in a RECEIVERS table for every Mastim Activity in an ACTIVITIES table'
+title = 'Choose closest receivers for Matsim activities'
+description = 'Choose the closest receiver in a RECEIVERS table for every Mastim activity in an ACTIVITIES table'
 
 inputs = [
         activitiesTable : [
@@ -66,11 +62,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
-
-
 
 // main function of the script
 @CompileStatic

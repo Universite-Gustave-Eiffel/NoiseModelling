@@ -10,42 +10,41 @@
  *
  */
 
+/**
+ * @Author DIAGNE Ndeye-Maguette, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.scripts.Data_Assimilation
-
-
 
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.PreparedStatement
 
 
 title = 'Extraction of the best configurations'
 description = 'Extraction of the best maps, i.e. those that minimise the difference between the measured and simulated values, by calculating the minimum median values. '
-
 inputs = [
         observationTable: [
                 name: 'Sensors measurement training table',
                 title: 'Measurement table',
-                description: 'table of observationSensor containing the training data Set',
+                description: 'Table of "observationSensor" containing the training data Set',
                 type: String.class
         ],
         noiseMapTable: [
                 name: 'Noise map table',
                 title: 'Noise map table',
-                description: 'table of noiseMapTable containing the noise maps after simulation',
+                description: 'Table of "noiseMapTable" containing the noise maps after simulation',
                 type: String.class
         ],
         tempToleranceThreshold: [
-                name: 'temperature tolerance threshold ',
-                title: 'temperature tolerance threshold ',
-                description: 'temperature tolerance threshold to extract the best configuration',
+                name: 'Temperature tolerance threshold',
+                title: 'Temperature tolerance threshold',
+                description: 'Temperature tolerance threshold used to filter and extract the best configurations',
                 type: Double.class
         ]
 ]
@@ -202,4 +201,3 @@ static def exec(Connection connection, input){
     return "Calculation Done ! The table BEST_CONFIGURATION_FULL has been created."
 
 }
-

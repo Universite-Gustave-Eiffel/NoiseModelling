@@ -20,6 +20,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
@@ -31,10 +32,47 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestWallReflection {
+
+    @Test
+    public void testCloseReflectionBeforeReceiverEvenWithPointAfterReflection() {
+        CutProfile cutProfile = new CutProfile();
+        cutProfile.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
+        cutProfile.cutPoints.add(new CutPointSource(new Coordinate(11.49, 0.0, 2.0)));
+
+        CutPoint reflectionBasePoint = new CutPoint(new Coordinate(1.0, 0.0, 2.0), 0.0, 0.0);
+        cutProfile.cutPoints.add(new CutPointReflection(reflectionBasePoint,
+                new LineSegment(new Coordinate(1.0, -2.5, 0.0), new Coordinate(1.0, 2.5, 5.0)),
+                Collections.emptyList()));
+
+        // This point stands for a later event on the path (for example a diffraction-related point).
+        cutProfile.cutPoints.add(new CutPointTopography(new Coordinate(1.2, 0.0, 3.0)));
+        cutProfile.cutPoints.add(new CutPointReceiver(new Coordinate(1.49, 0.0, 2.0)));
+
+        assertTrue(cutProfile.hasCloseReflectionBeforeReceiver(0.5),
+                "The last reflection before the receiver should trigger filtering even if another point follows it.");
+    }
+
+    @Test
+    public void testReflectionOutsideReceiverWallDistanceThreshold() {
+        CutProfile cutProfile = new CutProfile();
+        cutProfile.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
+        cutProfile.cutPoints.add(new CutPointSource(new Coordinate(11.51, 0.0, 2.0)));
+
+        CutPoint reflectionBasePoint = new CutPoint(new Coordinate(1.0, 0.0, 2.0), 0.0, 0.0);
+        cutProfile.cutPoints.add(new CutPointReflection(reflectionBasePoint,
+                new LineSegment(new Coordinate(1.0, -2.5, 0.0), new Coordinate(1.0, 2.5, 5.0)),
+                Collections.emptyList()));
+
+        cutProfile.cutPoints.add(new CutPointReceiver(new Coordinate(1.50, 0.0, 2.0)));
+
+        assertFalse(cutProfile.hasCloseReflectionBeforeReceiver(0.5),
+                "The optional filter must only reject reflections with a receiver-to-wall distance strictly below 0.5 m.");
+    }
 
     @Test
     public void testWideWall() {
@@ -50,6 +88,53 @@ public class TestWallReflection {
     }
 
     @Test
+    public void testCubicBuildingReflectionWithinMaxReflectionDistance() {
+        // This test reproduces a case where a valid reflection was previously discarded because the
+        // wall reflection visibility cone was truncated to (wallDistance + maxRefDist) instead of
+        // extending to the full propagation distance.
+
+        GeometryFactory factory = new GeometryFactory();
+        double buildingHeight = 10.0;
+
+        // Cubic building 10m x 10m x 10m, front wall facing the source/receiver at y = 0
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        Coordinate[] buildingCoordinates = new Coordinate[]{
+                new Coordinate(-5, 0, buildingHeight),
+                new Coordinate(5, 0, buildingHeight),
+                new Coordinate(5, 10, buildingHeight),
+                new Coordinate(-5, 10, buildingHeight),
+                new Coordinate(-5, 0, buildingHeight)
+        };
+        profileBuilder.addBuilding(buildingCoordinates, 1);
+        profileBuilder.finishFeeding();
+
+        // Receiver 5 m in front of the building, centered, at 4 m height
+        Coordinate receiver = new Coordinate(0, -5, 4);
+        // Source 50 m from the building, at 1 m height
+        Coordinate source = new Coordinate(0, -50, 1);
+
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(receiver);
+        inputData.addSource(factory.createPoint(source));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 20;
+        inputData.maxSrcDist = 100;
+        inputData.setReflexionOrder(1);
+
+        Envelope receiverPropagationEnvelope = new Envelope(receiver);
+        receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(source);
+
+        assertFalse(mirrorResults.isEmpty(),
+                "Expected the reflection on the building front wall to be found");
+    }
+
+    @Test
     public void testNReflexion() throws ParseException, IOException, SQLException {
         GeometryFactory factory = new GeometryFactory();
 
@@ -57,12 +142,16 @@ public class TestWallReflection {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         Csv csv = new Csv();
         WKTReader wktReader = new WKTReader();
+        double height = 10.0;
         try(ResultSet rs = csv.read(new FileReader(
                 TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
                 new String[]{"geom", "id"})) {
             assertTrue(rs.next()); //skip column name
             while(rs.next()) {
-                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+                Geometry geometry = wktReader.read(rs.getString(1));
+                Coordinate[] coordinates = geometry.getCoordinates();
+                coordinates = Arrays.stream(coordinates).map(c -> new Coordinate(c.x, c.y, height)).toArray(Coordinate[]::new);
+                profileBuilder.addBuilding(coordinates, rs.getInt(2));
             }
         }
         profileBuilder.finishFeeding();
@@ -132,26 +221,30 @@ public class TestWallReflection {
 
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.setzBuildings(false); // building Z is height not altitude
         Csv csv = new Csv();
         WKTReader wktReader = new WKTReader();
+        double height = 10.0;
+        double demHeight = 500.0;
         try(ResultSet rs = csv.read(new FileReader(
                         TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
                 new String[]{"geom", "id"})) {
             assertTrue(rs.next()); //skip column name
             while(rs.next()) {
-                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+                Geometry geometry = wktReader.read(rs.getString(1));
+                Coordinate[] coordinates = geometry.getCoordinates();
+                coordinates = Arrays.stream(coordinates).map(c -> new Coordinate(c.x, c.y, height + demHeight)).toArray(Coordinate[]::new);
+                profileBuilder.addBuilding(coordinates, rs.getInt(2));
             }
         }
-        profileBuilder.addTopographicPoint(new Coordinate(598962.08,646370.83,500.00));
-        profileBuilder.addTopographicPoint(new Coordinate(599252.92,646370.11,500.00));
-        profileBuilder.addTopographicPoint(new Coordinate(599254.37,646100.19,500.00));
-        profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(598962.08,646370.83,demHeight));
+        profileBuilder.addTopographicPoint(new Coordinate(599252.92,646370.11,demHeight));
+        profileBuilder.addTopographicPoint(new Coordinate(599254.37,646100.19,demHeight));
+        profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,demHeight));
         profileBuilder.finishFeeding();
         assertEquals(5, profileBuilder.getBuildingCount());
         Scene inputData = new Scene(profileBuilder);
-        inputData.addReceiver(new Coordinate(599093.85,646227.90, 504));
-        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 501)));
+        inputData.addReceiver(new Coordinate(599093.85,646227.90, demHeight + 4.0));
+        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, demHeight + 1.0)));
         inputData.setComputeHorizontalDiffraction(false);
         inputData.setComputeVerticalDiffraction(false);
         inputData.maxRefDist = 80;

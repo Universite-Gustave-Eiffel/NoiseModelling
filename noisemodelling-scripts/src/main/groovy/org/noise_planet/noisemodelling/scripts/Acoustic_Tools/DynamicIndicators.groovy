@@ -26,26 +26,26 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Compute dynamic indicators'
-description = 'Compute dynamic indicators as L10, L90 </br> The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed.'
+description = 'Computes dynamic percentile indicators (L10, L50, L90) for each row in the table'
 
 inputs = [
         columnName   : [
                 name       : 'Column name',
                 title      : 'Column name',
-                description: 'Column name on which to perform the calculation. (STRING) </br> For example : LEQA',
+                description: 'Column name on which to perform the calculation. (STRING) </br> For example : LEAQ',
                 type       : String.class
         ],
         tableName: [
                 title      : 'Name of the table',
                 name       : 'Name of the table',
-                description: 'Name of the table on which to perform the calculation. The table must contain multiple sound level values for a single receiver. (STRING) </br> For example : RECEIVERS_LEVEL',
+                description: 'Name of the table on which to perform the calculation. The table must contain multiple sound level values for a single receiver. The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed. (STRING) </br> For example : RECEIVERS_LEVEL',
                 type       : String.class
         ],
         outputTableName: [
                 title      : 'Name of the output table',
                 name       : 'Name of the output table',
-                description: 'Name of the output table default to tableName+_DYN_IND',
-                min        : 0, max: 1,
+                description: 'Name of the output table',
+                default    : 'tableName_DYN_IND',
                 type       : String.class,
         ]
 ]
@@ -58,8 +58,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
 
 
 def exec(Connection connection, Map input) {
@@ -110,4 +108,3 @@ def exec(Connection connection, Map input) {
     return resultString
 
 }
-

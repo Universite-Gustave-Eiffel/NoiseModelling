@@ -26,6 +26,7 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +54,9 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
-    private AtomicInteger constraintId = new AtomicInteger(1);
+    private final AtomicInteger constraintId = new AtomicInteger(1);
     private double epsilon = 1e-6;
-    private double geometrySimplificationDistance = 1;
-    private boolean isoSurfaceInBuildings = false;
+    private double geometrySimplificationDistance = 0.1;
     private boolean exportTrianglesGeometries = false;
 
     /**
@@ -86,19 +86,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      */
     public void setExportTrianglesGeometries(boolean exportTrianglesGeometries) {
         this.exportTrianglesGeometries = exportTrianglesGeometries;
-    }
-
-    /**
-     * @return True if isosurface will be placed into buildings
-     */
-    public boolean isIsoSurfaceInBuildings() {
-        return isoSurfaceInBuildings;
-    }
-    /**
-     * @param isoSurfaceInBuildings Set true in order to place isosurface in buildings
-     */
-    public void setIsoSurfaceInBuildings(boolean isoSurfaceInBuildings) {
-        this.isoSurfaceInBuildings = isoSurfaceInBuildings;
     }
 
     /**
@@ -147,6 +134,15 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                     throw new SQLException(ex);
                 }
             }
+        }
+        try(Statement s = connection.createStatement()) {
+            // Create index on pk_1, pk_2, pk_3
+            s.executeUpdate("CREATE INDEX ON " + triangleTableName + "(pk_1);");
+            s.executeUpdate("CREATE INDEX ON " + triangleTableName + "(pk_2);");
+            s.executeUpdate("CREATE INDEX ON " + triangleTableName + "(pk_3);");
+        }
+        if(!sourcesTableName.isEmpty() && !Double.isNaN(minimalSourceGeometriesDistanceToComputeCell)) {
+            filterReceiversFarAwayFromSources(connection, verticesTableName, triangleTableName, sourcesTableName, minimalSourceGeometriesDistanceToComputeCell);
         }
     }
     /**
@@ -328,8 +324,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                 Envelope ptEnv = sourceGeometry.getEnvelopeInternal();
                 if (ptEnv.intersects(expandedCellEnvelop)) {
                     if (sourceGeometry instanceof Point) {
-                        // Add square in rendering
-                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist, BufferParameters.CAP_SQUARE)), 1);
+                        // Add point source in rendering
+                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist)), 1);
                     } else {
                         if (sourceGeometry instanceof LineString) {
                             delaunaySegments.add((LineString) (sourceGeometry));
@@ -466,6 +462,58 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         }
     }
 
+    public static void filterReceiversFarAwayFromSources(Connection connection, String receiverTableName, String trianglesTableName, String sourcesTableName, double minimalSourceGeometriesDistanceToComputeCell) {
+        // Delete triangles far away from the sources
+        Logger logger = LoggerFactory.getLogger(Thread.currentThread().getName());
+        try(PreparedStatement ps = connection.prepareStatement("""
+                DELETE FROM %s t
+                WHERE EXISTS (
+                    SELECT 1\s
+                    FROM %s r1, %s r2, %s r3
+                    WHERE t.pk_1 = r1.pk AND t.pk_2 = r2.pk AND t.pk_3 = r3.pk
+                    AND NOT EXISTS (
+                        SELECT 1 FROM %s s\s
+                        WHERE (s.the_geom && ST_Expand(r1.the_geom, ?) AND ST_DWithin(r1.the_geom, s.the_geom, ?))
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM %s s\s
+                        WHERE (s.the_geom && ST_Expand(r2.the_geom, ?) AND ST_DWithin(r2.the_geom, s.the_geom, ?))
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM %s s\s
+                        WHERE (s.the_geom && ST_Expand(r3.the_geom, ?) AND ST_DWithin(r3.the_geom, s.the_geom, ?))
+                    )
+                );
+                """.formatted(trianglesTableName, receiverTableName, receiverTableName, receiverTableName, sourcesTableName, sourcesTableName, sourcesTableName))) {
+            ps.setDouble(1, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(2, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(3, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(4, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(5, minimalSourceGeometriesDistanceToComputeCell);
+            ps.setDouble(6, minimalSourceGeometriesDistanceToComputeCell);
+            int deletedRows = ps.executeUpdate();
+            logger.info("Deleted {} triangles from {} because they are too far from sources", deletedRows, trianglesTableName);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        // remove receivers not linked with triangles
+        try(Statement s = connection.createStatement()) {
+            String query = """
+                DELETE FROM %s r
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM %s t WHERE t.pk_1 = r.pk
+                    UNION ALL
+                    SELECT 1 FROM %s t WHERE t.pk_2 = r.pk
+                    UNION ALL
+                    SELECT 1 FROM %s t WHERE t.pk_3 = r.pk
+                );
+            """.formatted(receiverTableName, trianglesTableName, trianglesTableName, trianglesTableName);
+            s.executeUpdate(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * @param epsilon Merge points that are closer that this epsilon value
      */
@@ -495,9 +543,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         String sourceGeomName = geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
         Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
-                connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
-        int pkIndex = primaryKey.second();
-        if (pkIndex < 1) {
+                connection.unwrap(Connection.class), TableLocation.parse(sourcesTableName, dbType));
+        if (primaryKey == null) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
         try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
@@ -551,8 +598,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         List<Wall> walls = new LinkedList<>();
         Envelope expandedCell = new Envelope(cellEnvelope);
         expandedCell.expandBy(buildingBuffer);
-        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters,cellEnvelope, buildings, walls,
-                geometryFactory);
+        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters, cellEnvelope, buildings, walls,
+                new ProfileBuilder(), geometryFactory);
 
         LayerTinfour cellMesh = new LayerTinfour();
         cellMesh.setVerbose(verbose);
@@ -582,28 +629,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             translatedVertex.setOrdinate(2, z);
             vertices.add(translatedVertex);
         }
-        // Do not add triangles associated with buildings
-        List<Triangle> triangles;
-        if (!isoSurfaceInBuildings) {
-            triangles = new ArrayList<>(cellMesh.getTriangles().size());
-            for (Triangle triangle : cellMesh.getTriangles()) {
-                if (triangle.getAttribute() == 0) {
-                    // Keep only triangles that aren't associated with a building
-                    triangles.add(triangle);
-                }
-            }
-            // Keep only referenced vertices
-            Map<Integer, Integer> verticesIndexCorrespondence = new HashMap<>(); // Tinfour vertex index to our vertex index
-            List<Coordinate> filteredVertices = new ArrayList<>(vertices.size());
-            for(Triangle triangle : triangles) {
-                for(int i = 0; i < 3; i++) {
-                    updateTriangle(triangle, verticesIndexCorrespondence, i, vertices, filteredVertices);
-                }
-            }
-            vertices = filteredVertices;
-        } else {
-            triangles = cellMesh.getTriangles();
-        }
+        List<Triangle> triangles = cellMesh.getTriangles();
+
         receiversCount += vertices.size();
 
         generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
@@ -611,30 +638,17 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     }
 
     /**
-     * Insert into the new vertice list only vertices referenced in the triangles. If the vertex already exists
-     * in the mapping, its corresponding index is used; otherwise, the vertex is added to
-     * the vertices list and mapped to its new index.
-     *
-     * @param triangle The triangle to be updated, where vertex indices are modified as needed.
-     * @param tinFourIndexToListIndex A mapping of original vertex indices to their corresponding
-     *                                indices in the updated vertices list.
-     * @param cornerIndex The corner index of the triangle to update (0, 1, or 2).
-     * @param oldVerticesList The list of original vertices, from which new vertices are sourced if needed.
-     * @param vertices The list of updated vertices, where new vertices are added if they do not exist.
+     * Update the map with coordinate instance, it is already inserted return the old value
+     * @param uniqueVertices Map of vertices
+     * @param vertex Vertex to add
+     * @return Vertex index
      */
-    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex,
-                                       int cornerIndex, List<Coordinate> oldVerticesList, List<Coordinate> vertices) {
-        // get the original vertex index
-        int tinFourVertexIndex = triangle.get(cornerIndex);
-        // find if this vertex is already in our vertices list
-        if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
-            // use the vertex index inserted by a previous triangle
-            triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
-        } else {
-            // Not found, create a new vertex
-            vertices.add(oldVerticesList.get(tinFourVertexIndex));
-            triangle.set(cornerIndex, vertices.size() - 1);
+    private static Integer updateMap(Map<Coordinate, Integer> uniqueVertices, Coordinate vertex) {
+        Integer indexA = uniqueVertices.putIfAbsent(vertex, uniqueVertices.size());
+        if(indexA == null) {
+            indexA = uniqueVertices.size() - 1;
         }
+        return indexA;
     }
 
     public double getRoadWidth() {

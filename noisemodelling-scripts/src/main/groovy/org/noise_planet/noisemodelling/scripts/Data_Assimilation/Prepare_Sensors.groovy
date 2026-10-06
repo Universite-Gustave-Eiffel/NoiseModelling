@@ -1,11 +1,24 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author DIAGNE Ndeye-Maguette, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.scripts.Data_Assimilation
 
 import com.opencsv.CSVReader
-
-
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -20,39 +33,38 @@ import java.time.format.DateTimeParseException
 import java.util.concurrent.atomic.AtomicInteger
 
 title = 'Preparation of Sensor data'
-description = 'Extraction of sensor data for a given period and creation of sql tables '
-
+description = 'Extracts sensor data for a given period and creates SQL tables'
 inputs = [
         startDate: [
                 name: 'Start Time Stamp',
                 title: 'Start Time Stamp',
-                description: 'the start timestamp to extract the dataset in format "%Y-%m-%d %H:%M:%S" ',
+                description: 'The start timestamp to extract the dataset in format "%Y-%m-%d %H:%M:%S"',
                 type: String.class
         ],
         endDate: [
                 name: 'End Time Stamp',
                 title: 'End Time Stamp',
-                description: 'the end timestamp to extract the dataset in format "%Y-%m-%d %H:%M:%S" ',
+                description: 'The end timestamp to extract the dataset in format "%Y-%m-%d %H:%M:%S"',
                 type: String.class
         ],
         trainingRatio: [
                 name: 'Training data percentage',
                 title: 'Training data percentage',
-                description: 'Training data as a percentage of total data ',
+                description: 'Training data as a percentage of total data',
                 type: Float.class
         ],
         workingFolder: [
                 name: 'Input folder path',
                 title: 'Working directory path with input files',
-                description: 'Folder containing csv files "device_mapping_sf", the osm file and the folder "devices_data"',
+                description: 'Folder containing .csv files "device_mapping_sf", the .osm file and the folder "devices_data"',
                 type: String.class
         ],
         targetSRID : [
                 name       : 'Target projection identifier',
                 title      : 'Target projection identifier',
                 description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
-                        'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
-                        '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates example 2056 for Geneva.',
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
+                             '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates (e.g 2056 for Geneva).',
                 type       : Integer.class
         ]
 ]
@@ -136,7 +148,6 @@ static def exec(Connection connection,input){
     return "Calculation Done ! The tables SENSORS_MEASUREMENTS, SENSORS_LOCATION and SENSORS_MEASUREMENTS_TRAINING have been created."
 
 
-
 }
 
 /**
@@ -184,7 +195,6 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
 
     return selectedData
 }
-
 
 
 /**
@@ -313,7 +323,5 @@ static def extractObservationData(Connection connection,Float ratio) {
                     " VALUES ('${sensor}', '${row.The_GEOM}', ${row.IDRECEIVER}, '${row.EPOCH}', ${row.LAEQ}, ${row.Temp})")
         }
     }
-
-
 
 }

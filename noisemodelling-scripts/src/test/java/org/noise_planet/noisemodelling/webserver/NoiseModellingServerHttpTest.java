@@ -110,7 +110,7 @@ public class NoiseModellingServerHttpTest {
         // unit tests scripts in src/test/resources/org/noise_planet/noisemodelling/webserver/wps_scripts
         copyScriptsFromResource(Path.of("src/main/groovy/org/noise_planet/noisemodelling/scripts").toAbsolutePath(), temporaryDirectory);
         copyScriptsFromResource(Path.of("src/test/resources/org/noise_planet/noisemodelling/webserver/wps_scripts").toAbsolutePath(), temporaryDirectory);
-        configuration.setScriptPath(temporaryDirectory.resolve("scripts").toString());
+        configuration.setScriptPath(temporaryDirectory.resolve("scripts/").toString());
         app = new NoiseModellingServer(configuration);
         app.startServer(false);
     }
@@ -122,7 +122,10 @@ public class NoiseModellingServerHttpTest {
                     try {
                         // Get the folders after "scripts" in the path and create the same structure in the temporary directory
                         Path relativePath = resourcePath.relativize(path);
-                        Files.createDirectories(temporaryDirectory.resolve("scripts").resolve(relativePath.getParent()));
+                        Path parentPath = relativePath.getParent();
+                        if(parentPath != null) {
+                            Files.createDirectories(temporaryDirectory.resolve("scripts").resolve(parentPath));
+                        }
                         Path targetPath = temporaryDirectory.resolve("scripts").resolve(relativePath);
                         Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException e) {
@@ -156,7 +159,8 @@ public class NoiseModellingServerHttpTest {
     public void clearInstance() throws SQLException {
         if (app != null) {
             try(Connection connection = app.getServerDataSource().getConnection()) {
-                connection.createStatement().execute("TRUNCATE TABLE JOBS");
+                connection.createStatement().execute("TRUNCATE TABLE LOGS");
+                connection.createStatement().execute("DELETE FROM JOBS CASCADE");
             }
         }
     }

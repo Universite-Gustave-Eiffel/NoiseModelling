@@ -16,13 +16,9 @@
  * @Contributor Ignacio Soto, Ministry for the Ecological Transition, Spain
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Receivers
 
-
-
 import groovy.sql.Sql
-
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
 import org.h2gis.api.EmptyProgressVisitor
@@ -43,7 +39,6 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -84,18 +79,18 @@ inputs = [
         sourcesTableName   : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Name of the Road table.</br><br>' +
-                             'Receivers will not be created on the specified road width',
+                description: 'Name of the Road table. The roads are added into the delaunay triangulation in order to densify the mesh near the sound sources.' +
+                             'The table must contain: <ul>' +
+                             '<li> <b> THE_GEOM </b> : the 2D geometry of the road (POINT/LINESTRING/MULTILINESTRING)</li></ul>',
+                min        : 0, max: 1,
                 type       : String.class
         ],
         maxCellDist        : [
                 name       : 'Maximum cell size',
                 title      : 'Maximum cell size',
                 description: 'Maximum distance used to split the domain into sub-domains (in meters) (FLOAT).</br><br>' +
-                             'In a logic of optimization of processing times, it allows to limit the number of objects (buildings, roads, …) stored in memory during the Delaunay triangulation.</br></br>' +
-                             '&#128736; Default value: <b>600 </b>',
-                min        : 0, max: 1,
-                default    : 600.0,
+                             'In a logic of optimization of processing times, it allows to limit the number of objects (buildings, roads, …) stored in memory during the Delaunay triangulation',
+                default    : 600,
                 type       : Double.class
         ],
         skipCellNoSourcesMinimalDistance        : [
@@ -110,18 +105,16 @@ inputs = [
                 title      : 'Road width',
                 description: 'Set Road Width (in meters) (FLOAT).</br> </br>' +
                              'No receivers closer than road width distance will be created.</br>' +
-                        ' </br> You can set 0m if you don\'t want to insert roads in the output but still want' +
-                        ' to skip cells without sources using the \'Skip cell no sources minimal distance\' parameter' +
-                             '&#128736; Default value: <b>2 </b>',
-                min        : 0, max: 1,
+                             ' </br> You can set 0 m if you don\'t want to insert roads in the output but still want' +
+                             ' to skip cells without sources using the \'Skip cell no sources minimal distance\' parameter',
+                default    : 2,
                 type       : Double.class
         ],
         buildingBuffer      : [
                 name       : 'Building buffer',
                 title      : 'Minimum distance to buildings (m)',
-                description: 'Do not add receivers closer than this distance to buildings (in meters). ' +
-                             'Default value: 2',
-                min        : 0, max: 1,
+                description: 'Do not add receivers closer than this distance to buildings (in meters)',
+                default    : 2,
                 type       : Double.class
         ],
         maxArea            : [
@@ -129,53 +122,54 @@ inputs = [
                 title      : 'Maximum Area',
                 description: 'Set Maximum Area (in m2) (FLOAT).</br> </br>' +
                              'No triangles larger than provided area will be created.</br>' +
-                             'Smaller area will create more receivers.</br> </br> ' +
-                             '&#128736; Default value: <b>2500 </b>',
-                min        : 0, max: 1,
+                             'Smaller area will create more receivers',
+                default    : 2500,
                 type       : Double.class
         ],
         height             : [
                 name       : 'Height',
                 title      : 'Height',
-                description: 'Receiver height relative to the ground (in meters) (FLOAT).</br> </br>' +
-                             '&#128736; Default value: <b>4 </b>',
-                min        : 0, max: 1,
+                description: 'Receiver height relative to the ground (in meters) (FLOAT)',
+                default    : 4,
                 type       : Double.class
         ],
         outputTableName    : [
                 name       : 'outputTableName',
                 title      : 'Name of output table',
                 description: 'Name of the output table.</br> </br>' +
-                             'Do not write the name of a table that contains a space.</br> </br>' +
-                             '&#128736; Default value: <b>RECEIVERS </b>',
-                min        : 0, max: 1,
+                             'Do not write the name of a table that contains a space',
+                default    : 'RECEIVERS',
                 type       : String.class
         ],
         isoSurfaceInBuildings: [
                 name        : 'Create IsoSurfaces over buildings',
                 title       : 'Create IsoSurfaces over buildings',
-                description : 'If enabled, isosurfaces will be visible at the location of buildings </br></br>' +
-                              '&#128736; Default value: <b>false </b>',
-                min         : 0, max: 1,
+                description : 'If enabled, isosurfaces will be visible at the location of buildings',
+                default     : true,
                 type        : Boolean.class
         ],
         fenceNegativeBuffer             : [
                 name       : 'Negative buffer',
                 title      : 'Negative buffer',
                 description: 'Reduce the fence(parameter, or sound sources and buildings extent)' +
-                        ' used to generate receivers positions. You should set here the maximum propagation distance (in meters) (FLOAT).</br> </br>' +
-                        '&#128736; Default value: <b>0 </b>',
-                min        : 0, max: 1,
+                        ' used to generate receivers positions. You should set here the maximum propagation distance (in meters) (FLOAT)',
+                default    : 0,
                 type       : Double.class
         ],
         exportTrianglesGeometries: [
                 name        : 'In the triangles table, export triangles geometries',
                 title       : 'In the triangles table, export triangles geometries',
-                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle. </br></br>' +
-                              '&#128736; Default value: <b>false </b>',
-                min         : 0, max: 1,
+                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle',
+                default    : false,
                 type        : Boolean.class
         ],
+        outputTableNameTriangles    : [
+                name       : 'outputTableNameTriangles',
+                title      : 'Name of triangles output table',
+                description: 'Name of the triangles output table.',
+                default    : 'TRIANGLES',
+                type       : String.class
+        ]
 ]
 
 outputs = [
@@ -188,12 +182,6 @@ outputs = [
 ]
 
 
-
-
-
-
-
-
 // Create a spatial index if it does not exist yet on table(geomCol)
 def ensureSpatialIndex(Connection connection, String table) {
     def geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, table).first()
@@ -202,7 +190,7 @@ def ensureSpatialIndex(Connection connection, String table) {
     }
 }
 
-def exec(Connection connection, Map input) {
+def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -211,31 +199,26 @@ def exec(Connection connection, Map input) {
     logger.info('Start : Delaunay grid')
     logger.info("inputs {}", input) // log inputs of the run
 
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     String receivers_table_name = "RECEIVERS"
     if (input['outputTableName']) {
         receivers_table_name = input['outputTableName']
     }
-    receivers_table_name = receivers_table_name.toUpperCase()
+    receivers_table_name = TableLocation.capsIdentifier(receivers_table_name, dbType)
+    def outputTableNameTriangles = TableLocation.capsIdentifier(
+            input.getOrDefault("outputTableNameTriangles", "TRIANGLES") as String, dbType)
 
-    String sources_table_name = "SOURCES"
-    if (input['sourcesTableName']) {
-        sources_table_name = input['sourcesTableName']
-    } else {
-        return "Source table must be specified"
-    }
-    sources_table_name = sources_table_name.toUpperCase()
+    String sources_table_name = TableLocation.capsIdentifier(input.getOrDefault("sourcesTableName", "") as String, dbType)
 
     String building_table_name = "BUILDINGS"
     if (input['tableBuilding']) {
         building_table_name = input['tableBuilding']
     }
-    building_table_name = building_table_name.toUpperCase()
 
-    boolean isoSurfaceInBuildings = false;
-    if(input['isoSurfaceInBuildings']) {
-        isoSurfaceInBuildings = input['isoSurfaceInBuildings'] as Boolean
-    }
+    building_table_name = TableLocation.capsIdentifier(building_table_name, dbType)
+
+    boolean isoSurfaceInBuildings = input.getOrDefault('isoSurfaceInBuildings', true) as Boolean
 
     Double maxCellDist = 600.0
     if (input['maxCellDist']) {
@@ -295,7 +278,8 @@ def exec(Connection connection, Map input) {
     //  2) Bounding box extracted from another table via 'fenceTableName'
     // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
     if (input['fenceTableName']) {
-        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+        def geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, input['fenceTableName'] as String).first()
+        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String, dbType), geomCol)
         if(fence.getSRID() == 0) {
             fence.setSRID(srid)
         }
@@ -306,7 +290,6 @@ def exec(Connection connection, Map input) {
 
 
     connection = new ConnectionWrapper(connection)
-    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
     // Clean previous outputs so we can regenerate a fresh grid.
     // Delete previous receivers grid
@@ -346,10 +329,6 @@ def exec(Connection connection, Map input) {
     // Do not add receivers closer to buildings than this distance
     delaunayReceiversMaker.setBuildingBuffer(buildingBuffer)
 
-
-    // Allow isosurfaces to be present over buildings if requested.
-    delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
-
     // Apply negative envelope parameter
     double negativeBuffer = input.getOrDefault("fenceNegativeBuffer",0.0) as Double
     if(negativeBuffer > 0) {
@@ -372,7 +351,7 @@ def exec(Connection connection, Map input) {
 
     long startTime = System.currentTimeMillis()
     try {
-        delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)
+        delaunayReceiversMaker.run(connection, receivers_table_name, outputTableNameTriangles, progressLogger)
     } catch (LayerDelaunayError ex) {
         logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +
                 "input geometries for debugging purpose")
@@ -392,11 +371,45 @@ def exec(Connection connection, Map input) {
     long processTime = System.currentTimeMillis() - startTime
     logger.info("Delaunay grid computed in " + (processTime / 1000) + " seconds.")
 
-    long nbReceivers = delaunayReceiversMaker.getReceiversCount()
+    if(!isoSurfaceInBuildings && !building_table_name.isEmpty()) {
+        logger.info("Removing triangles that are over buildings")
+        int removedTriangles = 0
+        if(!exportTriangles) {
+            removedTriangles = sql.executeUpdate("""
+            DELETE FROM TRIANGLES T WHERE EXISTS (SELECT 1 FROM $building_table_name B WHERE 
+                ST_MakeLine((SELECT THE_GEOM FROM $receivers_table_name R1 WHERE R1.PK = T.PK_1),
+                            (SELECT THE_GEOM FROM $receivers_table_name R2 WHERE R2.PK = T.PK_2),
+                            (SELECT THE_GEOM FROM $receivers_table_name R3 WHERE R3.PK = T.PK_3)) && B.THE_GEOM AND
+                            ST_Intersects(B.THE_GEOM, ST_MakePolygon(ST_MakeLine((SELECT THE_GEOM FROM $receivers_table_name R1 WHERE R1.PK = T.PK_1),
+                            (SELECT THE_GEOM FROM $receivers_table_name R2 WHERE R2.PK = T.PK_2),
+                            (SELECT THE_GEOM FROM $receivers_table_name R3 WHERE R3.PK = T.PK_3),
+                            (SELECT THE_GEOM FROM $receivers_table_name R1 WHERE R1.PK = T.PK_1)))));
+        """ as String)
+        } else {
+            removedTriangles = sql.executeUpdate("""
+                DELETE FROM TRIANGLES T WHERE EXISTS (SELECT 1 FROM $building_table_name B 
+                            WHERE T.THE_GEOM && B.THE_GEOM AND ST_Intersects(B.THE_GEOM, T.THE_GEOM));
+            """ as String);
+        }
+        logger.info("Removed {} triangles that are over buildings", removedTriangles)
+        sql.execute("""
+            -- Remove points not referenced by triangles
+            DELETE FROM $receivers_table_name R 
+            WHERE NOT EXISTS (SELECT 1 FROM $outputTableNameTriangles T WHERE T.PK_1 = R.PK)
+              AND NOT EXISTS (SELECT 1 FROM $outputTableNameTriangles T WHERE T.PK_2 = R.PK)
+              AND NOT EXISTS (SELECT 1 FROM $outputTableNameTriangles T WHERE T.PK_3 = R.PK);
+        """ as String)
+    }
+
+
+    long nbReceivers = JDBCUtilities.getRowCount(connection, receivers_table_name)
+    long nbTriangles = JDBCUtilities.getRowCount(connection, outputTableNameTriangles)
 
     // Process Done
-    def resultString = "Delaunay grid created with " + nbReceivers + " receivers in table " + receivers_table_name +
-            (exportTriangles ? " and triangles in table TRIANGLES" : "" )+ "."
+    def resultString = "Delaunay grid created with $nbReceivers receivers in table $receivers_table_name${exportTriangles ? " and $nbTriangles triangles in table " + outputTableNameTriangles : ""}."
+
+
+
     resultString += " Process time: " + (processTime / 1000) + " seconds."
 
     // print to command window
@@ -405,6 +418,10 @@ def exec(Connection connection, Map input) {
 
     return [result: receivers_table_name]
 
+}
 
+def exec(Connection connection, Map input) {
+    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
+    return exec(connection, input, progressLogger)
 }
 

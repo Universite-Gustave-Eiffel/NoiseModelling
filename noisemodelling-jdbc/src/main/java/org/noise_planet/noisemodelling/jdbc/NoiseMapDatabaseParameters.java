@@ -37,9 +37,10 @@ public class NoiseMapDatabaseParameters {
     public int CSVProfilerWriteInterval = 60;
 
     /**
-     * With attenuation export also the json of the related cnossos path, for debugging purpose
+     * With attenuation export also the json of the related intermediate attenuation (and propagation paths in the
+     * case of a Cnossos propagation model), for debugging purpose
      */
-    public boolean exportCnossosPathWithAttenuation = false;
+    public boolean exportAttenuationOutput = false;
     public boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     public int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
 
@@ -51,8 +52,9 @@ public class NoiseMapDatabaseParameters {
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = 0;
 
-    public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
-
+    /**
+     * @return the maximum number of rays to output
+     */
     public int getMaximumRaysOutputCount() {
         return maximumRaysOutputCount;
     }
@@ -62,6 +64,7 @@ public class NoiseMapDatabaseParameters {
 
     public String receiversLevelTable = DEFAULT_RECEIVERS_LEVEL_TABLE_NAME;
     public String raysTable = "RAYS";
+    public File sceneExportFolder = null;
 
     public File sqlOutputFile;
     public Boolean sqlOutputFileCompression = true;
@@ -119,10 +122,10 @@ public class NoiseMapDatabaseParameters {
 
 
     /**
-     * @param exportCnossosPathWithAttenuation With attenuation export also the json of the related cnossos path, for debugging purpose
+     * @param exportAttenuationOutput With attenuation export also the json of the related cnossos path, for debugging purpose
      */
-    public void setExportCnossosPathWithAttenuation(boolean exportCnossosPathWithAttenuation) {
-        this.exportCnossosPathWithAttenuation = exportCnossosPathWithAttenuation;
+    public void setExportAttenuationOutput(boolean exportAttenuationOutput) {
+        this.exportAttenuationOutput = exportAttenuationOutput;
     }
 
     /**
@@ -187,6 +190,20 @@ public class NoiseMapDatabaseParameters {
     }
 
     /**
+     * @return The storage location of the 3D scene files or null
+     */
+    public File getSceneExportFolder() {
+        return sceneExportFolder;
+    }
+
+    /**
+     * @param sceneExportFolder The storage location of the 3D scene files or null
+     */
+    public void setSceneExportFolder(File sceneExportFolder) {
+        this.sceneExportFolder = sceneExportFolder;
+    }
+
+    /**
      * @return If true all sources contributions are merged into a single noise level per receiver.
      * The source identifier is loosed in the output tables.
      */
@@ -206,5 +223,12 @@ public class NoiseMapDatabaseParameters {
      */
     public void setReceiversLevelTable(String receiversLevelTable) {
         this.receiversLevelTable = receiversLevelTable;
+    }
+
+    /**
+      * @return True if non-relevant sound source during propagation may be ignored
+     */
+    public boolean isMaximumErrorPruningEnabled() {
+        return maximumError > 0;
     }
 }

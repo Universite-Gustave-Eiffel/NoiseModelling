@@ -10,12 +10,13 @@
  *
  */
 
+/**
+ * @Author DIAGNE Ndeye-Maguette, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.scripts.Data_Assimilation
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
@@ -24,20 +25,18 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
 
 title = 'Data Simulation'
-description = 'Method to execute a series of operations for generate noise maps'
-
+description = 'Method for performing a series of operations to generate noise maps'
 inputs = [
         noiseMapLimit: [
-                name: 'Number of map ',
+                name: 'Number of map',
                 title: 'Number of map',
-                description: 'The optional parameter between 1 and 100 corresponding to the percentage of number of maps relative to the maximal number of combinations'+ 
-                        '&#128736; Default value: <b>100</b> ',
+                description: 'The optional parameter between 1 and 100 corresponding to the percentage of number of maps relative to the maximal number of combinations', 
+                default: '100',
                 type: Integer.class
         ]
 ]

@@ -14,22 +14,23 @@ package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.junit.jupiter.api.Test
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Create_Isosurface
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
-import org.noise_planet.noisemodelling.scripts.Receivers.Delaunay_Grid
+import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*
-
 
 import java.sql.SQLException
+
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * Test parsing of zip file using H2GIS database
@@ -78,20 +79,22 @@ class TestAcousticTools extends JdbcTestCase {
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS2(THE_GEOM)")
 
-        new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS2",
-                                              "maxArea" : 0,
-                                              "sourceDensification": 0]);
+        new Regular_Grid().exec(connection, ["buildingTableName"  : "BUILDINGS",
+                                             "sourcesTableName"   : "ROADS2",
+                                             "fenceTableName" : "ROADS2",
+                                             "outputTriangleTable" : true,
+                                             "delta" : 50]);
 
 
-        new Noise_level_from_traffic().exec(connection, [tableBuilding :"BUILDINGS", tableRoads: "ROADS2",
-                                                         tableReceivers: "RECEIVERS",
-                                                         confMaxSrcDist:100, confTemperature:20, confHumidity:50,
-                                                         confFavourableOccurrencesDefault: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
-                                                                 " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
+        new Noise_level_from_source().exec(connection, [tableBuilding                   : "BUILDINGS", tableSources: "ROADS2",
+                                                        tableReceivers                  : "RECEIVERS",
+                                                        confMaxSrcDist                  : 100,
+                                                        confDiffHorizontal              : true,
+                                                        confTemperature                 : 20, confHumidity: 50,
+                                                        confFavourableOccurrencesDefault: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
+                                                                " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
 
-        new Create_Isosurface().exec(connection, [resultTable : NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
-
+        new Create_Isosurface().exec(connection, [resultTable: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME, keepTriangles: true])
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("ROADS2")))
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)))
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("CONTOURING_NOISE_MAP")))

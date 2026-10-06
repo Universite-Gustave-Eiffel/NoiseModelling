@@ -17,11 +17,8 @@
 
 package org.noise_planet.noisemodelling.scripts.Dynamic
 
-
-
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
@@ -33,7 +30,6 @@ import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnoss
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.security.InvalidParameterException
 import java.sql.Connection
 import java.sql.ResultSet
@@ -41,17 +37,17 @@ import java.sql.SQLException
 import java.util.stream.Collectors
 
 title = 'From Road traffic flows to noisy individual vehicles'
-description = 'Calculating individual vehicle position and noise_level based on average traffic flows.' +
+description = 'Calculates individual vehicle position and noise level based on average traffic flows.' +
         '</br> </br> <b> A first output table is called : SOURCES_GEOM </b> which is needed to compute the Noise Attenuation Matrix' +
         'and contain : </br>' +
-        '-  <b> IDSOURCE  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-        '-  <b> ROAD_ID  </b> : id link to the road segment (INTEGER). </br>' +
+        '-  <b> IDSOURCE </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
+        '-  <b> ROAD_ID </b> : id link to the road segment (INTEGER). </br>' +
         '-  <b> THE_GEOM </b> : the 3D geometry of the sources (POINT). </br> ' +
         '</br> </br> <b> The output table is called : SOURCES_EMISSION </b> ' +
         'and contain : </br>' +
-        '-  <b> PK  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-        '-  <b> IDSOURCE  </b> : link to the source point (INTEGER). </br>' +
-        '-  <b> PERIOD  </b> : The TIMESTAMP iteration (VARCHAR).</br>' +
+        '-  <b> PK </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
+        '-  <b> IDSOURCE </b> : link to the source point (INTEGER). </br>' +
+        '-  <b> PERIOD </b> : The TIMESTAMP iteration (VARCHAR).</br>' +
         '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000 </b> : 8 columns giving the instantaneous emission sound level for each octave band (FLOAT).'
 
 inputs = [
@@ -99,10 +95,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
 
 
 // main function of the script
@@ -265,7 +257,10 @@ def exec(Connection connection, input) {
             }
         })
     }
-    sql.execute("CREATE INDEX ON SOURCES_EMISSION(PERIOD, IDSOURCE)")
+    // IDSOURCE must be the leading column: both the per-cell emission fetch and the
+    // Noise_From_Attenuation_Matrix join look rows up by IDSOURCE (H2 nested-loop joins
+    // cannot use an index whose leading column is PERIOD for those lookups)
+    sql.execute("CREATE INDEX ON SOURCES_EMISSION(IDSOURCE, PERIOD)")
     sql.execute("drop table VEHICLES_PROBA if exists;")
 
 
@@ -557,6 +552,7 @@ class Vehicle {
             RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
                     speed * 3.6, 0, vehicle_type, 0,  true, 1, id      )
             rsParametersDynamic.setRoadSurface("DEF")
+            rsParametersDynamic.setFrequency(freqs[i])
             // remove lw_correction
             result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic) + lw_correction;
         }
@@ -758,6 +754,7 @@ class IndividualVehicleEmissionProcessData {
                 RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setRoadSurface(RoadSurface)
                 rsParameters.setSlopePercentage(0)
+                rsParameters.setFrequency(FreqParam)
 
                 res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
@@ -784,6 +781,7 @@ class IndividualVehicleEmissionProcessData {
                 RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
                 rsParameters.setRoadSurface(RoadSurface)
+                rsParameters.setFrequency(FreqParam)
                 res_HV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }
@@ -819,10 +817,6 @@ class IndividualVehicleEmissionProcessData {
             LV.put(pk, (double) row[2])
             SPEED_HV.put(pk, (double) row[3])
             HV.put(pk, (double) row[4])
-
         }
-
-
     }
-
 }

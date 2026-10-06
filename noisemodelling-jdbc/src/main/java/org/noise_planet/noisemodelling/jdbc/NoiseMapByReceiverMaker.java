@@ -26,10 +26,15 @@ import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
+import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -49,18 +54,25 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /** If true, all processing are aborted and all threads will be shutdown */
     public AtomicBoolean aborted = new AtomicBoolean(false);
     private final NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
-    private IComputeRaysOutFactory computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
+    private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
+    public String exportKmlName = "cell_%d_%d.kml";
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
-    /** ?? for train source ? TODO is it related to sources ? if yes then provide a special column for this kind of source */
-
+    /**
+     * Constructor for NoiseMapByReceiverMaker object.
+     *
+     * @param buildingsTableName Buildings table
+     * @param sourcesTableName  Source table
+     * @param receiverTableName Receiver table
+     */
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     /**
@@ -291,6 +303,11 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
                                         ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers);
 
+        File sceneExportFolder = getNoiseMapDatabaseParameters().getSceneExportFolder();
+        if(sceneExportFolder != null) {
+            exportScene(cellIndex, sceneExportFolder, scene);
+        }
+
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
                     scene.receivers.size(), scene.sourceGeometries.size(),
@@ -312,6 +329,33 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         computeRays.run(computeRaysOut);
 
         return computeRaysOut;
+    }
+
+    /**
+     * Export processed scene input data
+     * @param cellIndex Index of the current processing cell
+     * @param sceneExportFolder Where to store the file
+     * @param scene Current cell input data
+     * @throws IOException io issues
+     */
+    public void exportScene(CellIndex cellIndex, File sceneExportFolder, Scene scene) throws IOException {
+        // Export the scene as KML
+        if(sceneExportFolder.exists()) {
+            File kmlFile = new File(sceneExportFolder,
+                    String.format(Locale.ROOT, exportKmlName, cellIndex.getLatitudeIndex(),
+                            cellIndex.getLongitudeIndex()));
+            logger.info("Exporting scene to KML file {}", kmlFile.getAbsolutePath());
+            try(FileOutputStream fileOutputStream = new FileOutputStream(kmlFile)) {
+                try {
+                    KMLDocument.exportProfileBuilderData(fileOutputStream, scene,
+                            geometryFactory.getSRID());
+                } catch (IOException ex) {
+                    logger.warn("Error while creating the KML file {}, skipping it", sceneExportFolder.getAbsolutePath(), ex);
+                }
+            }
+        } else {
+            logger.warn("Scene export folder {} does not exists, skip writing files", sceneExportFolder.getAbsolutePath());
+        }
     }
 
     /**
@@ -388,40 +432,4 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
          */
         SceneWithEmission create(Connection connection, CellIndex cellIndex, Set<Long> skipReceivers) throws SQLException;
     }
-
-    /**
-     * A factory interface for creating objects that compute rays out for noise map computation.
-     */
-    public interface IComputeRaysOutFactory {
-
-        /**
-         * Called only once when the settings are set.
-         * @param connection             the database connection to be used for initialization.
-         * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
-         * @throws SQLException if an SQL exception occurs while initializing the propagation process data factory.
-         */
-        void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException;
-
-        /**
-         * Called before the first sub cell is being computed
-         * @param progressLogger Main progression information, this method will not update the progression
-         * @throws SQLException If an SQL exception occurs
-         */
-        void start(ProgressVisitor progressLogger) throws SQLException;
-
-        /**
-         * Called when all sub-cells have been processed
-         * @throws SQLException
-         */
-        void stop() throws SQLException;
-
-        /**
-         * Creates an object that computes paths out for noise map computation.
-         * @param cellData the scene data for the current computation cell
-         * @return an object that computes paths out for noise map computation.
-         */
-        CutPlaneVisitorFactory create(SceneWithEmission cellData);
-    }
-
-
 }

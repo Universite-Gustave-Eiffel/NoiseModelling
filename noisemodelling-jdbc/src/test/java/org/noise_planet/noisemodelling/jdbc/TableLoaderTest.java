@@ -17,7 +17,10 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.io.ParseException;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
@@ -26,6 +29,7 @@ import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.railway.RailwayPlatform;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
@@ -38,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -570,4 +575,7 @@ public class TableLoaderTest {
         }
         assertEquals(89.6, AcousticIndicatorsFunctions.wToDb(globalLevel), 0.1);
     }
+
+
+
 }

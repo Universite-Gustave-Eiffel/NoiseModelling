@@ -16,18 +16,16 @@
 
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Add primary key column or constraint'
-description = '&#10145;&#65039; Add a Primary Key (&#128273;) column or add a Primary Key constraint to a column of a table. </br> ' +
+description = '&#10145;&#65039; Adds a Primary Key (&#128273;) column, or adds a Primary Key constraint to an existing column.</br> ' +
               '<hr>' +
               'It is necessary to add a Primary Key on one of the columns for the source and receiver tables before doing a calculation. </br> </br>' +
               '&#128161; If the table already has a Primary Key, it will remove the constraint before the operation.'
@@ -36,7 +34,7 @@ inputs = [
         pkName: [
                 name: 'Name of the column',
                 title: 'Name of the column',
-                description: 'Name of the column to be added, or for which the main key constraint will be added. </br> </br>'+
+                description: 'Name of the column to be added, or for which the main key constraint will be added.</br> </br>'+
                 '&#128161; Primary keys must contain <b>UNIQUE</b> values, and cannot contain <b>NULL</b> values',
                 type: String.class
         ],
@@ -56,9 +54,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
 
 def exec(Connection connection, input) {
 

@@ -9,6 +9,9 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import com.bedatadriven.jackson.datatype.jts.JtsModule;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
@@ -28,11 +31,14 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
 import java.io.IOException;
@@ -50,6 +56,12 @@ public class NoiseMapByReceiverMakerTest {
 
     private Connection connection;
 
+    private static class DemTableLoader extends DefaultTableLoader {
+        public void fetchDem(Connection connection, org.locationtech.jts.geom.Envelope envelope) throws SQLException {
+            fetchCellDem(connection, envelope, new org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder());
+        }
+    }
+
     @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(NoiseMapByReceiverMakerTest.class.getSimpleName(), true, ""));
@@ -61,6 +73,107 @@ public class NoiseMapByReceiverMakerTest {
             connection.close();
         }
     }
+
+    private DemTableLoader initDemTableLoader(String demGeometryType, String demWkt) throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(ID INTEGER PRIMARY KEY, THE_GEOM GEOMETRY(POLYGONZ))");
+            st.execute("INSERT INTO BUILDINGS VALUES(1, 'POLYGONZ ((0 0 0, 10 0 0, 10 10 0, 0 10 0, 0 0 0))')");
+            st.execute("CREATE TABLE RECEIVERS(ID INTEGER PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ))");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, 'POINTZ (5 5 1)')");
+            st.execute("CREATE TABLE DEM(ID INTEGER PRIMARY KEY, THE_GEOM GEOMETRY(" + demGeometryType + "))");
+            st.execute("INSERT INTO DEM VALUES(1, '" + demWkt + "')");
+        }
+        DemTableLoader tableLoader = new DemTableLoader();
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "", "RECEIVERS");
+        noiseMapByReceiverMaker.setPropagationProcessDataFactory(tableLoader);
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMapByReceiverMaker.setDemTable("DEM");
+        noiseMapByReceiverMaker.initialize(connection);
+        return tableLoader;
+    }
+
+    private void assertDemWithoutZThrows(String demGeometryType, String demWkt) throws SQLException {
+        DemTableLoader tableLoader = initDemTableLoader(demGeometryType, demWkt);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
+        assertTrue(exception.getMessage().contains("DEM"), exception.getMessage());
+        assertTrue(exception.getMessage().contains("without Z ordinate"), exception.getMessage());
+    }
+
+    @Test
+    public void testDemPointWithoutZThrows() throws Exception {
+        assertDemWithoutZThrows("POINT", "POINT (1 1)");
+    }
+
+    @Test
+    public void testDemLineStringWithoutZThrows() throws Exception {
+        assertDemWithoutZThrows("LINESTRING", "LINESTRING (1 1, 2 2)");
+    }
+
+    @Test
+    public void testDemPointWithZSucceeds() throws Exception {
+        DemTableLoader tableLoader = initDemTableLoader("POINTZ", "POINTZ (1 1 12)");
+        assertDoesNotThrow(() -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
+    }
+
+    /**
+     * Check if the altitude of the roofs of buildings are well constructed from the DEM when height is provided
+     * but the buildings polygons are in 2D.
+     */
+    @Test
+    public void testBuildingsAltitudeFromDemAndHeight() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/SourceSi.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'RECEIVERS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/RCVS20.shp").getFile()));
+            st.execute("ALTER TABLE BUILDINGS ALTER COLUMN THE_GEOM GEOMETRY;");
+            st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SetSRID(ST_Force2D(THE_GEOM), 2154);");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.initialize(connection);
+
+            NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
+            SceneWithEmission sceneWithEmission = tableLoader.create(connection, new CellIndex(0, 0), new HashSet<>());
+
+            assertFalse(sceneWithEmission.profileBuilder.getBuildings().isEmpty());
+            for (Building building : sceneWithEmission.profileBuilder.getBuildings()) {
+                // Check altitude of the building
+                assertTrue(building.getAverageZ() > 100);
+            }
+        }
+    }
+
+    /**
+     * Check if the altitude of the roofs of buildings are well read from the geometry, ignoring the HEIGHT field of the buildings table
+     */
+    @Test
+    public void testBuildingsAltitudeFromBuildingsGeometry() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/SourceSi.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'RECEIVERS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/RCVS20.shp").getFile()));
+            st.execute("DELETE FROM BUILDINGS WHERE ST_ZMIN(THE_GEOM) < 0");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.initialize(connection);
+
+            NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
+            SceneWithEmission sceneWithEmission = tableLoader.create(connection, new CellIndex(0, 0), new HashSet<>());
+
+            assertFalse(sceneWithEmission.profileBuilder.getBuildings().isEmpty());
+            for (Building building : sceneWithEmission.profileBuilder.getBuildings()) {
+                // Check altitude of the building
+                assertTrue(building.getAverageZ() > 100);
+            }
+        }
+    }
+
 
     /**
      * Check if ground surface are split according to {@link GridMapMaker#groundSurfaceSplitSideLength}
@@ -89,7 +202,7 @@ public class NoiseMapByReceiverMakerTest {
                 }
                 assertEquals(3, scene.wjSources.size());
                 assertEquals(1, scene.wjSources.get(1L).size());
-                assertEquals("D", scene.wjSources.get(1L).get(0).period);
+                assertEquals("D", scene.wjSources.get(1L).getFirst().period);
             }
         }
     }
@@ -123,6 +236,21 @@ public class NoiseMapByReceiverMakerTest {
         sb.append(") AS select ");
         sb.append(values.toString());
         return sb.toString();
+    }
+
+    /**
+     * Deserialize CnossosAttenuationOutput object.
+     *
+     * @param json The serialized CnossosAttenuationOutput
+     * @return Deserialized CnossosAttenuationOutput object
+     * @throws JsonProcessingException if the deserialization fails
+     */
+    public static CnossosAttenuationOutput jsonToCnossosAttenuationOutput(String json) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.registerModule(new JtsModule());
+        return mapper.readValue(json, CnossosAttenuationOutput.class);
+
     }
 
 
@@ -185,9 +313,10 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
+            noiseMapByReceiverMaker.setThreadCount(1);
 
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -216,20 +345,20 @@ public class NoiseMapByReceiverMakerTest {
                 assertFalse(rs.next());
             }
 
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH, IDSOURCE FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER, IDSOURCE")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH, IDSOURCE FROM " + parameters.raysTable + " WHERE PERIOD='D' AND METEO='homogeneous' ORDER BY IDRECEIVER, IDSOURCE")) {
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
-                CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString(2));
+                AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString(2));
                 // This is source orientation, not relevant to receiver position
                 assertEquals(1, rs.getInt("IDSOURCE"));
-                assertOrientationEquals(new Orientation(45, 0.81, 0), cnossosPath.getSourceOrientation(), 0.01);
-                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), cnossosPath.raySourceReceiverDirectivity, 0.01);
+                assertOrientationEquals(new Orientation(45, 0.81, 0), attenuationOutput.cutProfile.getSourceOrientation(), 0.01);
+                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity(), 0.01);
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 assertEquals(1, rs.getInt("IDSOURCE"));
-                cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString(2));
-                assertOrientationEquals(new Orientation(45, 0.81, 0), cnossosPath.getSourceOrientation(), 0.01);
-                assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), cnossosPath.raySourceReceiverDirectivity, 0.01);
+                attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString(2));
+                assertOrientationEquals(new Orientation(45, 0.81, 0), attenuationOutput.cutProfile.getSourceOrientation(), 0.01);
+                assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity(), 0.01);
             }
         }
     }
@@ -261,7 +390,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
 
@@ -282,30 +411,30 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            List<CnossosPath> pathsParameters = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER")) {
+            List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND METEO='homogeneous' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
-                    pathsParameters.add(cnossosPath);
+                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
+                    attenuationOutputs.add(attenuationOutput);
                 }
             }
-            assertEquals(4 , pathsParameters.size());
-            CnossosPath pathParameters = pathsParameters.remove(0);
-            assertEquals(1, pathParameters.getCutProfile().getReceiver().receiverPk);
+            assertEquals(4 , attenuationOutputs.size());
+            AttenuationOutput attenuationOutput = attenuationOutputs.removeFirst();
+            assertEquals(1, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is front of source
-            assertEquals(new Orientation(0, 0, 0), pathParameters.getRaySourceReceiverDirectivity());
-            pathParameters = pathsParameters.remove(0);
-            assertEquals(2, pathParameters.getCutProfile().getReceiver().receiverPk);
+            assertEquals(new Orientation(0, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            attenuationOutput = attenuationOutputs.removeFirst();
+            assertEquals(2, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is behind of the source
-            assertEquals(new Orientation(180, 0, 0), pathParameters.getRaySourceReceiverDirectivity());
-            pathParameters = pathsParameters.remove(0);
-            assertEquals(3, pathParameters.getCutProfile().getReceiver().receiverPk);
+            assertEquals(new Orientation(180, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            attenuationOutput = attenuationOutputs.removeFirst();
+            assertEquals(3, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the right of the source
-            assertEquals(new Orientation(90, 0, 0), pathParameters.getRaySourceReceiverDirectivity());
-            pathParameters = pathsParameters.remove(0);
-            assertEquals(4, pathParameters.getCutProfile().getReceiver().receiverPk);
+            assertEquals(new Orientation(90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            attenuationOutput = attenuationOutputs.removeFirst();
+            assertEquals(4, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the left of the source
-            assertEquals(new Orientation(360-90, 0, 0), pathParameters.getRaySourceReceiverDirectivity());
+            assertEquals(new Orientation(360-90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
 
         }
     }
@@ -328,7 +457,7 @@ public class NoiseMapByReceiverMakerTest {
             IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
-            delaunayReceiversMaker.setMaximumArea(3000);
+            delaunayReceiversMaker.setMaximumArea(0);
             delaunayReceiversMaker.setGridDim(1);
             delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
@@ -352,8 +481,8 @@ public class NoiseMapByReceiverMakerTest {
             int resultRowCount = JDBCUtilities.getRowCount(connection,
                     noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
 
-            // D E N, should be 3 more rows than receivers
-            assertEquals(receiversRowCount * 3, resultRowCount);
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
         }
     }
 
@@ -398,8 +527,8 @@ public class NoiseMapByReceiverMakerTest {
             int resultRowCount = JDBCUtilities.getRowCount(connection,
                     noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
 
-            // D E N, should be 3 more rows than receivers
-            assertEquals(receiversRowCount * 3, resultRowCount);
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
         }
     }
 
@@ -429,14 +558,14 @@ public class NoiseMapByReceiverMakerTest {
 
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSourcesZIsAltitude(false);
+            noiseMapByReceiverMaker.setReceiversZIsAltitude(false);
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
             noiseMapByReceiverMaker.setDemTable("DEM");
@@ -445,24 +574,26 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            List<CnossosPath> pathsParameters = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE NOT FAVOURABLE ORDER BY IDRECEIVER")) {
+            List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE METEO='homogeneous' AND PERIOD='D' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
-                    pathsParameters.add(cnossosPath);
+                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
+                    attenuationOutputs.add(attenuationOutput);
                 }
             }
-            assertEquals(1 , pathsParameters.size());
+            assertEquals(1 , attenuationOutputs.size());
             // Check source coordinates
-            CnossosPath pathParameters = pathsParameters.get(0);
-            assertEquals(200.53, pathParameters.getCutProfile().getSource().coordinate.z, 0.1);
+            AttenuationOutput attenuationOutput = attenuationOutputs.getFirst();
+            assertEquals(200.53, attenuationOutput.getCutProfile().getSource().coordinate.z, 0.1);
             // Check receiver coordinates
-            assertEquals(189.30, pathParameters.getCutProfile().getReceiver().coordinate.z, 0.1);
+            assertEquals(189.30, attenuationOutput.getCutProfile().getReceiver().coordinate.z, 0.1);
             // Check CNOSSOS path points
             // One diffraction on horizontal edge of building
-            assertEquals(3, pathParameters.getPointList().size());
-            assertEquals(200.53, pathParameters.getPointList().get(0).coordinate.y, 0.1);
-            assertEquals(189.30, pathParameters.getPointList().get(pathParameters.getPointList().size() - 1).coordinate.y, 0.1);
+            assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutput);
+            CnossosAttenuationOutput cnossosAttenuationOutput = (CnossosAttenuationOutput) attenuationOutput;
+            assertEquals(3, cnossosAttenuationOutput.propagationPath.getPointList().size());
+            assertEquals(200.53, cnossosAttenuationOutput.propagationPath.getPointList().getFirst().coordinate.y, 0.1);
+            assertEquals(189.30, cnossosAttenuationOutput.propagationPath.getPointList().getLast().coordinate.y, 0.1);
         }
     }
 
@@ -494,14 +625,14 @@ public class NoiseMapByReceiverMakerTest {
 
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSourcesZIsAltitude(false);
+            noiseMapByReceiverMaker.setReceiversZIsAltitude(false);
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
             noiseMapByReceiverMaker.setDemTable("DEM");
@@ -510,19 +641,23 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            List<CnossosPath> pathsParameters = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+            List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
-                    pathsParameters.add(cnossosPath);
+                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
+                    attenuationOutputs.add(attenuationOutput);
                 }
             }
             // Diffraction over the walls of the building, but no direct path
-            assertEquals(2 , pathsParameters.size());
+            assertEquals(2 , attenuationOutputs.size());
             // Homogenous path with diffraction over the building wall
-            assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(0).getPointList().get(1).type);
+            assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutputs.getFirst());
+            CnossosAttenuationOutput cnossosAttenuationOutput0 = (CnossosAttenuationOutput) attenuationOutputs.getFirst();
+            assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput0.propagationPath.getPointList().get(1).type);
             // Favorable path with diffraction over the building wall
-            assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(1).getPointList().get(1).type);
+            assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutputs.get(1));
+            CnossosAttenuationOutput cnossosAttenuationOutput1 = (CnossosAttenuationOutput) attenuationOutputs.get(1);
+            assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput1.propagationPath.getPointList().get(1).type);
         }
     }
 

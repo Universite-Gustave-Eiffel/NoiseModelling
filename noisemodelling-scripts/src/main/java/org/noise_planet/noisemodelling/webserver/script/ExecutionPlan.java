@@ -8,7 +8,11 @@
  */
 package org.noise_planet.noisemodelling.webserver.script;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
+
 
 /**
  * Store the inputs and outputs of a job execution.
@@ -45,6 +49,31 @@ public class ExecutionPlan {
         this.inputs = inputs;
         this.outputs = null;
         this.scriptMetadata = scriptMetadata;
+    }
+
+    /**
+     * Fill missing optional inputs, from specified default values in the scripts metadata
+     */
+    public void fillInputsWithDefaultValues() {
+        scriptMetadata.inputs.entrySet( ).stream().filter(
+                        entry -> entry.getValue().defaultValue != null
+                                && !inputs.containsKey(entry.getKey()))
+                .forEach(entry -> {
+                    Object defaultValue = entry.getValue().defaultValue;
+                    Class<?> expectedType = entry.getValue().type;
+                    // Groovy may generate BigDecimal instead of expected class
+                    // So cast/convert to the expected type
+                    if(expectedType != null && !expectedType.isAssignableFrom(defaultValue.getClass())) {
+                        try {
+                            defaultValue = ScriptMetadata.castInputUsingExpectedInputType(expectedType, defaultValue.toString());
+                        } catch (Exception ex) {
+                            Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
+                            logger.info("Warning, failed to cast default value for input '{}', use the original value. Exception: {}",
+                                    entry.getKey(), ex.getMessage());
+                        }
+                    }
+                    inputs.put(entry.getKey(), defaultValue);
+                });
     }
 
     public Map<String, Object> getInputs() {

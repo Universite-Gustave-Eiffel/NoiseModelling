@@ -6,6 +6,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
@@ -144,10 +145,7 @@ public class EmissionTableGenerator {
 
         if(sourceFieldsCache.containsKey("SLOPE")) {
             slope = rs.getDouble(sourceFieldsCache.get("SLOPE"));
-        }else{
-            way = 3;
         }
-
 
         // old fields
         if(sourceFieldsCache.containsKey("TV"+period)) {
@@ -215,8 +213,9 @@ public class EmissionTableGenerator {
                 Coordinate[] c = g.getCoordinates();
                 if(c.length >= 2) {
                     double z0 = c[0].z;
-                    double z1 = c[1].z;
+                    double z1 = c[c.length - 1].z;
                     if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
+                        // Compute the slope using the 2D length and the Z difference
                         slope = Utils.computeSlope(z0, z1, g.getLength());
                     }
                 }

@@ -10,21 +10,19 @@
  *
  */
 
+/**
+ * @Author DIAGNE Ndeye-Maguette, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.scripts.Data_Assimilation
-
-
 
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-
 import java.sql.Connection
 
-
 title = 'Merged Sensors and Receivers'
-description = 'Adding the sensors into the RECEIVERS after creating a regular grid of receivers.'
-
+description = 'Merges sensor locations into an existing RECEIVERS table previously created with a regular grid.'
 inputs = [
         tableReceivers: [
                 name: 'The receiver table',
@@ -35,7 +33,7 @@ inputs = [
         tableSensors: [
                 name: 'The Sensors table',
                 title: 'The Sensors table',
-                description: 'The Sensors table ',
+                description: 'The Sensors table',
                 type: String.class
         ]
 ]
@@ -65,4 +63,3 @@ static def exec(Connection connection,inputs) {
     return "Calculation Done ! The tables " + receiverTable + " and "+tableSensors +" have been merged."
 
 }
-

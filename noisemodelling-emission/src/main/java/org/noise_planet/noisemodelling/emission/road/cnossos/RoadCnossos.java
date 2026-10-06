@@ -31,6 +31,7 @@ import static org.noise_planet.noisemodelling.emission.utils.Utils.*;
 public class RoadCnossos {
     private static JsonNode RoadCnossos_2015 = parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2015.json")); // old coefficients in 2015 amendments
     private static JsonNode cnossosData2020 =parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2020.json")); // new coefficients in 2020 amendments
+    private static JsonNode cnossosDataNL = parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_NL.json")); // Dutch coefficients
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -43,14 +44,15 @@ public class RoadCnossos {
 
     /**
      * Get the CNOSSOS coefficients from a specific file version.
-     * @param fileVersion 1=RailwayCnossosEU_2020.json; other = RailwayCnossosSNCF_2021.json
+     * @param fileVersion 1=RoadCnossos_2015.json; 528=cnossosDataNL.json, other = cnossosData2020.json
+     *                    Country specific codes following standard in ISO 3166-1-numeric
      * @return
      */
     public static JsonNode getCnossosData(int fileVersion) {
-        if (fileVersion == 1) {
-            return RoadCnossos_2015; // old coefficients in 2015 amendments
-        } else {
-            return cnossosData2020; // new coefficients in 2020 amendments
+        switch (fileVersion) {
+            case 1: return RoadCnossos_2015; // old coefficients in 2015 amendments
+            case 528: return cnossosDataNL; // Dutch specific coefficients
+            default: return cnossosData2020; // new coefficients in 2020 amendments
         }
     }
 
@@ -287,7 +289,7 @@ public class RoadCnossos {
 
     public static double evaluate(RoadCnossosParameters roadCnossosParameters) throws IOException {
         final int freqParam = roadCnossosParameters.getFrequency();
-        final double Temperature = roadCnossosParameters.getTemperature();
+        final double temperature = roadCnossosParameters.getTemperature();
         final double Ts_stud = roadCnossosParameters.getTsStud();
         final double Pm_stud = roadCnossosParameters.getqStudRatio();
         final double Junc_dist = roadCnossosParameters.getJunc_dist();
@@ -311,9 +313,9 @@ public class RoadCnossos {
         }
 
         // Effect of air temperature on rolling noise correction Eq 2.2.10
-        lvRoadLvl = lvRoadLvl + getDeltaTemperature(Temperature, "1"); // K = 0.08
-        medRoadLvl = medRoadLvl + getDeltaTemperature(Temperature, "2"); // K = 0.04
-        hgvRoadLvl = hgvRoadLvl + getDeltaTemperature(Temperature, "3"); // K = 0.04
+        lvRoadLvl = lvRoadLvl + getDeltaTemperature(temperature, "1"); // K = 0.08
+        medRoadLvl = medRoadLvl + getDeltaTemperature(temperature, "2"); // K = 0.04
+        hgvRoadLvl = hgvRoadLvl + getDeltaTemperature(temperature, "3"); // K = 0.04
 
         /**
          * Propulsion Noise

@@ -1,7 +1,7 @@
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by the DECIDE team FROM the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
  *
  * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
@@ -15,8 +15,6 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  * @Author Gwendall Petit, Lab-STICC CNRS UMR 6285 
  */
-
-
 
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
@@ -32,7 +30,6 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Statement
@@ -51,11 +48,11 @@ description = '&#10145;&#65039; Insert altimetric points coming from input layer
               'And six parameters:</br>' +
               ' <ul>' +
                 '<li>Road width (roadWidth): Name of column where the road width is stored (Mandatory)</li>' +
-                '<li>Roads platform height (hRoad) (Optionnal). Default value = 0m</li>' +
+                '<li>Roads platform height (hRoad) (Optional). Default value = 0m</li>' +
                 '<li>Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)</li>' +
-                '<li>Rail platform height (hRail) (Optionnal). Default value = 0.5m</li>' +
-                '<li>Input SRID (inputSRID): SRID of the input tables (Optionnal)</li>' +
-                '<li>Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optionnal). If not specified, "ENRICHED" is applied</li>' +
+                '<li>Rail platform height (hRail) (Optional). Default value = 0.5m</li>' +
+                '<li>Input SRID (inputSRID): SRID of the input tables (Optional)</li>' +
+                '<li>Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied</li>' +
               '</ul>' +
               '<hr>' +
               'In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter <b>railWidth</b>, using the following formula:' +
@@ -109,9 +106,8 @@ inputs = [
         hRoad : [
                 name       : 'Roads platform height',
                 title      : 'Roads platform height',
-                description: 'Roads platform height (in meters) (Optionnal) </br> </br>'+
-                             '&#128736; Default value = <b>0</b>',
-                min        : 0, max: 1,
+                description: 'Roads platform height (in meters) (Optional)',
+                default    : 0,
                 type       : Double.class
         ],
         inputRail : [
@@ -129,17 +125,15 @@ inputs = [
         hRail : [
                 name       : 'Rail platform height',
                 title      : 'Railways platform height',
-                description: 'Railways platform height (in meters) (Optionnal)</br> </br>'+
-                             '&#128736; Default value = <b>0.5</b>',
-                min        : 0, max: 1,
+                description: 'Railways platform height (in meters) (Optional)',
+                default    : 0.5,
                 type       : double.class
         ],
         outputSuffixe : [
-                name       : 'Output suffixe',
-                title      : 'Output suffixe',
-                description: 'Suffixe applied at the end of the resuling table name </br> </br>'+
-                             '&#128736; If not specified, "ENRICHED" is applied',
-                min        : 0, max: 1,
+                name       : 'Output suffix',
+                title      : 'Output suffix',
+                description: 'Suffix applied at the end of the resulting table name',
+                default    : 'ENRICHED',
                 type       : String.class
         ]
 ]

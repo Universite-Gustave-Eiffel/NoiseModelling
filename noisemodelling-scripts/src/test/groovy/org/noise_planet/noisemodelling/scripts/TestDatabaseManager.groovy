@@ -12,6 +12,8 @@
 
 package org.noise_planet.noisemodelling.scripts
 
+import groovy.sql.Sql
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.MultiPoint
@@ -19,8 +21,10 @@ import org.noise_planet.noisemodelling.scripts.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Clean_Database
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Drop_a_Table
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Execute_Query
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Map
+import org.noise_planet.noisemodelling.webserver.utilities.Logging
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -95,7 +99,7 @@ class TestDatabaseManager extends JdbcTestCase {
     @Test
     void testDisplayTables1() {
         SHPRead.importTable(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
-        String res = new Display_Database().exec(connection, [:])
+        String res = new Display_Database().exec(connection, ["showColumns":false])
         assertEquals("BUILDINGS</br></br>", res)
     }
 
@@ -115,5 +119,28 @@ class TestDatabaseManager extends JdbcTestCase {
         assertTrue(res.contains("The total number of rows is 830"))
         assertTrue(res.contains("The srid of the table is 2154"))
         assertTrue(res.contains("POINT Z(223495.9880411485 6757167.98900822 0)"))
+    }
+
+
+    @Test
+    void testConsoleDisplayTable() {
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
+        def area = 50
+        def result = Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM BUILDINGS WHERE ST_AREA(THE_GEOM) > $area LIMIT 5", 120)
+        assertTrue(result.contains("ID_WAY"))
+    }
+
+    @Test
+    void testExecuteQueryHTML() {
+        def sqlQueries = "CREATE TABLE TEST(PK SERIAL, USERNAME VARCHAR) AS SELECT 1, 'BOB'; SELECT * FROM TEST;"
+        def output = new Execute_Query().exec(connection, [sqlQueries : sqlQueries, outputFormat : "HTML"], new EmptyProgressVisitor()).result
+        assertTrue(output.contains("BOB"))
+    }
+
+    @Test
+    void testExecuteQueryJSON() {
+        def sqlQueries = "CREATE TABLE TEST(PK SERIAL, USERNAME VARCHAR) AS SELECT 1, 'BOB'; SELECT * FROM TEST;"
+        def output = new Execute_Query().exec(connection, [sqlQueries : sqlQueries, outputFormat : "JSON"], new EmptyProgressVisitor()).result
+        assertTrue(output.contains("\"USERNAME\":\"BOB\""))
     }
 }

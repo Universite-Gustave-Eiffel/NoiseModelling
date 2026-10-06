@@ -1,9 +1,7 @@
-package org.noise_planet.noisemodelling.scripts.Geometric_Tools
-
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by the DECIDE team FROM the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
  *
  * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
@@ -18,14 +16,11 @@ package org.noise_planet.noisemodelling.scripts.Geometric_Tools
  * @Author Gwendall Petit, Lab-STICC CNRS UMR 6285 
  */
 
-
-
-
+package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
 import groovy.sql.Sql
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.CompileStatic
-
 import org.h2.util.ScriptReader
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
@@ -34,7 +29,6 @@ import org.h2gis.utilities.TableLocation
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Statement
@@ -86,17 +80,15 @@ inputs = [
         hRoad : [
                 name       : 'Roads platform height',
                 title      : 'Roads platform height',
-                description: 'Roads platform height (in meters) (Optional)  </br> </br>'+
-                             '&#128736; Default value = <b>0</b>',
-                min        : 0, max: 1,
+                description: 'Roads platform height (in meters) (Optional)',
+                default    : 0,
                 type       : Double.class
         ],
         outputSuffix : [
                 name       : 'Output suffix',
                 title      : 'Output suffix',
-                description: 'Suffix applied at the end of the resulting table name </br> </br>'+
-                             '&#128736; If not specified, "ENRICHED" is applied',
-                min        : 0, max: 1,
+                description: 'Suffix applied at the end of the resulting table name',
+                default    : 'ENRICHED',
                 type       : String.class
         ]
 ]
@@ -145,12 +137,6 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
         }
     }
 }
-
-
-
-
-
-
 
 
 def exec(Connection connection, input) {

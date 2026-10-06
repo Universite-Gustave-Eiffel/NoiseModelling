@@ -17,7 +17,8 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
@@ -25,6 +26,8 @@ import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_buildin
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -226,5 +229,58 @@ class TestGeometricTools extends JdbcTestCase {
         def countAfter = sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED")[0] as Integer
 
         assertTrue(countBefore < countAfter)
+    }
+
+
+    @Test
+    void testExportKML(@TempDir File tempDir) {
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ground_type.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("dem.geojson").getPath(),
+                 "inputSRID": "2154"])
+
+
+        new Road_Emission_from_Traffic().exec(connection, [tableRoads: "ROADS2"])
+
+        File kmlLocation = new File(tempDir, "dem")
+        assertTrue(kmlLocation.mkdirs())
+
+        new Noise_level_from_source().exec(connection,
+                ["tableBuilding"        : "BUILDINGS",
+                 "tableSources"         : "LW_ROADS",
+                 "tableReceivers"       : "RECEIVERS",
+                 "tableGroundAbs"       : "GROUND_TYPE",
+                 "tableDEM"             : "DEM",
+                 "confRaysName"         : kmlLocation.toURI().toString(),
+                 "confMaxSrcDist"       : 500.0,
+                 "confReflOrder"        : 0,
+                 "confMaxError"         : 3.0])
+
+        // Check if KML files have been created in the output directory kmlLocation
+        // List all files ending with .kml
+        // Exception if no KML file is found
+        int kmlFileCount = 0
+        kmlLocation.eachFileMatch(~/.*\.kml/) { file ->
+            kmlFileCount++
+            // Check if it is not empty
+            assertTrue(file.length() > 0, "KML file ${file.name} is empty")
+        }
+        assertTrue(kmlFileCount > 0, "No KML files found in directory ${kmlLocation}")
     }
 }

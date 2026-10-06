@@ -6,8 +6,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+  
 jobs:
-  build:
+  build_linux:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -32,40 +36,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       # Setup the jdk using version 11 of Adoptium Temurin
-      - name: Setup java 11 using Adoptium Temurin
+      - name: Setup java 25 using Adoptium Temurin
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '25'
           server-id: central
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
+        run: mvn test install javadoc:jar package -B
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_DB: noisemodelling_db
           POSTGRES_USER: noisemodelling
           POSTGRES_PASSWORD: noisemodelling
-      - name: Maven Deploy
+      - name: Unzip production artifacts
+        run: |
+          # 1. Unzip into a temporary directory
+          unzip -q noisemodelling-scripts/target/*.zip -d tmp_extract
+          
+          # 2. Create target directory
+          mkdir NoiseModelling
+          
+          # 3. Move contents from the subfolder to the target
+          # The asterisk-slash-asterisk moves everything inside the first subfolder
+          mv tmp_extract/*/* NoiseModelling/
+          
+          # 4. Cleanup
+          rm -rf tmp_extract
+      - name: Integration test, use ScriptRunner with H2GIS
+        run: |
+          bin/ScriptRunner -w /tmp/h2gis_ws -s get_started_tutorial_complex.groovy
+        working-directory: NoiseModelling
+      - name: Integration test, use ScriptRunner with PostGIS
+        run: |
+          bin/ScriptRunner -w /tmp/postgis_ws -s get_started_tutorial_complex.groovy --host localhost --user noisemodelling --password noisemodelling --port 5432 --database noisemodelling_db
+        working-directory: NoiseModelling
+      - name: Maven Deploy snapshot
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean deploy -B
-      - name: Install bsdtar
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libarchive-tools
-      - name: Unzip production artifacts
-        run: |
-          mkdir NoiseModelling
-          # bsdtar handles .zip and supports --strip-components
-          bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
+        run: mvn clean -DskipTests deploy -B
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |
@@ -90,40 +107,8 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: NoiseModelling/
   build_windows:
-    runs-on: windows-latest
-    steps:
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            $HOME/.m2/
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-      # Checkout the source code of the project
-      - name: Checkout
-        uses: actions/checkout@v4
-      # Setup the jdk using version 11 of Adoptium Temurin
-      - name: Setup java 11 using Adoptium Temurin
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
-      - name: Extract packaged zip with windows
-        run: |
-          unzip -o noisemodelling-scripts/target/*.zip -d NoiseModelling
-      - name: Find extracted folder (PowerShell)
-        id: folder
-        shell: pwsh
-        run: |
-          $subdir = Get-ChildItem -Path NoiseModelling -Directory | Select-Object -First 1
-          echo "folder=$($subdir.FullName)" >> $env:GITHUB_OUTPUT
-      - name: Run tutorial script
-        run: |
-          bin\ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/ground_type.shp
-        working-directory: ${{ steps.folder.outputs.folder }}
+    uses: ./.github/workflows/build_windows.yml
+    with:
+      git_ref: ${{ github.ref }}
+
+

@@ -37,8 +37,8 @@ public class CnossosPathBuilder {
                                            List<Double> exactFrequencyArray) {
         final List<CutPoint> cuts = cutProfile.cutPoints;
 
-        Coordinate src = pts2D.get(0);
-        Coordinate rcv = pts2D.get(pts2D.size() - 1);
+        Coordinate src = pts2D.getFirst();
+        Coordinate rcv = pts2D.getLast();
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
         for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
@@ -224,6 +224,11 @@ public class CnossosPathBuilder {
                 && !cutProfile.isCurvedPath()) {
             throw new IllegalArgumentException("A favourable path cannot be computed using lateral non curved cut profile");
         }
+        // Check if source or receiver are below the ground
+        if(cutProfile.getReceiver().coordinate.z < cutProfile.getReceiver().getzGround()
+          || cutProfile.getSource().coordinate.z < cutProfile.getSource().getzGround()) {
+            return null;
+        }
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
 
@@ -238,8 +243,8 @@ public class CnossosPathBuilder {
         List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfilePoints.size());
         Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
-        Coordinate firstPts2D = pts2D.get(0);
-        Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
+        Coordinate firstPts2D = pts2D.getFirst();
+        Coordinate lastPts2D = pts2D.getLast();
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().groundCoefficient);
         // Directive 2002/49/EC, section 2.5.3 "Significant heights above the ground":
         // "If the equivalent height of a point becomes negative, i.e. if the point is located
@@ -282,11 +287,13 @@ public class CnossosPathBuilder {
         cnossosPath.setPointList(points);
         cnossosPath.setSegmentList(segments);
         cnossosPath.setSRSegment(srPath);
-        cnossosPath.init(exactFrequencyArray.size());
         List<Coordinate> hullPts2D = pts2D;
+        List<CutPoint> transformedCutPoints = null;
         if(favourable) {
-            // Compute the altered profile for favourable path
-            hullPts2D = cutProfile.computePts2D(true);
+            // Compute the altered profile for favourable path, also capture transformed cut points
+            // for wall altitude checks later
+            transformedCutPoints = new ArrayList<>();
+            hullPts2D = cutProfile.computePts2D(true, transformedCutPoints);
         }
         boolean ignoreBuildingsInConvexHull = (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT);
@@ -296,46 +303,6 @@ public class CnossosPathBuilder {
 
         // Src if perceived source position from the receiver point of view
         Coordinate src = cutProfile.getSource().getCoordinate();
-
-        // For reflection paths without diffraction points, check if reflection is valid
-        // In favorable conditions, the wall is effectively lowered, and we need to verify
-        // the reflection point is actually on the transformed wall, not above it
-        if (favourable && cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION && hullPointsIndices.size() == 2) {
-            // No diffraction points, just source -> reflection -> receiver
-            // Compute transformed coordinates for favorable conditions to check reflection validity
-            List<CutPoint> transformedCutPoints = new ArrayList<>();
-            cutProfile.computePts2D(true, transformedCutPoints);
-
-            if (!transformedCutPoints.isEmpty()) {
-                for (int i = 0; i < transformedCutPoints.size(); i++) {
-                    CutPoint transformedPoint = transformedCutPoints.get(i);
-                    if (transformedPoint instanceof CutPointReflection &&
-                            Double.compare(transformedPoint.getCoordinate().z, transformedPoint.getzGround()) != 0) {
-                        CutPointReflection cutPointReflection = (CutPointReflection) transformedPoint;
-
-                        // Get the transformed wall altitude at the reflection point
-                        double transformedWallAltitude = Vertex.interpolateZ(transformedPoint.coordinate,
-                                cutPointReflection.wall.p0, cutPointReflection.wall.p1);
-
-                        // Get the direct line altitude from source to receiver at this reflection position
-                        // Use ORIGINAL coordinates for the source and receiver
-                        Coordinate srcCoord = cutProfile.cutPoints.get(0).getCoordinate();
-                        Coordinate rcvCoord = cutProfile.cutPoints.get(cutProfile.cutPoints.size() - 1).getCoordinate();
-                        double reflectionX = pts2D.get(i).x;
-                        double srcX = pts2D.get(0).x;
-                        double rcvX = pts2D.get(cutProfile.cutPoints.size() - 1).x;
-                        double t = (reflectionX - srcX) / (rcvX - srcX);
-                        double directLineAltitude = srcCoord.z + t * (rcvCoord.z - srcCoord.z);
-
-                        // If the direct line clears the transformed wall (goes above it), reject the reflection
-                        if (directLineAltitude > transformedWallAltitude + EPSILON) {
-                            // Ray passes over the wall, reflection is not valid in favorable conditions
-                            return null;
-                        }
-                    }
-                }
-            }
-        }
 
         // Move then check reflection height if there is diffraction on the path
         if(hullPointsIndices.size() > 2) {
@@ -407,8 +374,8 @@ public class CnossosPathBuilder {
                 }
                 Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
                         cutProfile.cutPoints.get(i0).getCoordinate(), targetPosition);
-                points.get(0).orientation = emissionDirection;
-                cnossosPath.raySourceReceiverDirectivity = emissionDirection;
+                points.getFirst().orientation = emissionDirection;
+                cutProfile.setRaySourceReceiverDirectivity(emissionDirection);
                 src = pts2D.get(i0);
             }
             // Add reflection/vertical edge diffraction points/segments between i0 i1
@@ -422,6 +389,19 @@ public class CnossosPathBuilder {
                     CutPointReflection cutPointReflection = (CutPointReflection) currentPoint;
                     double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(cutPointReflection.coordinate,
                             cutPointReflection.wall.p0, cutPointReflection.wall.p1);
+                    // Validate that the reflection point does not go above the building.
+                    // For favourable conditions, use the transformed (curvature-lowered) wall altitude;
+                    // for homogeneous conditions, use the real wall altitude.
+                    double checkWallAltitude = wallAltitudeAtReflexionPoint;
+                    if (favourable && transformedCutPoints != null) {
+                        CutPointReflection transformedReflection = (CutPointReflection) transformedCutPoints.get(pointIndex);
+                        checkWallAltitude = Vertex.interpolateZ(transformedReflection.coordinate,
+                                transformedReflection.wall.p0, transformedReflection.wall.p1);
+                    }
+                    if (pts2D.get(pointIndex).y > checkWallAltitude + EPSILON) {
+                        // Reflection point is above the building, path is not valid
+                        return null;
+                    }
                     PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(),
                             cutPointReflection.wallAlpha, REFL);
                     reflectionPoint.obstacleZ = wallAltitudeAtReflexionPoint;
@@ -444,11 +424,11 @@ public class CnossosPathBuilder {
             points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), RECV));
             if(previousPivotPoint != i0 && i == hullPointsIndices.size() - 1) {
                 // we added segments before i1 vertical plane diffraction point, but it is the last vertical plane
-                // diffraction point and we must add the remaining segment between the last horizontal diffraction point
+                // diffraction point, and we must add the remaining segment between the last horizontal diffraction point
                 // and the last point
                 Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, previousPivotGround, pts2DGround.length);
                 meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
-                SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pts2D.size() - 1),
+                SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.getLast(),
                         meanPlane, cutProfile.getGPathByIndex(previousPivotPoint, cutProfile.cutPoints.size() - 1, Scene.DEFAULT_G_BUILDING),
                         gS);
                 seg.setPoints2DGround(segmentGroundPoints);
@@ -467,7 +447,7 @@ public class CnossosPathBuilder {
             path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
             if (i != hullPointsIndices.size() - 1) {
-                PointPath pt = points.get(points.size() - 1);
+                PointPath pt = points.getLast();
                 pt.type = DIFH;
                 if(cutPt1 instanceof CutPointWall) {
                     pt.alphaWall = ((CutPointWall) cutPt1).wallAlpha;
@@ -479,7 +459,7 @@ public class CnossosPathBuilder {
             return null;
         }
 
-        Coordinate rcv = points.get(points.size()-1).coordinate;
+        Coordinate rcv = points.getLast().coordinate;
         PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
         if(p0==null){
             // Direct propagation (no diffraction over obstructing objects)
@@ -510,7 +490,7 @@ public class CnossosPathBuilder {
                 long difVPointCount = cnossosPath.getPointList().stream().
                         filter(pointPath -> pointPath.type.equals(DIFV)).count();
                 double distance = difVPointCount == 0 ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
-                cnossosPath.delta = segments.get(0).d + cnossosPath.e + segments.get(segments.size()-1).d - distance;
+                cnossosPath.delta = segments.getFirst().d + cnossosPath.e + segments.getLast().d - distance;
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
@@ -524,8 +504,8 @@ public class CnossosPathBuilder {
         }
         Coordinate cn = pn.coordinate;
 
-        SegmentPath seg1 = segments.get(0);
-        SegmentPath seg2 = segments.get(segments.size()-1);
+        SegmentPath seg1 = segments.getFirst();
+        SegmentPath seg2 = segments.getLast();
 
         double dSO0 = seg1.d;
         double dOnR = seg2.d;

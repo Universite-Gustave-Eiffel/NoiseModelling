@@ -300,7 +300,7 @@ public class RoadCnossosParameters {
      * @param slopePercentage Gradient percentage of road from -12 % to 12 %
      */
     public void setSlopePercentage(double slopePercentage) {
-        this.slopePercentage = Math.min(12., Math.max(-12., slopePercentage));
+        this.slopePercentage = Math.clamp(slopePercentage, -12., 12.);
     }
 
     public double getWay() {
