@@ -41,6 +41,8 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -292,6 +294,51 @@ public class NoiseMapByReceiverMakerTest {
     }
 
 
+
+    @Test
+    public void testRecordProfile() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22,0.0 )),
+                    91,
+                    new Orientation(90,15,0),
+                    4));
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapByReceiverMaker.getSceneInputSettings().setUseTrainDirectivity(true);
+
+            File profileFile = File.createTempFile("profile", ".csv");
+            profileFile.deleteOnExit();
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().CSVProfilerOutputPath = profileFile;
+
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            List<String> lines = Files.readAllLines(profileFile.toPath());
+            assertTrue(lines.size() >= 2, "The profiler should have written at least one data row");
+            List<String> headers = Arrays.asList(lines.getFirst().split(","));
+            Set<String> expectedColumns = new HashSet<>(Arrays.asList("time","jdbc_stack","average_cut_source_distance","cut_profile_count",
+                    "jvm_used_heap_mb","jvm_max_heap_mb","receiver_min_milliseconds","receiver_median_milliseconds",
+                    "receiver_mean_milliseconds","receiver_max_milliseconds",
+                    "receiver_collect_sources_max_milliseconds","receiver_precompute_reflection_max_milliseconds",
+                    "receiver_processed_sources_percentage_mean","receiver_median_point_sources_in_range",
+                    "progression"));
+            // Check if expected columns are in the header
+            for(String columnHeader : expectedColumns) {
+                assertTrue(headers.contains(columnHeader), "Column not found: " + columnHeader);
+            }
+            int cutProfileCount = Integer.parseInt(lines.getLast().split(",")[headers.indexOf("cut_profile_count")]);
+            assertEquals(2, cutProfileCount, "Two receivers, one point source, should have 2 cut profiles");
+        }
+    }
 
     @Test
     public void testLineDirectivity() throws Exception {
