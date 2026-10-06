@@ -103,7 +103,7 @@ public class PathFinder {
 
     /**
      * Computation stacks and timing are collected by this class in order
-     * to profile the execution of the simulation
+     * to profile the execution of the simulation.
      * @param profilerThread Instance of ProfilerThread
      */
     public void setProfilerThread(ProfilerThread profilerThread) {
@@ -260,8 +260,8 @@ public class PathFinder {
 
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
-        AtomicInteger cutProfileCount = new AtomicInteger(0);
-        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+        dataOut.startReceiver(receiverPointInfo, sourceList);
+
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {
@@ -284,8 +284,7 @@ public class PathFinder {
         if(profilerThread != null &&
                 profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
             ReceiverStatsMetric receiverStatsMetric = profilerThread.getMetric(ReceiverStatsMetric.class);
-            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(),
-                    cutProfileCount.get(), sourceList.size(), processedSources.get());
+            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(), sourceList.size(), processedSources.get());
             // Save computation time for this receiver
             receiverStatsMetric.onEndComputation(new ReceiverStatsMetric.ReceiverComputationTime(receiverPointInfo.receiverIndex,
                     (int) TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS),
@@ -433,15 +432,15 @@ public class PathFinder {
     }
 
     /**
-     * Recover lost attributes of source and receiver that are lost when creating intermediate profiles
+     * Recover lost attributes of source and receiver that were lost when creating intermediate profiles
      * @param rcv Receiver information
      * @param src Source information
      * @param data Propagation data
      * @param cutPoints Cut points of the full profile
      */
     private CutProfile resetSourceReceiverAttributes(ReceiverPointInfo rcv, SourcePointInfo src, Scene data, List<CutPoint> cutPoints) {
-        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
-                (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
+        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.getFirst(),
+                (CutPointReceiver) cutPoints.getLast());
         mainProfile.insertCutPoint(false,
                 cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
