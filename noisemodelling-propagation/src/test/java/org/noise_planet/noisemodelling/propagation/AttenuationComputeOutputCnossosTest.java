@@ -6269,8 +6269,8 @@ public class AttenuationComputeOutputCnossosTest {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(3, -100, 2.5),
-                        new Coordinate(3, 100, 2.5)
+                        new Coordinate(3, -100, 2),
+                        new Coordinate(3, 100, 2)
                 },alphas,1)
                 .finishFeeding();
 

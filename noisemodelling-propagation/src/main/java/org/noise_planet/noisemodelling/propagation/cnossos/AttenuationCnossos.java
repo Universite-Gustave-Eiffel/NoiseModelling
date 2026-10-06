@@ -637,7 +637,7 @@ public class AttenuationCnossos {
         if(exportAttenuationMatrix) {
             attenuationOutput.aRef = aRef.clone();
         }
-        double[] aRetroDiff;
+        double[] aRetroDiff = new double[data.getFrequencies().size()];
         //ABoundary computation
         double[] aBoundary;
         double[] aGlobalMeteo = new double[data.getFrequencies().size()];
@@ -854,6 +854,7 @@ public class AttenuationCnossos {
         }
         // Keep global attenuation
         attenuationOutput.aGlobal = aGlobalMeteoRay.clone();
+        attenuationOutput.aRetroDiff = aRetroDiff;
         attenuationOutput.deltaBodyScreen = deltaBodyScreen;
     }
 

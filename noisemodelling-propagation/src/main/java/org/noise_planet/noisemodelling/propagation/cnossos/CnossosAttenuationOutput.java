@@ -28,6 +28,7 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
     public  double[] aRef = new double[0];
     public  double[] double_aBoundary = new double[0];
     public  double[] aRetroDiff = new double[0]; // Alpha Retro Diffraction
+    public double[] deltaBodyScreen = new double[0];
 
     /**
      * Global attenuation (dB) without source directivity or atmospheric conditions probability ponderation
@@ -35,8 +36,6 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
     public  double[] aGlobalRaw = new double[0];
     public double[] aDif = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation
-    /** Retro diffraction (Train) */
-    public double[] deltaBodyScreen = new double[0];
     public ABoundary aBoundary = new ABoundary();
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
     public boolean keepAbsorption = false;
@@ -52,6 +51,7 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
         this.aDif = new double[size];
         this.aSource = new double[size];
         this.aRetroDiff = new double[size];
+        this.deltaBodyScreen = new double[size];
     }
 
     public CnossosAttenuationOutput() {
@@ -73,9 +73,9 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
         this.aSource = other.aSource;
         this.aBoundary = other.aBoundary;
         this.groundAttenuation = other.groundAttenuation;
-        this.deltaBodyScreen = other.deltaBodyScreen;
         this.propagationPath = other.propagationPath;
         this.keepAbsorption = other.keepAbsorption;
+        this.deltaBodyScreen = other.deltaBodyScreen;
     }
 
     @Override
