@@ -668,16 +668,13 @@ public class AttenuationCnossos {
 
                 // dr = rcv.x = dB + dR (total horizontal distance source → receiver)
                 double dr = rcv.x;
-                // h0 = absolute Z of rail top (reference plane for CNOSSOS body barrier)
-                double h0 = ptList.get(0).altitude + hRail;
-                // hs = source height above rail top
-                double hs = src.y - h0;
+                // h0 = altitude of rail top (reference plane for CNOSSOS body barrier)
+                double h0 = src.y + hRail;
                 // hr = receiver height above rail top
                 double hr = rcv.y - h0;
                 // hbRel = barrier height above rail top (for the dB < 5·hB condition)
                 double hbRel = hb - h0;
 
-                // Bug #1 fix: condition uses barrier height relative to rail top, not absolute Z
                 if (db < 5 * hbRel) {
                     for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
                         if (pDif.alphaWall.get(idfreq) < 0.8){
@@ -699,7 +696,7 @@ public class AttenuationCnossos {
 
                                 // (2.5.41) rn = |SnR| — Bug #2 fix: di - dr, not di - (db+dr)
                                 // dr already = dB+dR in the 2D profile coordinate system
-                                rn[i] = sqrt(pow(di - dr, 2) + pow(hs - hr, 2));
+                                rn[i] = sqrt(pow(di - dr, 2) + pow(hRail - hr, 2));
 
                                 // (2.5.40) ΔLgeo,n = 20·lg(r0/rn)
                                 deltaGeo[i][0] = 20 * log10(rn[0] / rn[i]);
