@@ -320,18 +320,19 @@ public class NoiseMapByReceiverMakerTest {
 
             List<String> lines = Files.readAllLines(profileFile.toPath());
             assertTrue(lines.size() >= 2, "The profiler should have written at least one data row");
-            String[] headers = lines.get(0).split(",");
-            int profilesCountIndex = -1;
-            for (int i = 0; i < headers.length; i++) {
-                if ("receiver_median_profiles_count".equals(headers[i].trim())) {
-                    profilesCountIndex = i;
-                }
+            List<String> headers = Arrays.asList(lines.getFirst().split(","));
+            Set<String> expectedColumns = new HashSet<>(Arrays.asList("time","jdbc_stack","average_cut_source_distance","cut_profile_count",
+                    "jvm_used_heap_mb","jvm_max_heap_mb","receiver_min_milliseconds","receiver_median_milliseconds",
+                    "receiver_mean_milliseconds","receiver_max_milliseconds",
+                    "receiver_collect_sources_max_milliseconds","receiver_precompute_reflection_max_milliseconds",
+                    "receiver_processed_sources_percentage_mean","receiver_median_point_sources_in_range",
+                    "progression"));
+            // Check if expected columns are in the header
+            for(String columnHeader : expectedColumns) {
+                assertTrue(headers.contains(columnHeader), "Column not found: " + columnHeader);
             }
-            assertTrue(profilesCountIndex >= 0, "Missing receiver_median_profiles_count column");
-            String[] lastRow = lines.get(lines.size() - 1).split(",");
-            double medianProfilesCount = Double.parseDouble(lastRow[profilesCountIndex].trim());
-            assertTrue(medianProfilesCount > 0,
-                    "receiver_median_profiles_count should not be zero when the profiler is enabled");
+            int cutProfileCount = Integer.parseInt(lines.getLast().split(",")[headers.indexOf("cut_profile_count")]);
+            assertEquals(2, cutProfileCount, "Two receivers, one point source, should have 2 cut profiles");
         }
     }
 

@@ -260,9 +260,8 @@ public class PathFinder {
 
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
-        AtomicInteger cutProfileCount = new AtomicInteger(0);
-        CutPlaneVisitor countingDataOut = new CutProfileCounter(dataOut, cutProfileCount);
-        countingDataOut.startReceiver(receiverPointInfo, sourceList);
+        dataOut.startReceiver(receiverPointInfo, sourceList);
+
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {
@@ -272,7 +271,7 @@ public class PathFinder {
         AtomicInteger processedSources = new AtomicInteger(0);
         // For each Pt Source - Pt Receiver
         for (SourcePointInfo sourcePointInfo : sourceList) {
-            CutPlaneVisitor.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, countingDataOut, receiverMirrorIndex);
+            CutPlaneVisitor.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, receiverMirrorIndex);
             processedSources.addAndGet(1);
             // If the delta between already received power and maximal potential power received is inferior to data.maximumError
             if ((visitor != null && visitor.isCanceled()) ||
@@ -285,8 +284,7 @@ public class PathFinder {
         if(profilerThread != null &&
                 profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
             ReceiverStatsMetric receiverStatsMetric = profilerThread.getMetric(ReceiverStatsMetric.class);
-            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(),
-                    cutProfileCount.get(), sourceList.size(), processedSources.get());
+            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(), sourceList.size(), processedSources.get());
             // Save computation time for this receiver
             receiverStatsMetric.onEndComputation(new ReceiverStatsMetric.ReceiverComputationTime(receiverPointInfo.receiverIndex,
                     (int) TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS),
@@ -294,36 +292,7 @@ public class PathFinder {
         }
 
         // No more rays for this receiver
-        countingDataOut.finalizeReceiver(receiverPointInfo);
-    }
-
-    /**
-     * Count the cut profiles pushed for a receiver without exposing the counter in the visitor api.
-     */
-    private static class CutProfileCounter implements CutPlaneVisitor {
-        private final CutPlaneVisitor delegate;
-        private final AtomicInteger cutProfileCount;
-
-        CutProfileCounter(CutPlaneVisitor delegate, AtomicInteger cutProfileCount) {
-            this.delegate = delegate;
-            this.cutProfileCount = cutProfileCount;
-        }
-
-        @Override
-        public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-            cutProfileCount.incrementAndGet();
-            return delegate.onNewCutPlane(cutProfile);
-        }
-
-        @Override
-        public void startReceiver(ReceiverPointInfo receiver, Collection<SourcePointInfo> sourceList) {
-            delegate.startReceiver(receiver, sourceList);
-        }
-
-        @Override
-        public void finalizeReceiver(ReceiverPointInfo receiver) {
-            delegate.finalizeReceiver(receiver);
-        }
+        dataOut.finalizeReceiver(receiverPointInfo);
     }
 
     /**
@@ -463,15 +432,15 @@ public class PathFinder {
     }
 
     /**
-     * Recover lost attributes of source and receiver that are lost when creating intermediate profiles
+     * Recover lost attributes of source and receiver that were lost when creating intermediate profiles
      * @param rcv Receiver information
      * @param src Source information
      * @param data Propagation data
      * @param cutPoints Cut points of the full profile
      */
     private CutProfile resetSourceReceiverAttributes(ReceiverPointInfo rcv, SourcePointInfo src, Scene data, List<CutPoint> cutPoints) {
-        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
-                (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
+        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.getFirst(),
+                (CutPointReceiver) cutPoints.getLast());
         mainProfile.insertCutPoint(false,
                 cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
