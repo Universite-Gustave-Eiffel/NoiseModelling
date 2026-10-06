@@ -103,7 +103,7 @@ public class PathFinder {
 
     /**
      * Computation stacks and timing are collected by this class in order
-     * to profile the execution of the simulation
+     * to profile the execution of the simulation.
      * @param profilerThread Instance of ProfilerThread
      */
     public void setProfilerThread(ProfilerThread profilerThread) {
