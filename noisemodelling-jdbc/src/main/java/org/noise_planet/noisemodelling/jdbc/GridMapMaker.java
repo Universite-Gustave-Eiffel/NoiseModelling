@@ -32,6 +32,8 @@ public abstract class GridMapMaker {
     protected DefaultTableLoader.BuildingTableParameters buildingTableParameters = new DefaultTableLoader.BuildingTableParameters();
     protected final String sourcesTableName;
     protected String soilTableName = "";
+    /** Optional table of bridge deck points (elevated road structures). Empty = no bridges. */
+    protected String bridgePointsTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
@@ -267,6 +269,24 @@ public abstract class GridMapMaker {
      */
     public void setSoilTableName(String soilTableName) {
         this.soilTableName = soilTableName;
+    }
+
+    /**
+     * Optional table of bridge deck points. Columns: PK, BRIDGE_PK, THE_GEOM (POINT),
+     * ABSOLUTE_DECK_HEIGHT, RELATIVE_DECK_HEIGHT, DECK_THICKNESS, RIGHT_WIDTH, LEFT_WIDTH,
+     * RIGHT_BARRIER_HEIGHT, LEFT_BARRIER_HEIGHT, POSITION, GIRDER_TYPE, SLAB_TYPE.
+     * Rows are grouped by BRIDGE_PK into one bridge deck each.
+     * @return bridge deck points table name ("" if none)
+     */
+    public String getBridgePointsTableName() {
+        return bridgePointsTableName;
+    }
+
+    /**
+     * @param bridgePointsTableName bridge deck points table name (see {@link #getBridgePointsTableName()})
+     */
+    public void setBridgePointsTableName(String bridgePointsTableName) {
+        this.bridgePointsTableName = bridgePointsTableName;
     }
 
     /**

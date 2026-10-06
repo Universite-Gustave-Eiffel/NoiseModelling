@@ -1,0 +1,180 @@
+{
+ "type": "FeatureCollection",
+ "name": "bridgepoints",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:EPSG::2154"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 1,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     0,
+     50
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 2,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     20,
+     50
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 3,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     40,
+     50
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 4,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     60,
+     50
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 5,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     80,
+     50
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 6,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     100,
+     50
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 7,
+    "BRIDGE_PK": 1,
+    "POSITION": "CENTER",
+    "GIRDER_TYPE": "STEEL_BOX",
+    "SLAB_TYPE": "STEEL",
+    "ABSOLUTE_DECK_HEIGHT": 8.0,
+    "RELATIVE_DECK_HEIGHT": null,
+    "DECK_THICKNESS": 0.5,
+    "LEFT_WIDTH": 3.0,
+    "RIGHT_WIDTH": 3.0,
+    "LEFT_BARRIER_HEIGHT": 2.0,
+    "RIGHT_BARRIER_HEIGHT": 2.0
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120,
+     50
+    ]
+   }
+  }
+ ]
+}

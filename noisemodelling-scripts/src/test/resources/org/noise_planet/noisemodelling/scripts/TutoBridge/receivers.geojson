@@ -1,0 +1,320 @@
+{
+ "type": "FeatureCollection",
+ "name": "receivers",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:EPSG::2154"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 1
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -30,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 2
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -20,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 3
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -10,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 4
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     0,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 5
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 6
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     20,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 7
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     30,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 8
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     40,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 9
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     50,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 10
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     60,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 11
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     70,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 12
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     80,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 13
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     90,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 14
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     100,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 15
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     110,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 16
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 17
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 18
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 19
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     150,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 20
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     160,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 21
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     170,
+     75,
+     2.0
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "PK": 22
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     180,
+     75,
+     2.0
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+"type": "FeatureCollection",
+"name": "receivers_hatori",
+"features": [
+{ "type": "Feature", "properties": { "id": null, "PK": 1, "HISTORY": "initreceiver (H-RISK with noisemodelling v 0.6.3) at 2026-06-23 15:56:16", "alti": 1.0 }, "geometry": { "type": "Point", "coordinates": [ -13918.665654702997927, -113561.181880692151026, 1.0 ] } },
+{ "type": "Feature", "properties": { "id": null, "PK": 2, "HISTORY": "initreceiver (H-RISK with noisemodelling v 0.6.3) at 2026-06-23 15:56:16", "alti": 1.0 }, "geometry": { "type": "Point", "coordinates": [ -13915.032820715188791, -113563.430777924775612, 1.0 ] } },
+{ "type": "Feature", "properties": { "id": null, "PK": 3, "HISTORY": "initreceiver (H-RISK with noisemodelling v 0.6.3) at 2026-06-23 15:56:16", "alti": 1.0 }, "geometry": { "type": "Point", "coordinates": [ -13911.572978820766366, -113565.160698870560736, 1.0 ] } },
+{ "type": "Feature", "properties": { "id": null, "PK": 4, "HISTORY": "initreceiver (H-RISK with noisemodelling v 0.6.3) at 2026-06-23 15:56:16", "alti": 1.0 }, "geometry": { "type": "Point", "coordinates": [ -13907.767152739872472, -113567.928572385091684, 1.0 ] } },
+{ "type": "Feature", "properties": { "id": null, "PK": 5, "HISTORY": "initreceiver (H-RISK with noisemodelling v 0.6.3) at 2026-06-23 15:56:16", "alti": 1.0 }, "geometry": { "type": "Point", "coordinates": [ -13896.00369030357615, -113576.924161306407768, 1.0 ] } },
+{ "type": "Feature", "properties": { "id": null, "PK": 6, "HISTORY": "initreceiver (H-RISK with noisemodelling v 0.6.3) at 2026-06-23 15:56:16", "alti": 1.0 }, "geometry": { "type": "Point", "coordinates": [ -13876.97455989125956, -113588.687623741556308, 1.0 ] } }
+]
+}
