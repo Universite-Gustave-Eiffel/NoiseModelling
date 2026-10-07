@@ -20,15 +20,14 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
+import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
+import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
@@ -888,5 +887,64 @@ public class NoiseMapByReceiverMakerTest {
             }
         }
         assertTrue(different, "Changing platform (DEFAULT vs testPlatform) should produce different receiver levels");
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+
+        // Get Class to compute LW
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
+        RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        List<LineString> geometries = v.getRailWayLWGeometry();
+        assertEquals(geometries.size(),2);
+
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Buildings.shp").getFile());
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+
+        // ICI POUR CHANGER HAUTEUR ET G ECRAN
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_DENSIFY(the_geom, 1) , pk as pk, 12.0 as height, g as g FROM Rail_protect");
+
+        // ICI HAUTEUR RECPTEUR
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
+
+        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
+
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY",
+                "RECEPTEURS");
+
+        NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        // Use train directivity functions instead of discrete directivity
+        DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
+        defaultTableLoader.insertTrainDirectivity();
+
+        parameters.setRaysTable("RAYS");
+        parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
+        parameters.exportAttenuationMatrix = true;
+        parameters.exportAttenuationOutput = true;
+        parameters.keepAbsorption = true;
+
+        noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+        try(Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT IDRECEIVER, IDSOURCE, PATH, METEO FROM RAYS ORDER BY IDRECEIVER, IDSOURCE, METEO")) {
+            while (resultSet.next()) {
+                CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(resultSet.getString("PATH"));
+
+
+            }
+        }
+
+        assertTrue(false);
     }
 }
