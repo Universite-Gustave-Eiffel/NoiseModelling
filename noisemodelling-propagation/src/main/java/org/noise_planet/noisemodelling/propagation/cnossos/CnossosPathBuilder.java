@@ -31,17 +31,47 @@ public class CnossosPathBuilder {
     public static final double ALPHA0 = 2e-4;
     private static final double EPSILON = 1e-7;
 
-    public static void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
-                                     LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
+    /**
+     * Look for Rayleigh diffraction points on the profile section delimited by idxStart and idxEnd.
+     * The section can be a full direct path (idxStart=0, idxEnd=size-1) or a sub segment of a
+     * reflection path (for example reflection to receiver) so that terrain obstacles that are below
+     * the direct source-receiver line but above the real (reflected) path are still taken into account.
+     */
+    public static void computeRayleighDiff(CutProfile cutProfile, CnossosPath pathParameters,
+                                     int idxStart, int idxEnd,
+                                     List<PointPath> points, List<SegmentPath> segments,
                                      List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex,
                                            List<Double> exactFrequencyArray) {
+        computeRayleighDiff(cutProfile, pathParameters, idxStart, idxEnd, points, segments, pts2D, pts2DGround,
+                cut2DGroundIndex, exactFrequencyArray, false);
+    }
+
+    /**
+     * @param requirePositiveDeltaH when true, only terrain points that really block the section
+     *                              (deltaH >= 0) are kept. Used for reflection sub segments so that
+     *                              grazing terrain, already handled on the direct source-receiver
+     *                              line, is not counted twice.
+     */
+    private static void computeRayleighDiff(CutProfile cutProfile, CnossosPath pathParameters,
+                                     int idxStart, int idxEnd,
+                                     List<PointPath> points, List<SegmentPath> segments,
+                                     List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex,
+                                           List<Double> exactFrequencyArray, boolean requirePositiveDeltaH) {
         final List<CutPoint> cuts = cutProfile.cutPoints;
 
-        Coordinate src = pts2D.getFirst();
-        Coordinate rcv = pts2D.getLast();
-        CutPoint srcCut = cutProfile.getSource();
-        CutPoint rcvCut = cutProfile.getReceiver();
-        for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
+        Coordinate src = pts2D.get(idxStart);
+        Coordinate rcv = pts2D.get(idxEnd);
+        int startGround = cut2DGroundIndex.get(idxStart);
+        int endGround = cut2DGroundIndex.get(idxEnd);
+        double[] meanPlaneSeg = JTSUtility.getMeanPlaneCoefficients(
+                Arrays.copyOfRange(pts2DGround, startGround, endGround + 1));
+        SegmentPath srSeg = computeSegment(src, rcv, meanPlaneSeg,
+                cutProfile.getGPath(cuts.get(idxStart), cuts.get(idxEnd), Scene.DEFAULT_G_BUILDING),
+                cuts.get(idxStart).getGroundCoefficient());
+        LineSegment dAB = new LineSegment(src, rcv);
+        CutPoint srcCut = cuts.get(idxStart);
+        CutPoint rcvCut = cuts.get(idxEnd);
+        for (int i0Cut = idxStart + 1; i0Cut < idxEnd; i0Cut++) {
             // Skip reflection points — they are not terrain obstacles and should not
             // create Rayleigh diffraction points
             if(cuts.get(i0Cut) instanceof CutPointReflection) {
@@ -52,7 +82,11 @@ public class CnossosPathBuilder {
 
             double dSO = src.distance(o);
             double dOR = o.distance(rcv);
-            double deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
+            double deltaH = dAB.orientationIndex(o) * (dSO + dOR - srSeg.d);
+            if(requirePositiveDeltaH && deltaH < 0) {
+                // terrain below the section, not blocking it
+                continue;
+            }
             boolean rcrit = false;
             for(double f : exactFrequencyArray) {
                 if(deltaH > -(340./f) / 20) {
@@ -65,12 +99,12 @@ public class CnossosPathBuilder {
                 //Add point path
 
                 //Plane S->O
-                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround, 0, iO + 1);
+                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround, startGround, iO + 1);
                 double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
                 SegmentPath seg1 = computeSegment(src, o, abs);
 
                 //Plane O->R
-                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround, iO, pts2DGround.length);
+                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround, iO, endGround + 1);
                 double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
                 SegmentPath seg2 = computeSegment(o, rcv, abr);
 
@@ -108,10 +142,10 @@ public class CnossosPathBuilder {
                         double dSO0 = seg1.d;
                         pathParameters.deltaSPrimeR = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
                         pathParameters.deltaSRPrime = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
-                        if(dSR.orientationIndex(o) == 1) {
+                        if(dAB.orientationIndex(o) == 1) {
                             pathParameters.delta = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
                         } else {
-                            Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
+                            Coordinate pA = dAB.pointAlong((o.x-src.x)/(rcv.x-src.x));
                             pathParameters.delta =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
                         }
                         if(dSPrimeRPrime.orientationIndex(o) == 1) {
@@ -129,6 +163,76 @@ public class CnossosPathBuilder {
                 }
             }
         }
+    }
+
+
+    /**
+     * Look for Rayleigh diffraction on a reflection path by splitting it at its real nodes
+     * (source, each reflection, receiver) and checking every sub segment independently.
+     * @return true if at least one diffraction point was added, the provided {@code points} and
+     * {@code segments} lists are then rebuilt in path order.
+     */
+    private static boolean computeReflectionRayleighDiff(CutProfile cutProfile, CnossosPath cnossosPath,
+                                                         List<SegmentPath> segments, List<PointPath> points,
+                                                         List<Coordinate> pts2D, Coordinate[] pts2DGround,
+                                                         List<Integer> cut2DGroundIndex,
+                                                         List<Double> exactFrequencyArray) {
+        final List<CutPoint> cuts = cutProfile.cutPoints;
+        List<Integer> nodes = new ArrayList<>();
+        nodes.add(0);
+        for(int i = 1; i < cuts.size() - 1; i++) {
+            if(cuts.get(i) instanceof CutPointReflection) {
+                nodes.add(i);
+            }
+        }
+        nodes.add(cuts.size() - 1);
+        if(nodes.size() < 3 || points.size() != nodes.size()) {
+            // no reflection node, or the point list does not match the reflection nodes
+            return false;
+        }
+        List<List<SegmentPath>> subSegments = new ArrayList<>(nodes.size() - 1);
+        List<List<PointPath>> subPoints = new ArrayList<>(nodes.size() - 1);
+        boolean hasDiffraction = false;
+        for(int k = 0; k + 1 < nodes.size(); k++) {
+            List<SegmentPath> segs = new ArrayList<>();
+            List<PointPath> pts = new ArrayList<>();
+            computeRayleighDiff(cutProfile, cnossosPath, nodes.get(k), nodes.get(k + 1),
+                    pts, segs, pts2D, pts2DGround, cut2DGroundIndex, exactFrequencyArray, true);
+            subSegments.add(segs);
+            subPoints.add(pts);
+            if(!segs.isEmpty()) {
+                hasDiffraction = true;
+            }
+        }
+        if(!hasDiffraction) {
+            return false;
+        }
+        // Rebuild the path, interleaving the diffraction points and the reflection/receiver nodes.
+        List<SegmentPath> orderedSegments = new ArrayList<>();
+        List<PointPath> orderedPoints = new ArrayList<>();
+        orderedPoints.add(points.getFirst());
+        for(int k = 0; k + 1 < nodes.size(); k++) {
+            List<SegmentPath> segs = subSegments.get(k);
+            if(segs.isEmpty()) {
+                // keep a single segment for the whole node pair so the path stays continuous
+                int startGround = cut2DGroundIndex.get(nodes.get(k));
+                int endGround = cut2DGroundIndex.get(nodes.get(k + 1));
+                double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(
+                        Arrays.copyOfRange(pts2DGround, startGround, endGround + 1));
+                orderedSegments.add(computeSegment(pts2D.get(nodes.get(k)), pts2D.get(nodes.get(k + 1)),
+                        meanPlane, cutProfile.getGPath(cuts.get(nodes.get(k)), cuts.get(nodes.get(k + 1)),
+                                Scene.DEFAULT_G_BUILDING), cuts.get(nodes.get(k)).getGroundCoefficient()));
+            } else {
+                orderedSegments.addAll(segs);
+            }
+            orderedPoints.addAll(subPoints.get(k));
+            orderedPoints.add(points.get(k + 1));
+        }
+        segments.clear();
+        segments.addAll(orderedSegments);
+        points.clear();
+        points.addAll(orderedPoints);
+        return true;
     }
 
 
@@ -469,17 +573,43 @@ public class CnossosPathBuilder {
             boolean horizontalPlaneDiffraction = cutProfile.cutPoints.stream()
                     .anyMatch(
                             cutPoint -> cutPoint instanceof CutPointVEdgeDiffraction);
-            List<SegmentPath> rayleighSegments = new ArrayList<>();
-            List<PointPath> rayleighPoints = new ArrayList<>();
+            boolean rayleighFound = false;
             // do not check for rayleigh if the path is not direct between R and S
             if(!horizontalPlaneDiffraction) {
-                // Check for Rayleigh criterion for segments computation
-                LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
-                // Look for diffraction over edge on free field (frequency dependent)
-                computeRayleighDiff(srPath, cutProfile, cnossosPath, dSR, rayleighSegments, rayleighPoints, pts2D,
-                        pts2DGround, cut2DGroundIndex, exactFrequencyArray);
+                if(cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
+                    // Keep the historical source-receiver Rayleigh check first (grazing terrain,
+                    // already used by the reference test cases).
+                    List<SegmentPath> directSegments = new ArrayList<>();
+                    List<PointPath> directPoints = new ArrayList<>();
+                    computeRayleighDiff(cutProfile, cnossosPath, 0, cutProfile.cutPoints.size() - 1,
+                            directPoints, directSegments, pts2D, pts2DGround, cut2DGroundIndex,
+                            exactFrequencyArray);
+                    if(!directSegments.isEmpty()) {
+                        segments.addAll(directSegments);
+                        points.addAll(1, directPoints);
+                        rayleighFound = true;
+                    } else {
+                        // No grazing terrain on the direct line: look for terrain that really blocks
+                        // a sub segment of the reflected path (S->Ref, Ref->R...).
+                        rayleighFound = computeReflectionRayleighDiff(cutProfile, cnossosPath, segments, points,
+                                pts2D, pts2DGround, cut2DGroundIndex, exactFrequencyArray);
+                    }
+                } else {
+                    // Check for Rayleigh criterion for segments computation
+                    List<SegmentPath> rayleighSegments = new ArrayList<>();
+                    List<PointPath> rayleighPoints = new ArrayList<>();
+                    // Look for diffraction over edge on free field (frequency dependent)
+                    computeRayleighDiff(cutProfile, cnossosPath, 0, cutProfile.cutPoints.size() - 1,
+                            rayleighPoints, rayleighSegments, pts2D, pts2DGround, cut2DGroundIndex,
+                            exactFrequencyArray);
+                    if(!rayleighSegments.isEmpty()) {
+                        segments.addAll(rayleighSegments);
+                        points.addAll(1, rayleighPoints);
+                        rayleighFound = true;
+                    }
+                }
             }
-            if(rayleighSegments.isEmpty()) {
+            if(!rayleighFound) {
                 // We don't have a Rayleigh diffraction over DEM. Only direct SR path
                 if(segments.isEmpty()) {
                     segments.add(cnossosPath.getSRSegment());
@@ -494,9 +624,6 @@ public class CnossosPathBuilder {
                         filter(pointPath -> pointPath.type.equals(DIFV)).count();
                 double distance = difVPointCount == 0 ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
                 cnossosPath.delta = segments.getFirst().d + cnossosPath.e + segments.getLast().d - distance;
-            } else {
-                segments.addAll(rayleighSegments);
-                points.addAll(1, rayleighPoints);
             }
             return cnossosPath;
         }
