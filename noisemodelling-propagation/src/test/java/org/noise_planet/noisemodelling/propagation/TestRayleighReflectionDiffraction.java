@@ -18,6 +18,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
@@ -32,17 +33,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Regression tests for the Rayleigh diffraction computation applied to reflected paths.
+ * Regression tests for the Rayleigh diffraction applied to reflected paths.
  * <p>
- * A terrain obstacle located between the reflection point and the receiver (or between the source
- * and the reflection point) is not necessarily visible from the direct source-receiver line, so it
- * was previously ignored. The diffraction must be computed on each real sub segment of the path.
+ * Following the Directive, the attenuation of a reflected path is computed on the unfolded path
+ * (image source -> receiver). A terrain obstacle located between the reflection point and the
+ * receiver is not necessarily visible from the direct source-receiver line, so it was previously
+ * ignored and the reflected path was treated as free field.
  */
 public class TestRayleighReflectionDiffraction {
 
     /**
      * Source -> reflection -> receiver profile. The obstacle is below the direct source-receiver
-     * line but above the reflection -> receiver segment.
+     * line but above the reflection -> receiver (unfolded) reference line.
      */
     private static CutProfile buildReflectionProfileWithObstacle() {
         CutProfile cutProfile = new CutProfile();
@@ -59,8 +61,6 @@ public class TestRayleighReflectionDiffraction {
                 Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
         cutProfile.cutPoints.add(reflection);
 
-        // Terrain obstacle: the direct S-R line passes well above it (so the grazing Rayleigh
-        // check on the direct line does not trigger), but it blocks the reflection leg.
         CutPointTopography obstacle = new CutPointTopography(new Coordinate(45, 0, 6));
         obstacle.setGroundCoefficient(0);
         cutProfile.cutPoints.add(obstacle);
@@ -73,7 +73,7 @@ public class TestRayleighReflectionDiffraction {
     }
 
     @Test
-    public void reflectionSubSegmentProducesRayleighDiffraction() {
+    public void reflectionPathUsesUnfoldedReferenceLine() {
         CutProfile cutProfile = buildReflectionProfileWithObstacle();
         List<Integer> cut2DGroundIndex = new ArrayList<>();
         List<Coordinate> pts2D = cutProfile.computePts2D();
@@ -81,18 +81,24 @@ public class TestRayleighReflectionDiffraction {
         CnossosPath path = new CnossosPath(cutProfile);
         path.setFavourable(false);
 
+        // Unfolded (image source) reference line through the reflection point and the receiver.
+        Coordinate reflectionPoint = pts2D.get(1);
+        Coordinate receiverPoint = pts2D.getLast();
+        double slope = (receiverPoint.y - reflectionPoint.y) / (receiverPoint.x - reflectionPoint.x);
+        Coordinate unfoldedSource = new Coordinate(0, reflectionPoint.y - slope * reflectionPoint.x);
+        LineSegment dSR = new LineSegment(unfoldedSource, receiverPoint);
+        SegmentPath srPath = CnossosPathBuilder.computeSegment(pts2D.getFirst(), receiverPoint,
+                JTSUtility.getMeanPlaneCoefficients(pts2DGround));
+
         List<PointPath> points = new ArrayList<>();
         List<SegmentPath> segments = new ArrayList<>();
         List<Double> frequencies = new ProfileBuilder().exactFrequencyArray;
+        CnossosPathBuilder.computeRayleighDiff(srPath, cutProfile, path, dSR, segments, points, pts2D,
+                pts2DGround, cut2DGroundIndex, frequencies);
 
-        int reflectionIndex = 1;
-        int receiverIndex = cutProfile.cutPoints.size() - 1;
-        CnossosPathBuilder.computeRayleighDiff(cutProfile, path, reflectionIndex, receiverIndex,
-                points, segments, pts2D, pts2DGround, cut2DGroundIndex, frequencies);
-
-        assertEquals(1, points.size(), "One terrain diffraction point is expected on the reflection leg");
+        assertEquals(1, points.size(), "One terrain diffraction point is expected on the reflected path");
         assertEquals(PointPath.POINT_TYPE.DIFH_RCRIT, points.getFirst().type);
-        assertEquals(2, segments.size(), "The reflection leg must be split in two segments at the obstacle");
+        assertEquals(2, segments.size(), "The reflected path must be split in two segments at the obstacle");
         assertTrue(path.delta > 0, "The path difference of the diffraction must be positive");
     }
 
@@ -106,7 +112,7 @@ public class TestRayleighReflectionDiffraction {
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, path.getCutProfile().getProfileType());
         assertTrue(path.getPointList().stream()
                         .anyMatch(point -> point.type == PointPath.POINT_TYPE.DIFH_RCRIT),
-                "A terrain diffraction point must be added on the reflection -> receiver leg");
+                "A terrain diffraction point must be added on the reflected path");
         assertTrue(path.delta > 0, "The path difference of the diffraction must be positive");
     }
 }
