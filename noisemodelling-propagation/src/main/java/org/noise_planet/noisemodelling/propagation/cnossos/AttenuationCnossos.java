@@ -657,9 +657,6 @@ public class AttenuationCnossos {
                 double hRail = scene.sourceHRail.getOrDefault(cnossosPath.cutProfile.getSource().sourcePk, DEFAULT_H_RAIL);
                 int nMax = scene.bodyBarrierMaxReflectionOrder; // maximum reflection order N
                 Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
-                double[] deltaL = new double[data.getFrequencies().size()];
-                // Bug #6 fix: init to 0.0, not dBToW(0.0)=1.0 which would double-count n=0
-                Arrays.fill(deltaL, 0.0);
 
                 // Barrier position in 2D profile (absolute coordinates)
                 double db = pDif.coordinate.x;       // dB: horizontal distance source → barrier
@@ -676,6 +673,7 @@ public class AttenuationCnossos {
                 double hbRel = hb - h0;
 
                 if (db < 5 * hbRel) {
+                    double[] deltaL = new double[data.getFrequencies().size()];
                     for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
                         if (pDif.alphaWall.get(idfreq) < 0.8){
 
@@ -765,6 +763,9 @@ public class AttenuationCnossos {
                         }
                     }
                     deltaBodyScreen = wToDb(deltaL);
+                    if(!Arrays.stream(deltaBodyScreen).allMatch(Double::isFinite)) {
+                        throw new IllegalStateException("Infinite attenuation on train body/wall potential gain..");
+                    }
                 }
             }
 

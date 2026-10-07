@@ -28,6 +28,11 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
     public  double[] aRef = new double[0];
     public  double[] double_aBoundary = new double[0];
     public  double[] aRetroDiff = new double[0]; // Alpha Retro Diffraction
+    /**
+     * Gain from the multiple reflections between the body of the train vehicle and a close wall
+     * In order to take account of this effect the source must contain
+     * the attribute Cref in {@link org.noise_planet.noisemodelling.propagation.SceneWithAttenuation#sourceCref}
+     */
     public double[] deltaBodyScreen = new double[0];
 
     /**

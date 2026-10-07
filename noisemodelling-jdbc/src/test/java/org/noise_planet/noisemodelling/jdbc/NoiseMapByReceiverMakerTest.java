@@ -31,6 +31,8 @@ import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
@@ -909,7 +911,7 @@ public class NoiseMapByReceiverMakerTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
-        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_DENSIFY(the_geom, 1) , pk as pk, 12.0 as height, g as g FROM Rail_protect");
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT the_geom , pk as pk, 12.0 as height, 0.2 as g FROM Rail_protect");
 
         // ICI HAUTEUR RECPTEUR
         connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
@@ -923,6 +925,9 @@ public class NoiseMapByReceiverMakerTest {
         NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
         noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapByReceiverMaker.setMaximumPropagationDistance(150);
+        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.setThreadCount(1);
 
         // Use train directivity functions instead of discrete directivity
         DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -938,13 +943,14 @@ public class NoiseMapByReceiverMakerTest {
 
         try(Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT IDRECEIVER, IDSOURCE, PATH, METEO FROM RAYS ORDER BY IDRECEIVER, IDSOURCE, METEO")) {
+            int numberOfPropagationLinesWithDeltaBodyScreen = 0;
             while (resultSet.next()) {
                 CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(resultSet.getString("PATH"));
-
-
+                if(Arrays.stream(attenuationOutput.deltaBodyScreen).anyMatch(x -> x > 0)) {
+                    numberOfPropagationLinesWithDeltaBodyScreen++;
+                }
             }
+            assertNotEquals(0, numberOfPropagationLinesWithDeltaBodyScreen, "No propagation lines found with a gain from Train Body/Wall");
         }
-
-        assertTrue(false);
     }
 }

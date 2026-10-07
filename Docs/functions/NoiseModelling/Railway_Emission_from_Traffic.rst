@@ -68,6 +68,11 @@ Optional inputs
 
    Type: ``String``
 
+``railwayPlatformDataFile`` — *Railway platform data file*
+   URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
+
+   Type: ``String``
+
 ``trainSetDataFile`` — *Railway train set data file*
    URL of the railway train set data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
 
