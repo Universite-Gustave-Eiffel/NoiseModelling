@@ -4,13 +4,13 @@
 Railway Emission from Traffic
 =============================
 
-Compute railway emission noise map from vehicule, traffic table AND section table.
+Compute railway emission lines sources from vehicle, traffic table AND section table.
 
 Overview
 --------
 
-➡️ Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details).
-✅ The output table is called LW_RAILWAY
+➡️ Compute railway emission lines sources from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details).
+✅ The output table is called LW_RAILWAY and will contain the columns pk_section, the_geom, dir_id, gs, hrail, cref
 
 Arguments
 ---------
