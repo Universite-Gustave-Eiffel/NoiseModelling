@@ -35,10 +35,10 @@ import java.sql.PreparedStatement
 import java.sql.SQLException
 
 
-title = 'Compute railway emission noise map from vehicule, traffic table AND section table.'
-description = '&#10145;&#65039; Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
+title = 'Compute railway emission lines sources from vehicle, traffic table AND section table.'
+description = '&#10145;&#65039; Compute railway emission lines sources from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
               '<hr>' +
-              '&#x2705; The output table is called <b>LW_RAILWAY</b>'
+              '&#x2705; The output table is called <b>LW_RAILWAY</b> and will contain the columns pk_section, the_geom, dir_id, gs, hrail, cref'
 
 inputs = [
         tableRailwayTraffic: [
@@ -88,6 +88,13 @@ inputs = [
                 name : 'Railway emission data file',
                 title : 'Railway emission data file',
                 description : 'URL of the railway emission data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
+                type: String.class,
+                min: 0, max: 1
+        ],
+        railwayPlatformDataFile : [
+                name : 'Railway platform data file',
+                title : 'Railway platform data file',
+                description : 'URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
                 type: String.class,
                 min: 0, max: 1
         ]
@@ -166,9 +173,13 @@ def exec(Connection connection, input) {
     if(input['railwayEmissionDataFile'] != null && !(input['railwayEmissionDataFile'] as String).trim().isEmpty()) {
         railwayEmissionDataFile = input['railwayEmissionDataFile'] as String
     }
+    String railwayPlatformDataFile = RailWayLWIterator.RAILWAY_PLATFORMS_JSON
+    if(input['railwayPlatformDataFile'] != null && !(input['railwayPlatformDataFile'] as String).trim().isEmpty()) {
+        railwayPlatformDataFile = input['railwayPlatformDataFile'] as String
+    }
 
     EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile)
+            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile, railwayPlatformDataFile)
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");

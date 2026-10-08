@@ -38,6 +38,10 @@ import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POIN
 public class AttenuationCnossos {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossos.class);
+    /**
+     * Default is 0.18m (rail above ballast; ballast is considered as ground reference)
+     */
+    public static final double DEFAULT_H_RAIL = 0.18;
 
     /**
      * Compute attenuation of sound energy by distance. Minimum distance is one
@@ -633,7 +637,7 @@ public class AttenuationCnossos {
         if(exportAttenuationMatrix) {
             attenuationOutput.aRef = aRef.clone();
         }
-        double[] aRetroDiff;
+        double[] aRetroDiff = new double[data.getFrequencies().size()];
         //ABoundary computation
         double[] aBoundary;
         double[] aGlobalMeteo = new double[data.getFrequencies().size()];
@@ -641,103 +645,127 @@ public class AttenuationCnossos {
 
         List<PointPath> ptList = cnossosPath.getPointList();
 
-        // todo get hRail from input data
-        double hRail = 0.5;
         Coordinate src = ptList.getFirst().coordinate;
         PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
 
         if (pDif != null && !pDif.alphaWall.isEmpty()) {
-            if (pDif.bodyBarrier){
+            // Get Cref for this source (0 = no body barrier for road/open freight, 1 = fully reflecting)
+            double cref = scene == null ? 0.0 : scene.sourceCref.getOrDefault(cnossosPath.cutProfile.getSource().sourcePk, 0.0);
+            if (cref > 0){
+                // Get hRail for this source (rail-specific, default 0.18m)
+                // Default is 0.18m (rail above ballast; ballast is considered as ground reference)
+                double hRail = scene.sourceHRail.getOrDefault(cnossosPath.cutProfile.getSource().sourcePk, DEFAULT_H_RAIL);
+                int nMax = scene.bodyBarrierMaxReflectionOrder; // maximum reflection order N
+                Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
 
-                int n = 3;
-                Coordinate rcv = ptList.getLast().coordinate;
-                double[][] deltaGeo = new double[n+1][data.getFrequencies().size()];
-                double[][] deltaAbs = new double[n+1][data.getFrequencies().size()];
-                double[][] deltaDif = new double[n+1][data.getFrequencies().size()];
-                double[][] deltaRef = new double[n+1][data.getFrequencies().size()];
-                double[][] deltaRetroDifi = new double[n+1][data.getFrequencies().size()];
-                double[][] deltaRetroDif = new double[n+1][data.getFrequencies().size()];
-                double[] deltaL = new double[data.getFrequencies().size()];
-                Arrays.fill(deltaL, dBToW(0.0));
+                // Barrier position in 2D profile (absolute coordinates)
+                double db = pDif.coordinate.x;       // dB: horizontal distance source → barrier
+                double hb = pDif.coordinate.y;       // absolute Z of barrier top
+                Coordinate B = new Coordinate(db, hb);
 
-                double db = pDif.coordinate.x;
-                double hb = pDif.coordinate.y;
-                Coordinate B = new Coordinate(db,hb);
-
-                double Cref = 1;
+                // dr = rcv.x = dB + dR (total horizontal distance source → receiver)
                 double dr = rcv.x;
-                double h0 = ptList.getFirst().altitude+hRail;
-                double hs = ptList.getFirst().altitude+src.y-hRail;
-                double hr = ptList.getLast().altitude + ptList.getLast().coordinate.y-h0;
-                double[] r = new double[4];
-                if (db<5*hb) {
+                // h0 = altitude of rail top (reference plane for CNOSSOS body barrier)
+                double h0 = src.y + hRail;
+                // hr = receiver height above rail top
+                double hr = rcv.y - h0;
+                // hbRel = barrier height above rail top (for the dB < 5·hB condition)
+                double hbRel = hb - h0;
+
+                if (db < 5 * hbRel) {
+                    double[] deltaL = new double[data.getFrequencies().size()];
                     for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
-                        if (pDif.alphaWall.get(idfreq)<0.8){
+                        if (pDif.alphaWall.get(idfreq) < 0.8){
 
-                            double dif0 =0 ;
-                            double ch = 1.;
+                            double ch = 1.0;
                             double lambda = 340.0 / data.getFrequencies().get(idfreq);
-                            double hi = hs;
-                            double cSecond = 1;
+                            double cSecond = 1.0;
 
-                            for (int i = 0; i <= n; i++) {
-                                double di = -2 * i * db;
+                            // --- Pass 1: compute deltaGeo, deltaDif, deltaAbs, deltaRef for each n ---
+                            double[] rn = new double[nMax + 1];
+                            double[] difN = new double[nMax + 1];  // D_n diffraction values
+                            double[][] deltaGeo = new double[nMax + 1][1];
+                            double[][] deltaDif = new double[nMax + 1][1];
+                            double[][] deltaAbs = new double[nMax + 1][1];
+                            double[][] deltaRef = new double[nMax + 1][1];
 
-                                Coordinate si = new Coordinate(src.x+di, src.y);
-                                r[i] = sqrt(pow(di - (db + dr), 2) + pow(hi - hr, 2));
-                                deltaGeo[i][idfreq] =  20 * log10(r[0] / r[i]);
-                                double deltai = si.distance(B)+B.distance(rcv)-si.distance(rcv);
+                            for (int i = 0; i <= nMax; i++) {
+                                double di = -2.0 * i * db;  // dn = -2n·dB
 
+                                // (2.5.41) rn = |SnR| — Bug #2 fix: di - dr, not di - (db+dr)
+                                // dr already = dB+dR in the 2D profile coordinate system
+                                rn[i] = sqrt(pow(di - dr, 2) + pow(hRail - hr, 2));
+
+                                // (2.5.40) ΔLgeo,n = 20·lg(r0/rn)
+                                deltaGeo[i][0] = 20 * log10(rn[0] / rn[i]);
+
+                                // (2.5.43) δn via Euclidean distances in absolute coordinates
+                                Coordinate si = new Coordinate(src.x + di, src.y);
+                                double deltai = si.distance(B) + B.distance(rcv) - si.distance(rcv);
+
+                                // (2.5.21) Dn diffraction with C"=1, Ch=1
                                 double dif = 0;
-                                double testForm = (40/lambda)*cSecond*deltai;
-                                if (testForm>=-2) {
-                                    dif = 10*ch*log10(3+testForm);
+                                double testForm = (40.0 / lambda) * cSecond * deltai;
+                                if (testForm >= -2) {
+                                    dif = 10 * ch * log10(3 + testForm);
                                 }
+                                difN[i] = dif;
 
-                                if (i==0){
-                                    dif0=dif;
-                                    deltaRetroDif[i][idfreq] = dif;
-                                }else{
-                                    deltaDif[i][idfreq] = dif0-dif;
-                                }
+                                // (2.5.42) ΔLdif,n = D0 - Dn
+                                deltaDif[i][0] = (i == 0) ? 0 : difN[0] - difN[i];
 
-                                deltaAbs[i][idfreq] = 10 * i * log10(1 - pDif.alphaWall.get(idfreq));
-                                deltaRef[i][idfreq] = 10 * i * log10(Cref);
+                                // (2.5.44) ΔLabs,n = 10·n·lg(1-α)
+                                deltaAbs[i][0] = 10.0 * i * log10(1 - pDif.alphaWall.get(idfreq));
 
-                                double retroDif =0 ;
-                                Coordinate Pi = new Coordinate(-(2 * i -1)* db,hb);
-                                Coordinate RcvPrime = new Coordinate(dr,max(hr,hb*(db+dr-di)/(db-di)));
-                                deltai = -(si.distance(Pi)+Pi.distance(RcvPrime)-si.distance(RcvPrime));
-
-                                testForm = (40/lambda)*cSecond*deltai;
-                                if (testForm>=-2) {
-                                    retroDif = 10*ch*log10(3+testForm);
-                                }
-
-                                if (i==0){
-                                    deltaRetroDifi[i][idfreq] = 0;
-                                }else{
-                                    deltaRetroDifi[i][idfreq] = retroDif;
-                                }
-
-
+                                // (2.5.45) ΔLref,n = 10·n·lg(Cref)
+                                deltaRef[i][0] = 10.0 * i * log10(cref);
                             }
-                            // Compute deltaRetroDif
-                            deltaRetroDif[0][idfreq] = 0;
-                            for (int i = 1; i <= n; i++) {
+
+                            // --- Pass 2: compute retrodiffraction ΔLretrodif,n ---
+                            // Bug #5 fix: per (2.5.46), Δretrodif,n,i uses source Sn for ALL i=1..n
+                            double[] deltaRetroDif = new double[nMax + 1];
+                            deltaRetroDif[0] = 0; // (2.5.46) n=0 case
+
+                            for (int nn = 1; nn <= nMax; nn++) {
+                                double dn = -2.0 * nn * db;
+                                Coordinate sn = new Coordinate(src.x + dn, src.y);
+
                                 double sumRetrodif = 0;
-                                for (int j = 1; j <= i; j++) {
-                                    sumRetrodif = sumRetrodif + deltaRetroDifi[j][idfreq];
+                                for (int ii = 1; ii <= nn; ii++) {
+                                    // Pi at top of the ii-th reflecting surface
+                                    Coordinate Pi = new Coordinate(-(2.0 * ii - 1) * db, hb);
+
+                                    // (2.5.47-2.5.48) Equivalent receiver R'
+                                    // Bug #3 fix: numerator (dr - dn), not (db + dr - dn)
+                                    // Bug #4 fix: work in absolute Z consistently
+                                    double hRPrimeAbs = max(rcv.y, h0 + hbRel * (dr - dn) / (db - dn));
+                                    Coordinate RcvPrime = new Coordinate(dr, hRPrimeAbs);
+
+                                    // Retrodiffraction δ (negative path difference)
+                                    double deltai = -(sn.distance(Pi) + Pi.distance(RcvPrime) - sn.distance(RcvPrime));
+
+                                    double retroDif = 0;
+                                    double testForm = (40.0 / lambda) * cSecond * deltai;
+                                    if (testForm >= -2) {
+                                        retroDif = 10 * ch * log10(3 + testForm);
+                                    }
+                                    sumRetrodif += retroDif;
                                 }
-                                deltaRetroDif[i][idfreq] = - sumRetrodif;
+                                // (2.5.46) ΔLretrodif,n = -Σ Δretrodif,n,i
+                                deltaRetroDif[nn] = -sumRetrodif;
                             }
-                            // Compute deltaL
-                            for (int i = 0; i <= n; i++) {
-                                deltaL[idfreq] = deltaL[idfreq] + dBToW(deltaGeo[i][idfreq] + deltaDif[i][idfreq] + deltaAbs[i][idfreq] + deltaRef[i][idfreq] + deltaRetroDif[i][idfreq]);
+
+                            // --- (2.5.39) LW,eq = 10·lg(Σ 10^(ΔLn/10)) ---
+                            for (int i = 0; i <= nMax; i++) {
+                                deltaL[idfreq] += dBToW(deltaGeo[i][0] + deltaDif[i][0]
+                                        + deltaAbs[i][0] + deltaRef[i][0] + deltaRetroDif[i]);
                             }
                         }
                     }
                     deltaBodyScreen = wToDb(deltaL);
+                    if(!Arrays.stream(deltaBodyScreen).allMatch(Double::isFinite)) {
+                        throw new IllegalStateException("Infinite attenuation on train body/wall potential gain..");
+                    }
                 }
             }
 
@@ -824,6 +852,8 @@ public class AttenuationCnossos {
         }
         // Keep global attenuation
         attenuationOutput.aGlobal = aGlobalMeteoRay.clone();
+        attenuationOutput.aRetroDiff = aRetroDiff;
+        attenuationOutput.deltaBodyScreen = deltaBodyScreen;
     }
 
 }

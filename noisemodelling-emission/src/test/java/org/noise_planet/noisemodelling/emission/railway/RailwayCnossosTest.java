@@ -229,7 +229,6 @@ public class RailwayCnossosTest {
 
         RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
-        trackParameters.setFileVersion("EU"); // for bridge
 
         RailWayParameters lWRailWay = railwayCnossos.evaluate(vehicleParameters, trackParameters);
 
