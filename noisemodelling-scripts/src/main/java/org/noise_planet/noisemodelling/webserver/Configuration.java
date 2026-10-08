@@ -11,6 +11,7 @@
 package org.noise_planet.noisemodelling.webserver;
 
 import org.apache.commons.cli.*;
+import org.noise_planet.noisemodelling.VersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +77,9 @@ public class Configuration {
         Option helpOption = new Option("h", "help", false, "Show this help message");
         options.addOption(helpOption);
 
+        Option versionOption = new Option("v", "version", false, "Print NoiseModelling version and commit then exit");
+        options.addOption(versionOption);
+
         Option scriptPathOption = new Option("s", "script", true, "Path and file name of the script");
         scriptPathOption.setArgName("script path");
         options.addOption(scriptPathOption);
@@ -122,6 +126,13 @@ public class Configuration {
         if (args.length > 0 && (args[0].equals("-h") || args[0].equals("--help"))) {
             helpFormatter.printHelp(NOISE_MODELLING_WEB_SERVER, options);
             return null;
+        }
+        // Check if -v or --version argument is present
+        for (String arg : args) {
+            if (arg.equals("-v") || arg.equals("--version")) {
+                logger.info(VersionUtils.getVersionDescription());
+                return null;
+            }
         }
         try {
             CommandLine commandLine = commandLineParser.parse(options, args, true);

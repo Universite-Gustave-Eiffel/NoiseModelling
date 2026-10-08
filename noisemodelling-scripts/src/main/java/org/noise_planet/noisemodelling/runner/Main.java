@@ -22,6 +22,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
+import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.webserver.NoiseModellingServer;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.webserver.script.ExecutionPlan;
@@ -109,7 +110,7 @@ public class Main {
         databaseHostNameOption.setArgName("HOST");
         options.addOption(databaseHostNameOption);
         options.addOption(passwordOption);
-        Option printVersionOption = new Option("v", false, "Print version of all libraries");
+        Option printVersionOption = new Option("v", "version", false, "Print NoiseModelling version, commit and version of all libraries then exit");
         options.addOption(printVersionOption);
         Option shutdownOption = new Option("c", "shutdown", false, "Do not shutdown compact the database at the end " +
                 "of the execution");
@@ -123,6 +124,7 @@ public class Main {
         // Check if -v option is invoked before parsing using commandLineParser
         for (String arg : args) {
             if (arg.equals("-v") || arg.equals("--version")) {
+                logger.info(VersionUtils.getVersionDescription());
                 List<LibraryInfo> libraryInfoList = FileUtilities.collectLibraryIdentifiers();
                 printBuildIdentifiers(logger, libraryInfoList);
                 return;
