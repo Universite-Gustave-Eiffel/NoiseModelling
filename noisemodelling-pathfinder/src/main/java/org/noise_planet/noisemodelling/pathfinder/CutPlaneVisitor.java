@@ -13,8 +13,6 @@ import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
  /**
  * Instead of feeding a list and returning all vertical cut planes.
@@ -36,8 +34,7 @@ public interface CutPlaneVisitor {
      * @param receiver        Receiver information
      * @param sourceList      All sources in the range of this receiver sorted by the distance from the receiver
      */
-    void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
-                       AtomicInteger cutProfileCount);
+    void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList);
 
     enum PathSearchStrategy {
         /**

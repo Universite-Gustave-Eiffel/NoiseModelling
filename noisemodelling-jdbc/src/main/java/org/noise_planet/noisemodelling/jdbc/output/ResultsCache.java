@@ -32,16 +32,18 @@ public class ResultsCache implements ProfilerThread.Metric {
     public final AtomicInteger statisticsSumDistanceCutSourceCount = new AtomicInteger(0);
     public final AtomicLong statisticsSumSourcesCount = new AtomicLong(0);
     public final AtomicLong statisticsSumSourcesCountIgnored = new AtomicLong(0);
+    public final AtomicInteger cutProfileCount = new AtomicInteger(0);
 
     @Override
     public String[] getColumnNames() {
-        return new String[] {"jdbc_stack", "average_cut_source_distance"};
+        return new String[] {"jdbc_stack", "average_cut_source_distance", "cut_profile_count"};
     }
 
     @Override
     public String[] getCurrentValues() {
         // Metric that return unprocessed data (not yet recorded in the database)
-        return new String[] {Long.toString(queueSize.get()), Double.toString(getAverageCutSourceDistance())};
+        return new String[] {Long.toString(queueSize.get()), Double.toString(getAverageCutSourceDistance()),
+                Integer.toString(cutProfileCount.get())};
     }
 
     /**

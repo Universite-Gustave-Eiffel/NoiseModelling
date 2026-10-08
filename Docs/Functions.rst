@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 List of functions
 ^^^^^^^^^^^^^^^^^
@@ -40,6 +40,7 @@ Database Manager
 
     functions/Database_Manager/Add_Primary_Key
     functions/Database_Manager/Clean_Database
+    functions/Database_Manager/Copy_Table_with_Select
     functions/Database_Manager/Display_Database
     functions/Database_Manager/Drop_a_Table
     functions/Database_Manager/Execute_Query

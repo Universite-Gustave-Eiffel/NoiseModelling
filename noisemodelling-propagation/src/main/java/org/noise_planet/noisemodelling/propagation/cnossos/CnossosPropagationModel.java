@@ -45,8 +45,8 @@ public class CnossosPropagationModel implements PropagationModel {
                                       AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
         // Compute favorable and homogeneous propagation paths
         if (cnossosPaths.isEmpty()) {
-            double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-            cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
+            double gs = scene.getSourceGs(cutProfile.getSource().sourcePk);
+            cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile,
                     scene.profileBuilder.exactFrequencyArray, gs);
         }
         // Compute attenuation for each path

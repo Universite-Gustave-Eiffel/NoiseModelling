@@ -27,12 +27,14 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.Map;
 
 
 public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     public static final String RAILWAY_VEHICLES_CNOSSOS_JSON = "RailwayVehiclesCnossos.json";
     public static final String RAILWAY_TRAINSETS_JSON = "RailwayTrainsets.json";
     public static final String RAILWAY_EMISSION_CNOSSOS_JSON = "RailwayEmissionCnossos.json";
+    public static final String RAILWAY_PLATFORMS_JSON = "RailwayPlatforms.json";
     private RailwayCnossos railway = new RailwayCnossos();
     private Connection connection;
     private RailWayLWGeom railWayLWComplete = null;
@@ -41,6 +43,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     private String tableTrainTraffic;
     private SpatialResultSet spatialResultSet;
     public Map<String, Integer> sourceFields = null;
+    private Map<String, RailwayPlatform> platformMap;
 
 
     /**
@@ -50,13 +53,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
      * @param tableTrainTraffic Train traffic associated with tracks
      */
     public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) throws IOException {
-        this.railway.setVehicleDataFile(RAILWAY_VEHICLES_CNOSSOS_JSON);
-        this.railway.setTrainSetDataFile(RAILWAY_TRAINSETS_JSON);
-        this.railway.setRailwayDataFile(RAILWAY_EMISSION_CNOSSOS_JSON);
-        this.connection = connection;
-        this.tableTrackGeometry = tableTrackGeometry;
-        this.tableTrainTraffic = tableTrainTraffic;
-        railWayLWComplete = fetchNext(railWayLWIncomplete);
+        this(connection, tableTrackGeometry, tableTrainTraffic, RAILWAY_VEHICLES_CNOSSOS_JSON, RAILWAY_TRAINSETS_JSON, RAILWAY_EMISSION_CNOSSOS_JSON, RAILWAY_PLATFORMS_JSON);
     }
 
     /**
@@ -72,10 +69,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
      * @param railwayEmissionDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for railway metadata configuration.
      * @throws IOException        If an error occurs during file reading or parsing the specified data files.
      */
-    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile) throws IOException {
+    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile, String platformDataFile) throws IOException {
        this.railway.setVehicleDataFile(vehicleDataFile);
         this.railway.setTrainSetDataFile(trainSetDataFile);
         this.railway.setRailwayDataFile(railwayEmissionDataFile);
+        this.setPlatformDataFile(platformDataFile);
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
@@ -84,6 +82,35 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     @Override
     public boolean hasNext() {
         return railWayLWComplete != null;
+    }
+
+    /**
+     * Set a custom platform data file (JSON resource next to Railway class).
+     * @param platformDataFile name of the JSON file (e.g. "RailwayPlatforms.json")
+     */
+    public void setPlatformDataFile(String platformDataFile) {
+        this.platformMap = RailwayPlatform.loadFromJSON(platformDataFile);
+    }
+
+    /**
+     * Read platform info for a rail section from the result set.
+     * Looks up the PLATFORM column (name -> JSON lookup), defaults to DEFAULT if no column present.
+     * @throws IllegalArgumentException if the platform name is not found in the JSON library
+     */
+    private RailwayPlatform readPlatform(SpatialResultSet rs) throws SQLException {
+        if (sourceFields.containsKey("PLATFORM")) {
+            String platformName = rs.getString("PLATFORM");
+            if (!rs.wasNull() && platformName != null && !platformName.isEmpty()) {
+                RailwayPlatform p = platformMap.get(platformName.toUpperCase());
+                if (p == null) {
+                    throw new IllegalArgumentException(
+                            "Platform '" + platformName + "' not found in platform data file. " +
+                            "Available platforms: " + platformMap.keySet());
+                }
+                return p;
+            }
+        }
+        return RailwayPlatform.DEFAULT_PLATFORM;
     }
 
 
@@ -170,10 +197,15 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 incompleteRecord.setRailWayLWDay(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                 incompleteRecord.setRailWayLWEvening(getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
                 incompleteRecord.setRailWayLWNight(getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                 incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
                 incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
+                incompleteRecord.platform = readPlatform(spatialResultSet);
+                // GS from explicit column, otherwise use platform g3 (ground factor between rails)
                 if (hasColumn(spatialResultSet, "GS")) {
                     incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                } else {
+                    incompleteRecord.gs = incompleteRecord.platform.g3;
                 }
                 incompleteRecord.pk = spatialResultSet.getInt("trackid");
                 incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
@@ -189,7 +221,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     incompleteRecord.setRailWayLWEvening(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING")));
                     incompleteRecord.setRailWayLWNight(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT")));
                 } else {
-                    // railWayLWIncomplete is complete
+                    // railWayLWIncomplete is complete — sync cref from accumulated emissions
+                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                     completeRecord = new RailWayLWGeom(incompleteRecord);
                     // read next (incomplete) instance attributes for the next() call
                     incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
@@ -201,10 +234,15 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     incompleteRecord.setRailWayLWDay(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     incompleteRecord.setRailWayLWEvening(getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
                     incompleteRecord.setRailWayLWNight(getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                     incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
                     incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
+                    incompleteRecord.platform = readPlatform(spatialResultSet);
+                    // GS from explicit column, otherwise use platform g3 (ground factor between rails)
                     if (hasColumn(spatialResultSet, "GS")) {
                         incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                    } else {
+                        incompleteRecord.gs = incompleteRecord.platform.g3;
                     }
                     incompleteRecord.pk = spatialResultSet.getInt("trackid");
                     incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
@@ -215,6 +253,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 incompleteRecord.pk = -1;
             } else {
                 if (completeRecord == null) {
+                    // Sync cref from accumulated emissions before creating final record
+                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                     completeRecord = new RailWayLWGeom(incompleteRecord);
                 }
             }
@@ -314,23 +354,48 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 impactNoiseStr, bridgeTransfertStr, curvature, commercialSpeed, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = railway.getVehicleFromTrainset(train);
-       // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
-            int i = 0;
+            // Two-pass approach:
+            // Pass 1: evaluate each vehicle type and collect emissions + RBE values
+            List<RailWayCnossosParameters> vehicleEmissions = new ArrayList<>();
+            List<Integer> vehicleRbe = new ArrayList<>();
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
                 String typeTrain = entry.getKey();
-                double vehiclePerHouri = vehiclePerHour * entry.getValue();
+                int unitCount = entry.getValue();
+                double vehiclePerHouri = vehiclePerHour * unitCount;
+                int rbe = railway.getReflectingBarrierEffect(typeTrain);
+                RailWayCnossosParameters vehEmission = new RailWayCnossosParameters();
                 if (vehiclePerHouri>0) {
                     RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(typeTrain, vehicleSpeed,
                             vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
-
-                    if (i == 0) {
-                        lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
-                    } else {
-                        lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
-                    }
+                    vehEmission = railway.evaluate(vehicleParameters, trackParameters);
                 }
-                i++;
+                vehicleEmissions.add(vehEmission);
+                vehicleRbe.add(rbe);
+            }
+
+            // Pass 2: compute power-weighted Cref using low-source acoustic power
+            double rbeWeightedSum = 0;
+            double totalPowerWeight = 0;
+            for (int i = 0; i < vehicleEmissions.size(); i++) {
+                double power = vehicleEmissions.get(i).computeLowSourcePower();
+                rbeWeightedSum += vehicleRbe.get(i) * power;
+                totalPowerWeight += power;
+            }
+
+            // Merge all vehicle emissions
+            for (int i = 0; i < vehicleEmissions.size(); i++) {
+                if (i == 0) {
+                    lWRailWay = vehicleEmissions.get(i);
+                } else {
+                    lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, vehicleEmissions.get(i));
+                }
+            }
+
+            // Set power-weighted Cref on the combined emission result
+            if (totalPowerWeight > 0) {
+                lWRailWay.setCref(rbeWeightedSum / totalPowerWeight);
+                lWRailWay.setCrefTotalWeight(totalPowerWeight);
             }
 
         }else if (railway.isInVehicleList(train)){
@@ -339,6 +404,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
                 lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
             }
+            // Set Cref from single vehicle, weighted by low-source power
+            int rbe = railway.getReflectingBarrierEffect(train);
+            double power = lWRailWay.computeLowSourcePower();
+            lWRailWay.setCref(rbe);
+            lWRailWay.setCrefTotalWeight(power);
         }
 
         return lWRailWay;

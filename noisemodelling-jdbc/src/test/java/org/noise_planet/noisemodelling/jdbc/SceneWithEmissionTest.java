@@ -525,7 +525,7 @@ public class SceneWithEmissionTest {
             //Actual values
             // number of propagation rays between two walls = reflectionOrder * 4 + 2
             // number of cutProfile between two walls = reflectionOrder * 2 + 1
-            assertEquals(i * 2 + 1, propDataOut.cutProfileCount.get());
+            assertEquals(i * 2 + 1, propDataOut.resultsCache.cutProfileCount.get());
 
             double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumDbArray(propDataOut.resultsCache.receiverLevels.pop().levels);
             if(i == 0) {
