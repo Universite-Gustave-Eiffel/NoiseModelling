@@ -224,5 +224,6 @@ public class SceneWithAttenuation extends Scene {
         sourceGs.clear();
         sourceHRail.clear();
         directionAttributes.clear();
+        sourceCref.clear();
     }
 }
