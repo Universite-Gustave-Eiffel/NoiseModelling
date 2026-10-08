@@ -123,8 +123,8 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             }
             if(curved) {
                 // Adjust the altitude of the building roof points to be in the curved coordinate system
-                List<Coordinate> curvedRoofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
-                        roofPoints.toArray(new Coordinate[0]), false));
+                List<Coordinate> curvedRoofPoints = CurvedProfileGenerator.applyTransformation(p1, p2,
+                        roofPoints);
                 // Create a cut of the building volume with the roof points z moved to the bottom following
                 // the curve coordinate system formulae
                 if(cutRoofPointsWithPlane(cutPlane, curvedRoofPoints).isEmpty()) {
@@ -158,8 +158,8 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             List<Coordinate> roofPoints = Arrays.asList(extendedP0, extendedP1);
             if(curved) {
                 // Adjust the altitude of the building roof points to be in the curved coordinate system
-                List<Coordinate> curvedRoofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
-                        roofPoints.toArray(new Coordinate[0]), false));
+                List<Coordinate> curvedRoofPoints = CurvedProfileGenerator.applyTransformation(p1, p2,
+                        roofPoints);
                 // Create a cut of the building volume with the roof points z moved to the bottom following
                 // the curve coordinate system formulae
                 if(cutRoofPointsWithPlane(cutPlane, curvedRoofPoints).isEmpty()) {
