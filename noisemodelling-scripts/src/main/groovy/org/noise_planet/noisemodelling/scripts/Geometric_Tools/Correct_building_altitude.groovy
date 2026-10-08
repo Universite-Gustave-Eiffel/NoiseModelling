@@ -17,6 +17,7 @@ import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -60,26 +61,28 @@ def exec(Connection connection, Map input) {
 
     Sql sql = new Sql(connection)
     Statement statement = connection.createStatement()
+    DBTypes dbType = DBUtils.getDBType(connection)
 
-    String tableName = normalizeIdentifier(input['tableName'], 'tableName')
-    String heightColumn = normalizeIdentifier(input['heightColumn'] ?: 'HEIGHT', 'heightColumn')
+    String tableName = TableLocation.capsIdentifier(requiredValue(input['tableName'], 'tableName'), dbType)
+    String heightColumn = TableLocation.capsIdentifier(requiredValue(input['heightColumn'] ?: 'HEIGHT', 'heightColumn'), dbType)
+    TableLocation tableLocation = TableLocation.parse(tableName, dbType)
 
-    if (!JDBCUtilities.tableExists(connection, tableName)) {
+    if (!JDBCUtilities.tableExists(connection, tableLocation)) {
         throw new IllegalArgumentException("The table " + tableName + " does not exist.")
     }
-    if (!JDBCUtilities.hasField(connection, tableName, heightColumn)) {
+    if (!JDBCUtilities.hasField(connection, tableLocation, heightColumn)) {
         throw new IllegalArgumentException("Column " + heightColumn + " does not exist in table " + tableName + ".")
     }
 
-    List<String> geometryColumnNames = GeometryTableUtilities.getGeometryColumnNames(connection, tableName)
+    List<String> geometryColumnNames = GeometryTableUtilities.getGeometryColumnNames(connection, tableLocation)
     if (geometryColumnNames.isEmpty()) {
         throw new IllegalArgumentException("The table " + tableName + " does not contain a geometry column.")
     }
 
     String geometryColumnName = geometryColumnNames.get(0)
-    String tableIdentifier = TableLocation.parse(tableName, DBUtils.getDBType(connection)).toString()
-    String geometryIdentifier = statement.enquoteIdentifier(geometryColumnName, false)
-    String heightIdentifier = statement.enquoteIdentifier(heightColumn, false)
+    String tableIdentifier = tableLocation.toString()
+    String geometryIdentifier = TableLocation.quoteIdentifier(geometryColumnName, dbType)
+    String heightIdentifier = TableLocation.quoteIdentifier(heightColumn, dbType)
 
     Number nullHeightCount = sql.firstRow("SELECT COUNT(*) AS NB FROM " + tableIdentifier +
             " WHERE " + heightIdentifier + " IS NULL").NB as Number
@@ -93,19 +96,20 @@ def exec(Connection connection, Map input) {
         throw new IllegalArgumentException("Column " + heightColumn + " contains negative height value(s).")
     }
 
+    // ST_CoordDim exists in both H2GIS and PostGIS (ST_Is3D does not exist in PostGIS)
     Number twoDimensionalGeometryCount = sql.firstRow("SELECT COUNT(*) AS NB FROM " + tableIdentifier +
-            " WHERE " + geometryIdentifier + " IS NOT NULL AND ST_IS3D(" + geometryIdentifier + ") <> 1").NB as Number
+            " WHERE " + geometryIdentifier + " IS NOT NULL AND ST_COORDDIM(" + geometryIdentifier + ") < 3").NB as Number
     if (twoDimensionalGeometryCount.intValue() > 0) {
         throw new IllegalArgumentException("The geometry column " + geometryColumnName + " contains 2D geometries.")
     }
 
-    GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection,
-            TableLocation.parse(tableName, DBUtils.getDBType(connection)), geometryColumnName)
+    GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, tableLocation, geometryColumnName)
     metaData.setHasZ(true)
     metaData.initGeometryType()
 
+    // SET DATA TYPE ... USING is understood by both H2 and PostgreSQL
     String sqlUpdate = String.format(Locale.ROOT,
-            "ALTER TABLE %s ALTER COLUMN %s %s USING ST_SETSRID(ST_TRANSLATE(%s, 0, 0, %s), ST_SRID(%s))",
+            "ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s USING ST_SETSRID(ST_TRANSLATE(%s, 0, 0, %s), ST_SRID(%s))",
             tableIdentifier,
             geometryIdentifier,
             metaData.getSQL(),
@@ -121,13 +125,9 @@ def exec(Connection connection, Map input) {
     return resultString
 }
 
-private static String normalizeIdentifier(Object value, String parameterName) {
+private static String requiredValue(Object value, String parameterName) {
     if (value == null || value.toString().trim().isEmpty()) {
         throw new IllegalArgumentException(parameterName + " is required.")
     }
-    String identifier = value.toString().trim().toUpperCase(Locale.ROOT)
-    if (!(identifier ==~ /[A-Z][A-Z0-9_]*/)) {
-        throw new IllegalArgumentException(parameterName + " must be a simple SQL identifier.")
-    }
-    return identifier
+    return value.toString().trim()
 }
