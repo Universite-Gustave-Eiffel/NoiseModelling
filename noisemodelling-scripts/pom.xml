@@ -516,6 +516,8 @@
                         <configuration>
                             <finalName>NoiseModelling_${project.parent.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
+                            <!-- Prevents the ZIP from being attached for deploy/install to maven central (too heavy) -->
+                            <attach>false</attach>
                             <descriptors>
                                 <descriptor>src/assembly/distribution.xml</descriptor>
                             </descriptors>
