@@ -35,17 +35,17 @@ jobs:
       # Checkout the source code of the project
       - name: Checkout
         uses: actions/checkout@v4
-      # Setup the jdk using version 11 of Adoptium Temurin
+      # Set up the jdk using version 25 of Adoptium Temurin
       - name: Setup java 25 using Adoptium Temurin
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '25'
           server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+          server-username-env-var: MAVEN_USERNAME
+          server-password-env-var: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          gpg-passphrase-env-var: MAVEN_GPG_PASSPHRASE
       - name: Building
         run: mvn test install javadoc:jar package -B
         env:
