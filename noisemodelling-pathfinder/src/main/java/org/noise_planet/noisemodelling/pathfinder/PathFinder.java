@@ -373,7 +373,11 @@ public class PathFinder {
                 for(PathFinder.ComputationSide side : PathFinder.ComputationSide.values()) {
                     CutProfile cutProfileSide = computeVEdgeDiffraction(rcv, src, data, side, curved);
                     if (cutProfileSide != null) {
-                        strategy = dataOut.onNewCutPlane(cutProfileSide);
+                        CutPlaneVisitor.PathSearchStrategy pathStrategy = dataOut.onNewCutPlane(cutProfileSide);
+                        // A path returning CONTINUE must not cancel a stop requested by a previous path of this source
+                        if(!pathStrategy.equals(CutPlaneVisitor.PathSearchStrategy.CONTINUE)) {
+                            strategy = pathStrategy;
+                        }
                         if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                                 strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                             return strategy;
@@ -789,7 +793,11 @@ public class PathFinder {
             CutProfile cutProfileReflexion = resetSourceReceiverAttributes(rcv, src, data, mainProfileCutPoints);
             cutProfileReflexion.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
 
-            strategy = dataOut.onNewCutPlane(cutProfileReflexion);
+            CutPlaneVisitor.PathSearchStrategy pathStrategy = dataOut.onNewCutPlane(cutProfileReflexion);
+            // A path returning CONTINUE must not cancel a stop requested by a previous path of this source
+            if(!pathStrategy.equals(CutPlaneVisitor.PathSearchStrategy.CONTINUE)) {
+                strategy = pathStrategy;
+            }
             if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                     strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
