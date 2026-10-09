@@ -115,7 +115,7 @@ public class NoiseModellingServer {
             // Read configuration from command line
             Configuration configuration = Configuration.createConfigurationFromArguments(args);
             if(configuration == null) {
-                // Use called with --help or -h argument, just exit after displaying help
+                // Use called with --help/-h or --version/-v argument, just exit after displaying it
                 System.exit(0);
             }
             // Initialize additional loggers
