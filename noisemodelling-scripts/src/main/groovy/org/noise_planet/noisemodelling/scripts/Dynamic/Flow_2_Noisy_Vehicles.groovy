@@ -32,6 +32,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.stream.Collectors
@@ -200,16 +201,26 @@ def exec(Connection connection, input) {
 
         String insert = "INSERT INTO SOURCES_EMISSION VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
+        // the source points of each road are fetched by ROAD_ID below
+        sql.execute("CREATE INDEX ON SOURCES_GEOM(ROAD_ID)")
+
         int roadCount = JDBCUtilities.getRowCount(connection, sources_table_name)
 
-        sql.query("SELECT * FROM    "+sources_table_name+"   ;    ", { ResultSet result ->
+        // group the inserts in batches instead of one INSERT statement per emitting point,
+        // keeping autocommit on: on H2 one large transaction is slower than autocommit batches
+        PreparedStatement batchInsert = connection.prepareStatement(insert)
+        int pendingInserts = 0
+
+        sql.query("SELECT * FROM    " + sources_table_name + "   ;    ", { ResultSet result ->
 
             SpatialResultSet rs = result.unwrap(SpatialResultSet.class)
-            int k=1
+            int k = 1
 
             while (rs.next()) {
                 Road road = new Road()
-                logger.info(k + "/" + roadCount + "    % " + 100*k/roadCount)
+                if (k % 100 == 0 || k == roadCount) {
+                    logger.info(k + "/" + roadCount + "    % " + 100 * k / roadCount)
+                }
                 k++
 
                 road.setRoad(
@@ -238,24 +249,26 @@ def exec(Connection connection, input) {
 
                     for (SourcePoint source in road.source_points) {
                         if (source.levels[0]> 0.0){
-                            sql.execute(insert, [
-                                    time,
-                                    source.id,
-                                    source.levels[0],
-                                    source.levels[1],
-                                    source.levels[2],
-                                    source.levels[3],
-                                    source.levels[4],
-                                    source.levels[5],
-                                    source.levels[6],
-                                    source.levels[7]
-                            ])
+                            batchInsert.setInt(1, time)
+                            batchInsert.setLong(2, source.id)
+                            for (int freq = 0; freq < 8; freq++) {
+                                batchInsert.setDouble(3 + freq, source.levels[freq])
+                            }
+                            batchInsert.addBatch()
+                            if (++pendingInserts >= 500) {
+                                batchInsert.executeBatch()
+                                pendingInserts = 0
+                            }
                         }
                     }
 
                 }
             }
         })
+        if (pendingInserts > 0) {
+            batchInsert.executeBatch()
+        }
+        batchInsert.close()
     }
     // IDSOURCE must be the leading column: both the per-cell emission fetch and the
     // Noise_From_Attenuation_Matrix join look rows up by IDSOURCE (H2 nested-loop joins
@@ -724,80 +737,60 @@ class IndividualVehicleEmissionProcessData {
     Map<Integer, Double> SPEED_HV = new HashMap<>()
     Map<Integer, Double> LV = new HashMap<>()
     Map<Integer, Double> HV = new HashMap<>()
+    // The spectra only depend on the source speeds, so the possible outputs of
+    // getCarsLevel are computed once per source instead of once per source and time step
+    Map<Integer, double[]> LEVEL_LV_ONLY = new HashMap<>()
+    Map<Integer, double[]> LEVEL_HV_ONLY = new HashMap<>()
+    Map<Integer, double[]> LEVEL_LV_AND_HV = new HashMap<>()
+    final double[] LEVEL_NO_VEHICLE = new double[8]
     int nCars = 0
 
     double[] getCarsLevel(int idSource) throws SQLException {
-        double[] res_d = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        double[] res_LV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        double[] res_HV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        boolean lvPresent = Math.random() < LV.get(idSource)
+        boolean hvPresent = Math.random() < HV.get(idSource)
+        if (lvPresent && hvPresent) {
+            return LEVEL_LV_AND_HV.get(idSource)
+        } else if (lvPresent) {
+            return LEVEL_LV_ONLY.get(idSource)
+        } else if (hvPresent) {
+            return LEVEL_HV_ONLY.get(idSource)
+        }
+        return LEVEL_NO_VEHICLE
+    }
+
+    static double[] vehicleSpectrum(double speed, String veh_type) {
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
-
-
-        def random = Math.random()
-        if (random < LV.get(idSource)) {
-            int kk = 0
-            for (f in list) {
-
-                double speed = SPEED_LV.get(idSource)
-                int acc = 0
-                int FreqParam = f
-                double Temperature = 20
-                String RoadSurface = "DEF"
-                boolean Stud = false
-                double Junc_dist = 200
-                int Junc_type = 1
-                String veh_type = "1"
-                int acc_type = 1
-                double LwStd = 1
-                int VehId = 10
-
-                RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
-                rsParameters.setRoadSurface(RoadSurface)
-                rsParameters.setSlopePercentage(0)
-                rsParameters.setFrequency(FreqParam)
-
-                res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
-                kk++
-            }
-
-        }
-        random = Math.random()
-        if (random < HV.get(idSource)) {
-            int kk = 0
-            for (f in list) {
-                double speed = SPEED_HV.get(idSource)
-                double acc = 0
-                int FreqParam = f
-                double Temperature = 20
-                String RoadSurface = "DEF"
-                boolean Stud = false
-                double Junc_dist = 200
-                int Junc_type = 1
-                String veh_type = "3"
-                int acc_type = 1
-                double LwStd = 1
-                int VehId = 10
-
-                RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
-                rsParameters.setSlopePercentage(0)
-                rsParameters.setRoadSurface(RoadSurface)
-                rsParameters.setFrequency(FreqParam)
-                res_HV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
-                kk++
-            }
-        }
+        double[] result = new double[list.size()]
         int kk = 0
         for (f in list) {
+            int acc = 0
+            String RoadSurface = "DEF"
+            boolean Stud = false
+            int acc_type = 1
+            double LwStd = 1
+            int VehId = 10
+
+            RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
+            rsParameters.setRoadSurface(RoadSurface)
+            rsParameters.setSlopePercentage(0)
+            rsParameters.setFrequency(f)
+
+            result[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
+            kk++
+        }
+        return result
+    }
+
+    static double[] combineSpectrums(double[] res_LV, double[] res_HV) {
+        double[] res_d = new double[res_LV.length]
+        for (int kk = 0; kk < res_d.length; kk++) {
             res_d[kk] = 10 * Math.log10(
                     (1.0 / 2.0) *
                             (Math.pow(10, (10 * Math.log10(Math.pow(10, res_LV[kk] / 10))) / 10)
                                     + Math.pow(10, (10 * Math.log10(Math.pow(10, res_HV[kk] / 10))) / 10)
                             )
             )
-            kk++
         }
-
-
         return res_d
     }
 
@@ -817,6 +810,14 @@ class IndividualVehicleEmissionProcessData {
             LV.put(pk, (double) row[2])
             SPEED_HV.put(pk, (double) row[3])
             HV.put(pk, (double) row[4])
+        }
+        double[] noVehicle = new double[8]
+        for (Integer pk : SPEED_LV.keySet()) {
+            double[] lv = vehicleSpectrum(SPEED_LV.get(pk), "1")
+            double[] hv = vehicleSpectrum(SPEED_HV.get(pk), "3")
+            LEVEL_LV_ONLY.put(pk, combineSpectrums(lv, noVehicle))
+            LEVEL_HV_ONLY.put(pk, combineSpectrums(noVehicle, hv))
+            LEVEL_LV_AND_HV.put(pk, combineSpectrums(lv, hv))
         }
     }
 }
