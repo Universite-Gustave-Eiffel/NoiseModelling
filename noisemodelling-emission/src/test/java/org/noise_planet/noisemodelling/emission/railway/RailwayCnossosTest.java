@@ -986,4 +986,15 @@ public class RailwayCnossosTest {
         impactNoise = railwayCnossos.getImpactNoise("NL_BB3_M4", 9);
         assertEquals(25, impactNoise, EPSILON_TEST1);
     }
+
+    @Test
+    public void Test_Lightrail_Indication() throws IOException {
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+
+        boolean light = railwayCnossos.isLightRail("NL_trams");
+        assertTrue(light);
+
+        boolean heavy = railwayCnossos.isLightRail("NL_CAT8");
+        assertFalse(heavy);
+    }
 }
