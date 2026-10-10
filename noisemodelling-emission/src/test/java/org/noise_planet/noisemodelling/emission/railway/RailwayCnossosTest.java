@@ -1119,4 +1119,15 @@ public class RailwayCnossosTest {
             assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
         }
     }
+
+    @Test
+    public void Test_Lightrail_Indication() throws IOException {
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+
+        boolean light = railwayCnossos.isLightRail("NL_trams");
+        assertTrue(light);
+
+        boolean heavy = railwayCnossos.isLightRail("NL_CAT8");
+        assertFalse(heavy);
+    }
 }
