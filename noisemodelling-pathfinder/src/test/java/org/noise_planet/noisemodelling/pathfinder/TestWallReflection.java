@@ -23,6 +23,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
@@ -298,5 +299,62 @@ public class TestWallReflection {
                 new Coordinate(599092.38, 646235.61, 503.61), current.coordinate, 0.01);
         current = it.next();
         assertInstanceOf(CutPointReceiver.class, current);
+    }
+
+    /**
+     * Walls far from the source-receiver segments do not change the reflection paths
+     */
+    @Test
+    public void testFarWallsDoNotChangeReflections() {
+        List<String> reflections = computeReflectionPaths(false);
+        assertEquals(5, reflections.size());
+        assertEquals(reflections, computeReflectionPaths(true));
+    }
+
+    private static List<String> computeReflectionPaths(boolean addFarWalls) {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        List<Double> alphas = Collections.nCopies(8, 0.1);
+        // Walls around the receiver
+        profileBuilder.addWall(new Coordinate[]{new Coordinate(20, 35, 20), new Coordinate(80, 35, 20)}, alphas, -1);
+        profileBuilder.addWall(new Coordinate[]{new Coordinate(-10, 0, 15), new Coordinate(-10, 40, 15)}, alphas, -1);
+        if (addFarWalls) {
+            // More than maxRefDist away from the source-receiver segments, but in propagation range
+            for (int i = 0; i < 10; i++) {
+                for (int j = 0; j < 5; j++) {
+                    double x = -200 + i * 50;
+                    double y = 200 + j * 50;
+                    profileBuilder.addWall(new Coordinate[]{new Coordinate(x, y, 20), new Coordinate(x + 20, y + 10, 20)},
+                            alphas, -1);
+                }
+            }
+        }
+        profileBuilder.finishFeeding();
+        Scene scene = new ProfileBuilderDecorator(profileBuilder)
+                .addSource(0, 0, 60)
+                .addSource(50, 0, 60)
+                .addSource(100, 0, 60)
+                .addReceiver(50, 20, 4)
+                .build();
+        scene.reflexionOrder = 2;
+        scene.maxSrcDist = 500;
+        scene.maxRefDist = 50;
+        DefaultCutPlaneVisitor visitor = new DefaultCutPlaneVisitor(true);
+        PathFinder pathFinder = new PathFinder(scene);
+        pathFinder.setThreadCount(1);
+        pathFinder.run(visitor);
+        List<String> reflections = new ArrayList<>();
+        for (CutProfile cutProfile : visitor.cutProfiles) {
+            if (cutProfile.getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION) {
+                StringBuilder path = new StringBuilder(cutProfile.getSource().getCoordinate().toString());
+                for (CutPoint cutPoint : cutProfile.cutPoints) {
+                    if (cutPoint instanceof CutPointReflection) {
+                        path.append(' ').append(((CutPointReflection) cutPoint).wall);
+                    }
+                }
+                reflections.add(path.toString());
+            }
+        }
+        Collections.sort(reflections);
+        return reflections;
     }
 }
