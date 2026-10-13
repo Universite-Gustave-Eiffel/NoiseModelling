@@ -77,12 +77,16 @@ jobs:
           bin/ScriptRunner -w /tmp/postgis_ws -s get_started_tutorial_complex.groovy --host localhost --user noisemodelling --password noisemodelling --port 5432 --database noisemodelling_db
         working-directory: NoiseModelling
       - name: Maven Deploy snapshot
+        if: ${{ (github.ref == 'refs/heads/main') }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean -DskipTests deploy -B
+        run: |
+          echo "MAVEN_USERNAME length: ${#MAVEN_USERNAME}"
+          echo "MAVEN_PASSWORD length: ${#MAVEN_PASSWORD}"
+          echo "MAVEN_GPG_PASSPHRASE length: ${#MAVEN_GPG_PASSPHRASE}"
+          mvn clean -DskipTests deploy -B
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |
