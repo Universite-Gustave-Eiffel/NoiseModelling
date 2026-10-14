@@ -86,7 +86,7 @@ jobs:
           echo "MAVEN_USERNAME length: ${#MAVEN_USERNAME}"
           echo "MAVEN_PASSWORD length: ${#MAVEN_PASSWORD}"
           echo "MAVEN_GPG_PASSPHRASE length: ${#MAVEN_GPG_PASSPHRASE}"
-          mvn clean -DskipTests deploy -B
+          mvn clean -DskipTests deploy -B -Dmaven.repository.credentialScope=id
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |
