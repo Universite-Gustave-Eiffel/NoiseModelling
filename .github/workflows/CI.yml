@@ -41,7 +41,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '25'
-          server-id: central
+          server-id: sonatype
           server-username-env-var: MAVEN_USERNAME
           server-password-env-var: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
@@ -86,7 +86,7 @@ jobs:
           echo "MAVEN_USERNAME length: ${#MAVEN_USERNAME}"
           echo "MAVEN_PASSWORD length: ${#MAVEN_PASSWORD}"
           echo "MAVEN_GPG_PASSPHRASE length: ${#MAVEN_GPG_PASSPHRASE}"
-          mvn clean -DskipTests deploy -B -Dmaven.repository.credentialScope=id
+          mvn clean -DskipTests deploy -B
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |
