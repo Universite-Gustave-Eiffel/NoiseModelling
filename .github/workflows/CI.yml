@@ -77,7 +77,7 @@ jobs:
           bin/ScriptRunner -w /tmp/postgis_ws -s get_started_tutorial_complex.groovy --host localhost --user noisemodelling --password noisemodelling --port 5432 --database noisemodelling_db
         working-directory: NoiseModelling
       - name: Maven Deploy snapshot
-        if: ${{ (github.ref == 'refs/heads/main') }}
+        if: ${{ (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/debugMavenDeploy') }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
