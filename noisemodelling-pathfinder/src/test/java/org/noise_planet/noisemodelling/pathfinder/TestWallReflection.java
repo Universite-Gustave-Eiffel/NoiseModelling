@@ -135,6 +135,36 @@ public class TestWallReflection {
     }
 
     @Test
+    public void testReflexionKeepsSkipReceiverStrategy() {
+        // A reflection path returning CONTINUE must not cancel a PROCESS_SOURCE_BUT_SKIP_RECEIVER
+        // requested by a previous path of the same source (maximum error pruning)
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.addBuilding(new Coordinate[]{new Coordinate(-5, 0, 10), new Coordinate(5, 0, 10),
+                new Coordinate(5, 10, 10), new Coordinate(-5, 10, 10), new Coordinate(-5, 0, 10)}, 1);
+        profileBuilder.finishFeeding();
+        Coordinate receiver = new Coordinate(0, -5, 4);
+        Coordinate source = new Coordinate(0, -50, 1);
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(receiver);
+        inputData.addSource(new GeometryFactory().createPoint(source));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.setReflexionOrder(1);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(
+                profileBuilder.getWallsIn(new Envelope(-100, 100, -100, 100)), receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+        DefaultCutPlaneVisitor visitor = new DefaultCutPlaneVisitor(true, inputData);
+
+        CutPlaneVisitor.PathSearchStrategy strategy = new PathFinder(inputData).computeReflexion(
+                new PathFinder.ReceiverPointInfo(0, 0, receiver),
+                new PathFinder.SourcePointInfo(0, 0, source, 1.0, new Orientation()), receiverMirrorIndex,
+                visitor, CutPlaneVisitor.PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER);
+
+        assertFalse(visitor.cutProfiles.isEmpty(), "Expected a reflection path");
+        assertEquals(CutPlaneVisitor.PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER, strategy);
+    }
+
+    @Test
     public void testNReflexion() throws ParseException, IOException, SQLException {
         GeometryFactory factory = new GeometryFactory();
 
