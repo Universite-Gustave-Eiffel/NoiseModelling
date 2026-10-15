@@ -169,7 +169,8 @@
             <plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
-                <extensions>true</extensions>
+                <!-- Disable extension, <extensions>true</extensions> = "Collect everything into a local folder and upload a ZIP bundle to the Central Portal" (Works for Releases only) -->
+                <extensions>false</extensions>
                 <configuration>
                     <publishingServerId>sonatype</publishingServerId>
                 </configuration>
