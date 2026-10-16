@@ -146,6 +146,19 @@ public class RailwayCnossos extends Railway {
     }
 
     /**
+     * Get indication for heavy or light rail
+     * @param typeVehicle Vehicle type identifier (e.g. "SNCF2")
+     * @return true if light rail, false if heavy rail
+     */
+    public boolean isLightRail(String typeVehicle) {
+        try {
+            return getVehicleNode(typeVehicle).get("Lightrail").asBoolean();
+        } catch (Exception e) {
+            return false; //default fallback
+        }
+    }
+
+    /**
      *
      * @param typeVehicle
      * @param runningCondition
@@ -535,6 +548,7 @@ public class RailwayCnossos extends Railway {
         double[] lambdaToFreqLog = new double[35];
         double[] freqMedLog = new double[24];
         double[] Lambda = new double[35];
+        double calcSpeed = isLightRail(typeVehicle) ? max(30, speed) : max(50, speed);
 
         // Resolve impact noise node once before the loop
         boolean hasImpactNoise = false;
@@ -550,7 +564,7 @@ public class RailwayCnossos extends Railway {
         double m = 33;
         for (int idLambda = 0; idLambda < 35; idLambda++) {
             Lambda[idLambda] = Math.pow(10, m / 10);
-            lambdaToFreqLog[idLambda] = Math.log10(speed / Lambda[idLambda] * 1000 / 3.6);
+            lambdaToFreqLog[idLambda] = Math.log10(calcSpeed / Lambda[idLambda] * 1000 / 3.6);
 
             roughnessTotLambda[idLambda] = Math.pow(10, getLRoughness(typeVehicle, trackRoughnessId, idLambda) / 10);
 
