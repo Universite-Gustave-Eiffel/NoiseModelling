@@ -1806,6 +1806,7 @@
         "Reference": "c3nn",
         "Vmax": 130,
         "Length": 15,
+        "Lightrail": "true",
         "TrailerBogieBraking": "NA",
         "MotorBogieBraking": "NA",
         "MotorWheelDiameter": 680,
