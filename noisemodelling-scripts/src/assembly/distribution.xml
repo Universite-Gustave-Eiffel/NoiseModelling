@@ -62,4 +62,12 @@
             <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
+    <files>
+        <!-- Version and commit of this build -->
+        <file>
+            <source>${project.basedir}/src/assembly/version.txt</source>
+            <outputDirectory>/</outputDirectory>
+            <filtered>true</filtered>
+        </file>
+    </files>
 </assembly>
