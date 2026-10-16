@@ -74,7 +74,7 @@ inputs = [
                     title : "timestep",
                     description : "Number of iterations. Timestep in sec.",
                     default : 1,
-                    type: Integer.class],
+                    type: Double.class],
 
         gridStep : [name : 'gridStep',
                     title : "gridStep",
@@ -121,7 +121,7 @@ def exec(Connection connection, input) {
 
     int duration = input.getOrDefault("duration", 60) as Integer
 
-    int timestep = input.getOrDefault("timestep", 1) as Integer
+    double timestep = input.getOrDefault("timestep", 1) as Double
 
     int gridStep = input.getOrDefault("gridStep", 10) as Integer
 
@@ -185,7 +185,7 @@ def exec(Connection connection, input) {
             }
             sql.withBatch(100, qry) { ps ->
                 for (Map.Entry<Integer, double[]> s : sourceLev.entrySet()) {
-                    int time = it*timestep
+                    double time = it*timestep
                     ps.addBatch(time as String, s.key as Integer,
                             s.value[0] as Double, s.value[1] as Double, s.value[2] as Double,
                             s.value[3] as Double, s.value[4] as Double, s.value[5] as Double,
@@ -244,12 +244,12 @@ def exec(Connection connection, input) {
                 })
 
 
-                for (int time = 0; time < duration; time += timestep) {
+                for (double time = 0; time < duration; time += timestep) {
                     road.move(time, duration)
 
                     for (SourcePoint source in road.source_points) {
                         if (source.levels[0]> 0.0){
-                            batchInsert.setInt(1, time)
+                            batchInsert.setDouble(1, time)
                             batchInsert.setLong(2, source.id)
                             for (int freq = 0; freq < 8; freq++) {
                                 batchInsert.setDouble(3 + freq, source.levels[freq])
