@@ -45,7 +45,7 @@ public class RoadCnossosParameters {
     private double speedHgv; // cat 3 vehicle speed  (in km/h)
     private double speedWav; // cat 4a vehicle speed  (in km/h)
     private double speedWbv; // cat 4b vehicle speed  (in km/h)
-    private static final int MAXSPEED = 150; // maximum speed for all categories
+    private static final double MAXSPEED = 150.; // maximum speed for all categories
 
     private int fileVersion = 2; // default coefficient version (1 = 2015, 2 = 2020)
 
