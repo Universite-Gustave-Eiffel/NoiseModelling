@@ -55,7 +55,7 @@ Optional inputs
 ``timestep``
    Number of iterations. Timestep in sec.
 
-   Type: ``Integer``
+   Type: ``Double``
 
    Default: ``1``
 
