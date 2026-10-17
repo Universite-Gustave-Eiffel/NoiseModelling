@@ -13,6 +13,9 @@ The other tables are accessible via the left menu in the ``Input tables & parame
 .. warning::
 	In the lists below, the columns noted with ``*`` are mandatory
 
+.. warning::
+    The train speed is the lowest value of: track speed (``TRACKSPD``), commercial speed (``TRACKSPC``), train speed
+    (``TRAINSPED``), and the maximum speed (``Vmax``) of the train type (as listed in the `RailwayEmissionCnossos.json`_ file).
 
 Railways sections
 ---------------------
