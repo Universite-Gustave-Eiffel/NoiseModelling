@@ -45,6 +45,7 @@ public class RoadCnossosParameters {
     private double speedHgv; // cat 3 vehicle speed  (in km/h)
     private double speedWav; // cat 4a vehicle speed  (in km/h)
     private double speedWbv; // cat 4b vehicle speed  (in km/h)
+    private static final double MAXSPEED = 150.; // maximum speed for all categories
 
     private int fileVersion = 2; // default coefficient version (1 = 2015, 2 = 2020)
 
@@ -118,11 +119,11 @@ public class RoadCnossosParameters {
         this.qStudRatio = Math.max(0, Math.min(1, Pm_stud));
         this.Junc_dist = Math.max(0, Junc_dist);
         this.Junc_type = Math.max(0, Math.min(2, Junc_type));
-        this.speedLv = lv_speed;
-        this.speedMv = mv_speed;
-        this.speedHgv = hgv_speed;
-        this.speedWav = wav_speed;
-        this.speedWbv = wbv_speed;
+        this.speedLv = Math.min(lv_speed, MAXSPEED);
+        this.speedMv = Math.min(mv_speed, MAXSPEED);
+        this.speedHgv = Math.min(hgv_speed, MAXSPEED);
+        this.speedWav = Math.min(wav_speed, MAXSPEED);
+        this.speedWbv = Math.min(wbv_speed, MAXSPEED);
     }
 
     /**

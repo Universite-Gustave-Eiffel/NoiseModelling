@@ -280,4 +280,76 @@ public class RoadCnossosTest {
         }
         assertEquals(89.6, Utils.wToDba(globalLw), 0.1);
     }
+
+    /** Test min and max speed */
+    @Test
+    public void TestMinMaxSpeed() throws IOException {
+        String [] categories = {"1", "2", "3", "4a", "4b"};
+        double vehiclePerHour = 1000;
+        double vehicleSpeed = 200; //this is higher than allowed (150)
+        double tsStud = 0.5;
+        String surfRef = "NL01";
+        int frequency = 1000;
+        double temperature = -5;
+        double pmStud = 1;
+        double slope = -15;
+        double juncDist = 200;
+        int juncType = 1;
+        for (String cat : categories) {
+            RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(cat) ? vehiclePerHour : 0,
+                    "2".equals(cat) ? vehiclePerHour : 0, "3".equals(cat) ? vehiclePerHour : 0,
+                    "4a".equals(cat) ? vehiclePerHour : 0, "4b".equals(cat) ? vehiclePerHour : 0,
+                    frequency, temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+
+            double testSpeed = -1.;
+            switch(cat) {
+                case "1":
+                    testSpeed = rsParameters.getSpeedLv();
+                    break;
+                case "2":
+                    testSpeed = rsParameters.getSpeedMv();
+                    break;
+                case "3":
+                    testSpeed = rsParameters.getSpeedHgv();
+                    break;
+                case "4a":
+                    testSpeed = rsParameters.getSpeedWav();
+                    break;
+                case "4b":
+                    testSpeed = rsParameters.getSpeedWbv();
+                    break;
+            }
+            assertEquals(150., testSpeed);
+        }
+
+        vehicleSpeed = 5.; //lower than minimum speed (20)
+        for (String cat : categories) {
+            RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(cat) ? vehiclePerHour : 0,
+                    "2".equals(cat) ? vehiclePerHour : 0, "3".equals(cat) ? vehiclePerHour : 0,
+                    "4a".equals(cat) ? vehiclePerHour : 0, "4b".equals(cat) ? vehiclePerHour : 0,
+                    frequency, temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+
+            double testSpeed = -1.;
+            switch(cat) {
+                case "1":
+                    testSpeed = rsParameters.getSpeedLv();
+                    break;
+                case "2":
+                    testSpeed = rsParameters.getSpeedMv();
+                    break;
+                case "3":
+                    testSpeed = rsParameters.getSpeedHgv();
+                    break;
+                case "4a":
+                    testSpeed = rsParameters.getSpeedWav();
+                    break;
+                case "4b":
+                    testSpeed = rsParameters.getSpeedWbv();
+                    break;
+            }
+            assertEquals(20., testSpeed);
+        }
+    }
 }
