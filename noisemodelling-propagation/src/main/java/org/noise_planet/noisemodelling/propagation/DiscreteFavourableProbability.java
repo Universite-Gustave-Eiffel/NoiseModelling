@@ -79,7 +79,7 @@ public class DiscreteFavourableProbability implements FavourableProbability {
      * @return rose index
      */
     public int getRoseIndex(Coordinate receiver, Coordinate source) {
-        return getRoseIndex(Angle.angle(receiver, source));
+        return getRoseIndex(Math.atan2(receiver.getY() - source.getY(),receiver.getX() - source.getX()));
     }
 
     @Override
