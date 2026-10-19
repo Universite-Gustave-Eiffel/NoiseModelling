@@ -153,7 +153,7 @@ public class RailwayCnossos extends Railway {
     public double getMaxSpeed(String typeVehicle) {
         try {
             JsonNode vMax = getVehicleNode(typeVehicle).get("Vmax");
-            if (vMax.isEmpty()) {
+            if (vMax == null | !vMax.isNumber()) {
                 return 999.;
             } else {
                 return vMax.doubleValue();
