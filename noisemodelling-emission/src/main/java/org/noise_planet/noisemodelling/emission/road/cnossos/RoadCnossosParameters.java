@@ -255,6 +255,7 @@ public class RoadCnossosParameters {
         } else {
             speedLv = speed_max;
         }
+        speedLv = Math.min(speedLv, MAXSPEED);
         speedHgv = getVPl(speedLv, speed_max, roadtype, roadSubType);
         speedMv = getVPl(speedLv, speed_max, roadtype, roadSubType);
         speedWav = getVPl(speedLv, speed_max, roadtype, roadSubType);
