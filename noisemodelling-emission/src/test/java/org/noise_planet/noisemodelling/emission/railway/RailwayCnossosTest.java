@@ -1130,4 +1130,57 @@ public class RailwayCnossosTest {
         boolean heavy = railwayCnossos.isLightRail("NL_CAT8");
         assertFalse(heavy);
     }
+
+    @Test
+    public void Test_min_speed_rolling_noise() throws IOException {
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
+
+        // Initiate Train
+        String vehCat = "NL_CAT8";
+        double vehicleSpeed =20; //lower than minimum for heavy and light rail
+        int rollingCondition = 0;
+        double idlingTime = 0;
+        double nBUnit = 1;
+
+        // Initiate Section Train
+        int nTracks = 1;
+        String trackTransfer = "NL_BB1";
+        String railRoughness = "NL";
+        String impactNoise = "1";
+        String bridgeTransfert = "0";
+        int curvature = 0;
+        boolean isTunnel = false;
+        double vMaxInfra = 160;
+        double vehicleCommercial = 140;
+        double vehiclePerHour = (1000 * vehicleSpeed);
+
+        double[] expectedValuesLWRolling = new double[]{93.90309228566142, 94.34020557292932, 97.88814638640261, 101.86060685184475, 101.90405688398734, 102.09970343986468, 103.15501545176292, 105.80099973510661, 104.07258849541803, 102.58573531841301, 99.82622895104197, 99.00320957512739, 100.3073068749414, 98.67927974779782, 96.85363706279205, 95.80430411427801, 95.84049919050787, 96.96609773629223, 94.18340656451792, 91.54149315540252, 89.66112394960938, 87.59591130627331, 85.90820022806585, 84.452043756547};
+
+        RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
+        RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
+                impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
+        RailWayParameters lWRailWay = railwayCnossos.evaluate(vehicleParameters, trackParameters);
+
+        double[] lWextract = lWRailWay.getRailwaySourceList().get("ROLLING").getlW();
+        double[] lWCalculate = Utils.trainLWmperFreq(lWextract, nBUnit, 1);
+        // Compare with expected Values
+        for (int idFreq = 0; idFreq < 24; idFreq++) {
+            assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
+        }
+
+        //Again, but for light rail
+        vehCat = "NL_CAT10";
+        expectedValuesLWRolling = new double[] {76.91621742875255, 80.73651434570364, 82.64392527601942, 90.68904115616873, 92.7002512770292, 95.53559326939697, 95.13508895614285, 95.10726056201626, 92.05260628207225, 90.12952107501539, 87.25408373106771, 84.37502767797638, 86.89671541156024, 88.8200806245431, 86.503644330904, 87.7505118088595, 89.75175591253132, 88.84284475763624, 83.77814358306253, 82.65821307156158, 78.74753979689335, 77.41786760683635, 77.03797013136204, 76.74712798706129};
+        vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
+        lWRailWay = railwayCnossos.evaluate(vehicleParameters, trackParameters);
+
+        lWextract = lWRailWay.getRailwaySourceList().get("ROLLING").getlW();
+        lWCalculate = Utils.trainLWmperFreq(lWextract, nBUnit, 1);
+        // Compare with expected Values
+        for (int idFreq = 0; idFreq < 24; idFreq++) {
+            assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
+        }
+    }
 }
