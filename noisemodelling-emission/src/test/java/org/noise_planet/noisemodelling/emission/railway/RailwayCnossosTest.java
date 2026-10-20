@@ -1045,7 +1045,7 @@ public class RailwayCnossosTest {
         }
 
         //limited by Vmax vehiclespeed (130)
-         vehicleSpeed = 1000;
+         vehicleSpeed = 5000;
          vMaxInfra = 160;
          vehicleCommercial = 140;
 
@@ -1066,7 +1066,7 @@ public class RailwayCnossosTest {
         vNode.remove("Vmax");
 
         //limited by VmaxCommercial
-        vehicleSpeed = 1000;
+        vehicleSpeed = 5000;
         vMaxInfra = 160;
         vehicleCommercial = 140;
 
@@ -1084,9 +1084,9 @@ public class RailwayCnossosTest {
         }
 
         //limited by VmaxInfra
-        vehicleSpeed = 1000;
+        vehicleSpeed = 5000;
         vMaxInfra = 160;
-        vehicleCommercial = 1000;
+        vehicleCommercial = 5000;
 
         expectedValuesLWRolling = new double[]{87.85586849125458, 88.3869564887285, 89.06787276002217, 87.2478456693535, 83.95731367252331, 83.3374979072442, 83.96625385539393, 87.60693515263586, 88.78373342115019, 89.7403258771715, 89.75197682216076, 90.39208759803819, 93.04043862621191, 93.17583955398433, 92.7085837637564, 90.3724464460148, 90.87291043993733, 92.15769325425761, 88.01217176240718, 83.93676133374842, 81.64761386215261, 78.55983634643331, 76.2365296225307, 74.03119936245403};
         vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
@@ -1101,13 +1101,12 @@ public class RailwayCnossosTest {
             assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
         }
 
-        //limited by 500 km/h
-        vehicleSpeed = 1000;
-        vMaxInfra = 1000;
-        vehicleCommercial = 1000;
+        //limited by 999 km/h
+        vehicleSpeed = 5000;
+        vMaxInfra = 5000;
+        vehicleCommercial = 5000;
 
-        expectedValuesLWRolling = new double[]{86.24131717488052, 88.17439239585381, 95.031972548783, 95.66754619744785, 94.07004224106959, 94.28391714345682, 94.89614316200235, 95.65242657783634, 91.05648472741429, 88.69883755028047, 87.92202032414883, 88.19214572814207, 91.83284780988961, 94.89113182242001, 96.6968803374548, 97.11912634954811, 99.26262580370995, 101.62393985541512, 99.27348324770844, 96.53503050588756, 92.9690607518821, 90.45855348595282, 88.17031277770101, 84.56288504166668};
-        //You would expect the expectedValues to be higher then earlier, but the roughness spectrum is too short to provide all frequencies at this speed.
+        expectedValuesLWRolling = new double[]{83.24886480119524, 85.18194002216853, 89.08151676196012, 92.67509382376258, 93.1075012304155, 97.6376961109153, 96.74493387168253, 98.86145954177923, 98.24730900016604, 98.10859179624859, 96.04314722747985, 92.46183413347131, 92.77580082543642, 93.3599323823175, 94.06481890077399, 95.48655373413371, 99.03245435289699, 102.51154951460222, 101.27120220108063, 100.30440813817992, 99.31995947816299, 96.91915418746535, 94.53430189935037, 91.16090275052957};
         vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
         trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);

@@ -35,7 +35,7 @@ public class RailwayTrackParameters {
     private double speedCommercial; // commercial speed on the track (km/h)
     private int nTrack;
     private boolean isTunnel;
-    private static final double MAXSPEED = 500.;
+    private static final double MAXSPEED = 999.;
 
     public RailwayTrackParameters() {}
 
