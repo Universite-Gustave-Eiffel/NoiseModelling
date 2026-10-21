@@ -176,6 +176,27 @@ public class ProfileBuilderTest {
     }
 
     /**
+     * A line starting outside the DEM must keep all the ground elevation points once it
+     * enters the triangulation, and must not stop on the DEM boundary.
+     */
+    @Test
+    public void demLineSourceFromOutsideTest() {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        for (int x = -40; x <= 40; x += 20) {
+            for (int y = -40; y <= 40; y += 20) {
+                profileBuilder.addTopographicPoint(new Coordinate(x, y, 0.01 * (x * x + y * y)));
+            }
+        }
+        profileBuilder.finishFeeding();
+        LineString source = new GeometryFactory().createLineString(new Coordinate[]{
+                new Coordinate(-100, 7, 0.05), new Coordinate(100, 7, 0.05)});
+        LineString split = profileBuilder.splitGeometryLineToDem(source, ProfileBuilder.MILLIMETER);
+        assertEquals(source.getLength(), split.getLength(), DELTA);
+        assertEquals(6, split.getNumPoints());
+        assertEquals(1.45, split.getCoordinateN(3).z, DELTA);
+    }
+
+    /**
      * Test the ground adding to a {@link ProfileBuilder}.
      * @throws ParseException JTS WKT parsing exception.
      */

@@ -1206,7 +1206,8 @@ public class ProfileBuilder {
      * Compute the next triangle index. Select the closest intersection of the triangle
      * sides with the propagation line that is ahead of the already traveled distance.
      * Intersections at or behind that distance are ignored when the line follows a
-     * triangle edge, which otherwise makes the navigation go back and forth.
+     * triangle edge, which otherwise makes the navigation go back and forth. Sides
+     * without a neighbor are on the DEM boundary and are not navigation candidates.
      *
      * @param triIndex        Triangle index
      * @param propagationLine Propagation line
@@ -1231,7 +1232,7 @@ public class ProfileBuilder {
         double distline_line;
         // Intersection First Side
         idNeighbor = triNeighbors.get(2);
-        if (!navigationHistory.contains(idNeighbor)) {
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
             LineSegment triSegment = new LineSegment(aTri, bTri);
             Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
@@ -1250,7 +1251,7 @@ public class ProfileBuilder {
         }
         // Intersection Second Side
         idNeighbor = triNeighbors.get(0);
-        if (!navigationHistory.contains(idNeighbor)) {
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
             LineSegment triSegment = new LineSegment(bTri, cTri);
             Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
@@ -1269,7 +1270,7 @@ public class ProfileBuilder {
         }
         // Intersection Third Side
         idNeighbor = triNeighbors.get(1);
-        if (!navigationHistory.contains(idNeighbor)) {
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
             LineSegment triSegment = new LineSegment(cTri, aTri);
             Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
