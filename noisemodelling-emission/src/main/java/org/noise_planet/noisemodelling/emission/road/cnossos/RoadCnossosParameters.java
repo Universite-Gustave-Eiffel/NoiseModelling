@@ -59,8 +59,8 @@ public class RoadCnossosParameters {
     private static final double MINSPEED = 20.;
     /**
      * Heuristic upper bound, not a value from the CNOSSOS directive. It is used to avoid
-     * unrealistic emission values for out-of-range input speeds. Maintainers can adjust
-     * this constant if a different sanity bound is preferred.
+     * unrealistic emission values for out-of-range input speeds. This constant can be adjusted
+     * if a different sanity bound is preferred.
      */
     private static final double MAXSPEED = 150.;
     private static final Set<Double> REPORTED_OUT_OF_RANGE_SPEEDS = ConcurrentHashMap.newKeySet();
