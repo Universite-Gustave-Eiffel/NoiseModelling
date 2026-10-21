@@ -17,10 +17,13 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 import org.noise_planet.noisemodelling.emission.LineSource;
@@ -108,6 +111,60 @@ public class TableLoaderTest {
         assertInstanceOf(LineString.class, source);
         assertEquals(300, source.getLength(), 1e-9);
         assertEquals(2, source.getNumPoints());
+    }
+
+    @Test
+    public void testClippedLineSources() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE SOURCES(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)");
+            st.execute("INSERT INTO SOURCES VALUES "
+                    + "(1, 'LINESTRING Z (5 5 0.05, 12 8 0.05, 10 10 0.05)'),"
+                    + "(2, 'MULTILINESTRING Z ((1 1 0.05, 2 2 0.05), (5 5 0.05, 12 8 0.05, 10 10 0.05))'),"
+                    + "(3, 'LINESTRING Z (12 8 0.05, 10 10 0.05)'),"
+                    + "(4, 'POINT Z (10 10 0.05)')");
+        }
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("", "SOURCES", "");
+        noiseMap.geometryFactory = new GeometryFactory();
+        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        DefaultTableLoader loader = (DefaultTableLoader) noiseMap.getTableLoader();
+        loader.initialize(connection, noiseMap);
+
+        for (boolean absoluteZ : new boolean[] {false, true}) {
+            noiseMap.setSourcesZIsAltitude(absoluteZ);
+            ProfileBuilder profile = new ProfileBuilder();
+            profile.addTopographicPoint(new Coordinate(-100, -100, 100));
+            profile.addTopographicPoint(new Coordinate(100, -100, 100));
+            profile.addTopographicPoint(new Coordinate(0, 100, 100));
+            profile.finishFeeding();
+            assertTrue(profile.hasDem());
+            SceneWithEmission scene = new SceneWithEmission(profile, noiseMap.getSceneInputSettings());
+            loader.fetchCellSource(connection, new Envelope(0, 10, 0, 10), scene, true);
+
+            assertEquals(3, scene.sourceGeometries.size());
+            assertFalse(scene.sourcesPk.contains(3L), "A boundary touch must not become a point source");
+            Geometry line = scene.sourceGeometries.get(scene.sourcesPk.indexOf(1L));
+            assertInstanceOf(LineString.class, line);
+            assertEquals(2, line.getNumPoints());
+            assertEquals(5, line.getCoordinates()[0].x, 1e-9);
+            assertEquals(10, line.getCoordinates()[1].x, 1e-9);
+            assertEquals(50.0 / 7, line.getCoordinates()[1].y, 1e-9);
+            Geometry multiLine = scene.sourceGeometries.get(scene.sourcesPk.indexOf(2L));
+            assertInstanceOf(MultiLineString.class, multiLine);
+            assertEquals(2, multiLine.getNumGeometries());
+            assertInstanceOf(Point.class, scene.sourceGeometries.get(scene.sourcesPk.indexOf(4L)));
+            for (Geometry source : scene.sourceGeometries) {
+                for (Coordinate coordinate : source.getCoordinates()) {
+                    assertEquals(absoluteZ ? 0.05 : 100.05, coordinate.getZ(), 1e-9);
+                }
+            }
+
+            SceneWithEmission unclipped = new SceneWithEmission(profile, noiseMap.getSceneInputSettings());
+            loader.fetchCellSource(connection, new Envelope(0, 10, 0, 10), unclipped, false);
+            assertEquals(4, unclipped.sourceGeometries.size());
+            Geometry road = unclipped.sourceGeometries.get(unclipped.sourcesPk.indexOf(1L));
+            assertEquals(3, road.getNumPoints());
+            assertEquals(12, road.getCoordinates()[1].x, 1e-9);
+        }
     }
 
     @Test
