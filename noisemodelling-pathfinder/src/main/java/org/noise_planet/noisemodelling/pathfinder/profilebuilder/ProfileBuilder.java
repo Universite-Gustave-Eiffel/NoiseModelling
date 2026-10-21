@@ -1203,17 +1203,21 @@ public class ProfileBuilder {
         return new Coordinate[] {this.vertices.get(tri.getA()), this.vertices.get(tri.getB()), this.vertices.get(tri.getC())};
     }
     /**
-     * Compute the next triangle index.Find the shortest intersection point of
-     * triIndex segments to the p1 coordinate
+     * Compute the next triangle index. Select the closest intersection of the triangle
+     * sides with the propagation line that is ahead of the already traveled distance.
+     * Intersections at or behind that distance are ignored when the line follows a
+     * triangle edge, which otherwise makes the navigation go back and forth.
      *
      * @param triIndex        Triangle index
      * @param propagationLine Propagation line
+     * @param currentDistance Distance already traveled from the propagation line origin
      * @return Next triangle to the specified direction, -1 if there is no
      * triangle neighbor.
      */
     private int getNextTri(final int triIndex,
                            final LineSegment propagationLine,
-                           HashSet<Integer> navigationHistory, final Coordinate segmentIntersection) {
+                           HashSet<Integer> navigationHistory, double currentDistance,
+                           final Coordinate segmentIntersection) {
         final Triangle tri = topoTriangles.get(triIndex);
         final Triangle triNeighbors = topoNeighbors.get(triIndex);
         int nearestIntersectionSide = -1;
@@ -1235,8 +1239,9 @@ public class ProfileBuilder {
                 intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
-                distline_line = propagationLine.p1.distance(intersectionTest);
-                if (distline_line < nearestIntersectionPtDist) {
+                distline_line = propagationLine.p0.distance(intersectionTest);
+                if (distline_line > currentDistance + JTSUtility.TRIANGLE_INTERSECTION_EPSILON
+                        && distline_line < nearestIntersectionPtDist) {
                     segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionPtDist = distline_line;
                     nearestIntersectionSide = 2;
@@ -1253,8 +1258,9 @@ public class ProfileBuilder {
                 intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
-                distline_line = propagationLine.p1.distance(intersectionTest);
-                if (distline_line < nearestIntersectionPtDist) {
+                distline_line = propagationLine.p0.distance(intersectionTest);
+                if (distline_line > currentDistance + JTSUtility.TRIANGLE_INTERSECTION_EPSILON
+                        && distline_line < nearestIntersectionPtDist) {
                     segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionPtDist = distline_line;
                     nearestIntersectionSide = 0;
@@ -1271,8 +1277,9 @@ public class ProfileBuilder {
                 intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
-                distline_line = propagationLine.p1.distance(intersectionTest);
-                if (distline_line < nearestIntersectionPtDist) {
+                distline_line = propagationLine.p0.distance(intersectionTest);
+                if (distline_line > currentDistance + JTSUtility.TRIANGLE_INTERSECTION_EPSILON
+                        && distline_line < nearestIntersectionPtDist) {
                     segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionSide = 1;
                 }
@@ -1429,6 +1436,7 @@ public class ProfileBuilder {
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         LineSegment propaLine = new LineSegment(p1, p2);
+        double currentDistance = 0;
         if(curTriP1 == -1) {
             // we are outside the bounds of the triangles
             // Find the closest triangle to p1 on the line p1 to p2
@@ -1450,11 +1458,26 @@ public class ProfileBuilder {
         Coordinate[] triangleVertex = getTriangleVertices(curTriP1);
         outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
         boolean freeField = true;
+        double lineLength = propaLine.p0.distance(propaLine.p1);
         while (navigationTri != -1) {
             navigationHistory.add(navigationTri);
             Coordinate intersectionPt = new Coordinate();
-            int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
+            int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory,
+                    currentDistance, intersectionPt);
             if(propaTri == -1) {
+                // The line can follow a triangle edge or pass exactly through a vertex, where
+                // the next triangle is not a direct neighbor. Probe just ahead to find it.
+                double probeDistance = currentDistance + MILLIMETER;
+                Coordinate probe = probeDistance < lineLength ?
+                        propaLine.pointAlong(probeDistance / lineLength) : null;
+                int probeTri = probe == null ? -1 : getTriangleIdByCoordinate(probe);
+                Coordinate[] probeVertices = probeTri == -1 ? null : getTriangleVertices(probeTri);
+                if(probeTri != -1 && probeTri != navigationTri &&
+                        !navigationHistory.contains(probeTri) &&
+                        JTSUtility.dotInTri(probe, probeVertices[0], probeVertices[1], probeVertices[2])) {
+                    navigationTri = probeTri;
+                    continue;
+                }
                 // Add p2 coordinate
                 triangleVertex = getTriangleVertices(navigationTri);
                 outputPoints.add(new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
@@ -1472,6 +1495,7 @@ public class ProfileBuilder {
                         }
                     }
                 }
+                currentDistance = propaLine.p0.distance(intersectionPt);
             }
             navigationTri = propaTri;
         }
