@@ -148,19 +148,15 @@ public class RailwayCnossos extends Railway {
     /**
      * Get the maximum speed of a vehicle
      * @param typeVehicle Vehicle type identifier (e.g. "SNCF2")
-     * @return maximum speed of vehicle in km/h (with fallback to 999 km/h)
+     * @return maximum speed of vehicle in km/h, or {@link Railway#NO_SPEED_LIMIT} when
+     * the vehicle has no valid speed limit
      */
     public double getMaxSpeed(String typeVehicle) {
-        try {
-            JsonNode vMax = getVehicleNode(typeVehicle).get("Vmax");
-            if (vMax == null | !vMax.isNumber()) {
-                return 999.;
-            } else {
-                return vMax.doubleValue();
-            }
-        } catch (Exception e) {
-            return 999.; //default fallback
+        JsonNode vMax = getVehicleNode(typeVehicle).path("Vmax");
+        if (!vMax.isNumber() || vMax.doubleValue() <= 0.) {
+            return NO_SPEED_LIMIT;
         }
+        return vMax.doubleValue();
     }
 
     /**

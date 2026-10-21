@@ -352,4 +352,24 @@ public class RoadCnossosTest {
             assertEquals(20., testSpeed);
         }
     }
+
+    /** Bounds must also be applied when speeds come from road characteristics */
+    @Test
+    public void TestSpeedFromRoadCaracteristicsBounds() throws IOException {
+        RoadCnossosParameters rsParameters = new RoadCnossosParameters();
+        // Road type 3/subtype 1 returns the light vehicle speed for every category
+        rsParameters.setSpeedFromRoadCaracteristics(200., 200., false, 200., 31);
+        assertEquals(150., rsParameters.getSpeedLv());
+        assertEquals(150., rsParameters.getSpeedMv());
+        assertEquals(150., rsParameters.getSpeedHgv());
+        assertEquals(150., rsParameters.getSpeedWav());
+        assertEquals(150., rsParameters.getSpeedWbv());
+
+        rsParameters.setSpeedFromRoadCaracteristics(5., 5., false, 5., 31);
+        assertEquals(20., rsParameters.getSpeedLv());
+        assertEquals(20., rsParameters.getSpeedMv());
+        assertEquals(20., rsParameters.getSpeedHgv());
+        assertEquals(20., rsParameters.getSpeedWav());
+        assertEquals(20., rsParameters.getSpeedWbv());
+    }
 }

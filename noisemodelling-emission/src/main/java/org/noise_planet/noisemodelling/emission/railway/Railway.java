@@ -34,6 +34,12 @@ import java.util.Map;
  */
 
 public class Railway {
+    /**
+     * Sentinel speed (km/h) used when no speed limit is known. It is high enough not to
+     * constrain real railway traffic, while avoiding {@code infinity} in downstream maths.
+     */
+    public static final double NO_SPEED_LIMIT = 999.;
+
     private JsonNode railWayData;
     private JsonNode vehicleData;
     private JsonNode trainsetData;

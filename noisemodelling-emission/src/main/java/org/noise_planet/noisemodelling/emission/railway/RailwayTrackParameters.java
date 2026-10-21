@@ -23,8 +23,6 @@ package org.noise_planet.noisemodelling.emission.railway;
  */
 
 
-import java.io.IOException;
-
 /**
  * Parameters Track
  */
@@ -35,7 +33,6 @@ public class RailwayTrackParameters {
     private double speedCommercial; // commercial speed on the track (km/h)
     private int nTrack;
     private boolean isTunnel;
-    private static final double MAXSPEED = 999.;
 
     public RailwayTrackParameters() {}
 
@@ -63,7 +60,7 @@ public class RailwayTrackParameters {
 
     public void setSpeedTrack(double speedTrack) {
         if (speedTrack <= 0.)  throw new IllegalArgumentException("The track speed is zero or less on one section.");
-        this.speedTrack = Math.min(speedTrack, MAXSPEED);
+        this.speedTrack = Math.min(speedTrack, Railway.NO_SPEED_LIMIT);
     }
 
 
@@ -73,6 +70,6 @@ public class RailwayTrackParameters {
 
     public void setSpeedCommercial(double speedCommercial) {
         if (speedCommercial <= 0.)  throw new IllegalArgumentException("The commercial speed is zero or less on one section.");
-        this.speedCommercial = Math.min(speedCommercial, MAXSPEED);
+        this.speedCommercial = Math.min(speedCommercial, Railway.NO_SPEED_LIMIT);
     }
 }

@@ -16,7 +16,7 @@ Table SOURCES_GEOM definition
 .. warning::
     * In the list below, the columns noted with ``*`` are mandatory
     * This description is only valid :doc:`functions/NoiseModelling/Noise_level_from_source` Block. For the other Blocks, it is necessary to refer to the description of their input data
-    * Vehicle speeds are corrected to be in the range of 20 to 150 km/h
+    * Vehicle speeds are corrected to be in the range of 20 to 150 km/h. A warning is logged for each distinct out-of-range value.
 
 
 .. note::

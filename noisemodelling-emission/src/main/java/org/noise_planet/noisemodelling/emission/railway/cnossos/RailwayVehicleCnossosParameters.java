@@ -38,6 +38,7 @@ public class RailwayVehicleCnossosParameters extends RailwayVehicleParameters {
     private String fileVersion = "FR"; // version of cnossos coefficient, if 2 == amendments 2019
 
     public RailwayVehicleCnossosParameters(String typeVehicle, double speedVehicle, double vehiclePerHour, int runningCondition, double idlingTime) {
+        if (speedVehicle <= 0.) throw new IllegalArgumentException("The train speed is zero or less.");
         setTypeVehicle(typeVehicle);
         setSpeedVehicle(speedVehicle);
         setVehiclePerHour(vehiclePerHour);

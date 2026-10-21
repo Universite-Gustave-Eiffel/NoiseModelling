@@ -324,7 +324,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
         }
 
         if (sourceFields.containsKey("COMSPD")) {
-            commercialSpeed = rs.getDouble("COMSPD");
+            double commercialSpeedValue = rs.getDouble("COMSPD");
+            // COMSPD is optional: NULL/zero means "not provided", keep the default value
+            if (!rs.wasNull() && commercialSpeedValue > 0.) {
+                commercialSpeed = commercialSpeedValue;
+            }
         }
         if (sourceFields.containsKey("TRAINTYPE")) {
             train = rs.getString("TRAINTYPE");

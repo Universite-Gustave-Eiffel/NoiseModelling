@@ -14,8 +14,8 @@ The other tables are accessible via the left menu in the ``Input tables & parame
 	In the lists below, the columns noted with ``*`` are mandatory
 
 .. warning::
-    The train speed is the lowest value of: track speed (``TRACKSPD``), commercial speed (``TRACKSPC``), train speed
-    (``TRAINSPED``), and the maximum speed (``Vmax``) of the train type (as listed in the `RailwayEmissionCnossos.json`_ file).
+    The train speed is the lowest value of: track speed (``TRACKSPD``), commercial speed (``COMSPD``), train speed
+    (``TRAINSPD``), and the maximum speed (``Vmax``) of the train type (as listed in the `RailwayVehiclesCnossos.json`_ file).
 
 Railways sections
 ---------------------
@@ -69,7 +69,7 @@ Table definition
 		* ``0`` = Any type of track or bridge except metal bridges with unballasted tracks
 		* ``1`` = Metal bridges with unballasted tracks + 5dB
 	* Type: Integer
-* ``TRACKSPC``
+* ``COMSPD``
 	* Description: Commercial speed on the section *(in km/h)*
 	* Type: Double
 * ``ISTUNNEL``
@@ -118,5 +118,6 @@ Table definition
 
 
 .. _RailwayEmissionCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayEmissionCnossos.json
+.. _RailwayVehiclesCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json
 .. _RailwayTrainsets.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayTrainsets.json
 
