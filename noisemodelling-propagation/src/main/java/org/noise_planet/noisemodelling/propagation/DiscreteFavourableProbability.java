@@ -8,8 +8,6 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import org.locationtech.jts.algorithm.Angle;
-import org.locationtech.jts.geom.Coordinate;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,38 +46,26 @@ public class DiscreteFavourableProbability implements FavourableProbability {
     }
 
     /**
-     * The north slice is the last array index not the first one
-     * Ex for slice width of 20°:
-     *      - The first column 20° contain winds between 10 to 30 °
-     *      - The last column 360° contains winds between 350° to 360° and 0 to 10°
-     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
+     * Get the rose index holding the mean occurrence of favourable conditions in the given direction.
+     * The rose is ordered clockwise starting just after north: index 0 covers the sector centred on
+     * one sector width clockwise from north, and north itself is the last index.
+     * With 16 sectors, index 0 covers [11.25°, 33.75°) and the last index covers
+     * [348.75°, 360°) and [0°, 11.25°).
+     * @param angle propagation angle in radians in [0, 2 * pi), 0 = north, increasing clockwise
      * @return rose index
      */
     public int getRoseIndex(double angle) {
-        // Angle from cos -1 sin 0
-        double angleRad = -(angle - Math.PI);
-        // Offset angle by PI / 2 (North),
-        // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
-        angleRad -= (Math.PI / 2 - angleSection / 2);
-        // Fix out of bounds angle 0-2Pi
-        if(angleRad < 0) {
+        double angleRad = angle % (Math.PI * 2);
+        if (angleRad < 0) {
             angleRad += Math.PI * 2;
         }
-        int index = (int)(angleRad / angleSection) - 1;
-        if(index < 0) {
+        int index = (int) Math.round(angleRad / angleSection) - 1;
+        if (index < 0) {
             index = windRose.length - 1;
+        } else if (index >= windRose.length) {
+            index = 0;
         }
         return index;
-    }
-
-    /**
-     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the path (S,R):
-     * @param receiver
-     * @param source
-     * @return rose index
-     */
-    public int getRoseIndex(Coordinate receiver, Coordinate source) {
-        return getRoseIndex(Math.atan2(receiver.getY() - source.getY(),receiver.getX() - source.getX()));
     }
 
     @Override

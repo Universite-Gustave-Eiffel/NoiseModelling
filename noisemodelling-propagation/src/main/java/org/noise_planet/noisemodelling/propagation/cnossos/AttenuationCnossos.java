@@ -771,9 +771,9 @@ public class AttenuationCnossos {
 
         }
 
-        Coordinate sourceCoord = attenuationOutput.getCutProfile().getSource().getCoordinate();
-        Coordinate receiverCoord = attenuationOutput.getCutProfile().getReceiver().getCoordinate();
-        double probability = data.getWindRose().getFavourableProbability(Math.atan2(receiverCoord.getY() - sourceCoord.getY(),receiverCoord.getX() - sourceCoord.getX()));
+        double probability = data.getWindRose().getFavourableProbability(
+                attenuationOutput.getCutProfile().getSource().getCoordinate(),
+                attenuationOutput.getCutProfile().getReceiver().getCoordinate());
         if(!cnossosPath.isFavourable()) {
             // Homogenous conditions
             if (probability < 1) {

@@ -5984,25 +5984,29 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void testRoseIndex() {
         DiscreteFavourableProbability discreteFavourableProbability = new DiscreteFavourableProbability();
-        double angle_section = (2 * Math.PI) / DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length;
-        double angleStart = Math.PI / 2 - angle_section / 2;
-        for(int i = 0; i < DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length; i++) {
-            double angle = angleStart - angle_section * i - angle_section / 3;
-            int index = discreteFavourableProbability.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
-            assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
-            index = discreteFavourableProbability.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
-            assertEquals(i, index);
+        int sectorCount = DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length;
+        double angleSection = (2 * Math.PI) / sectorCount;
+        for (int i = 0; i < sectorCount; i++) {
+            double angle = angleSection * (i + 1);
+            assertEquals(i, discreteFavourableProbability.getRoseIndex(angle));
+            assertEquals(i, discreteFavourableProbability.getRoseIndex(angle - angleSection / 3));
+            assertEquals(i, discreteFavourableProbability.getRoseIndex(angle + angleSection / 3));
         }
+        assertEquals(sectorCount - 1, discreteFavourableProbability.getRoseIndex(0));
+        assertEquals(sectorCount - 1, discreteFavourableProbability.getRoseIndex(2 * Math.PI));
+        assertEquals(3, discreteFavourableProbability.getRoseIndex(Math.PI / 2));
+        assertEquals(7, discreteFavourableProbability.getRoseIndex(Math.PI));
+        assertEquals(11, discreteFavourableProbability.getRoseIndex(3 * Math.PI / 2));
     }
 
     @Test
     public void testDutchDay() {
         FavourableProbability favourableProbability = new DutchFavourableProbabilityFactory.DProbabilityGenerator("D");
         double[] favFractions = {
-                favourableProbability.getFavourableProbability(Math.atan2(-1.0,  0.0)), //from source to receiver: to south
-                favourableProbability.getFavourableProbability(Math.atan2( 0.0, -1.0)), //from source to receiver: to west
-                favourableProbability.getFavourableProbability(Math.atan2( 1.0,  0.0)), //from source to receiver: to north
-                favourableProbability.getFavourableProbability(Math.atan2( 0.0,  1.0))  //from source to receiver: to east
+                favourableProbability.getFavourableProbability(Math.PI),              //to south
+                favourableProbability.getFavourableProbability(3 * Math.PI / 2),      //to west
+                favourableProbability.getFavourableProbability(0),                    //to north
+                favourableProbability.getFavourableProbability(Math.PI / 2)           //to east
         };
         double[] expectedFractions = {0.2974, 0.2883, 0.4122, 0.4521};
         assertArrayEquals(expectedFractions, favFractions, 0.0001);
@@ -6012,10 +6016,10 @@ public class AttenuationComputeOutputCnossosTest {
     public void testDutchNight() {
         FavourableProbability favourableProbability = new DutchFavourableProbabilityFactory.ENProbabilityGenerator("N");
         double[] favFractions = {
-                favourableProbability.getFavourableProbability(Math.atan2(-1.0,  0.0)), //from source to receiver: to south
-                favourableProbability.getFavourableProbability(Math.atan2( 0.0, -1.0)), //from source to receiver: to west
-                favourableProbability.getFavourableProbability(Math.atan2( 1.0,  0.0)), //from source to receiver: to north
-                favourableProbability.getFavourableProbability(Math.atan2( 0.0,  1.0))  //from source to receiver: to east
+                favourableProbability.getFavourableProbability(Math.PI),              //to south
+                favourableProbability.getFavourableProbability(3 * Math.PI / 2),      //to west
+                favourableProbability.getFavourableProbability(0),                    //to north
+                favourableProbability.getFavourableProbability(Math.PI / 2)           //to east
         };
         double[] expectedFractions = {0.3396, 0.3588, 0.5129, 0.4588};
         assertArrayEquals(expectedFractions, favFractions, 0.0001);
@@ -6729,9 +6733,9 @@ public class AttenuationComputeOutputCnossosTest {
         DiscreteFavourableProbability discreteFavourableProbability = new DiscreteFavourableProbability();
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
             windRoseTest[idReceiver] = new double[DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length];
-            double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
+            double bearing = Math.atan2(receivers.get(idReceiver).getX(), receivers.get(idReceiver).getY());
             Arrays.fill(windRoseTest[idReceiver], 1);
-            int roseIndex = discreteFavourableProbability.getRoseIndex(angle);
+            int roseIndex = discreteFavourableProbability.getRoseIndex(bearing);
             windRoseTest[idReceiver][roseIndex] = 0.5;
         }
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
@@ -6758,6 +6762,55 @@ public class AttenuationComputeOutputCnossosTest {
                 }
             }
             assertEquals(idReceiver, maxPowerReceiverIndex);
+        }
+    }
+
+    @Test
+    public void testFavourableConditionDirectionFromRose() {
+        GeometryFactory gf = new GeometryFactory();
+        ProfileBuilder builder = new ProfileBuilder();
+        builder.finishFeeding();
+
+        SceneWithAttenuation scene = new SceneWithAttenuation(builder);
+        scene.addSource(gf.createPoint(new Coordinate(0, 0, 1)));
+        scene.setDefaultGroundAttenuation(0.5);
+        scene.setComputeHorizontalDiffraction(true);
+        scene.reflexionOrder = 0;
+        scene.maxSrcDist = 1500;
+
+        final double[] bearings = {0, 45, 90, 135, 180, 225, 270, 315};
+        final double distance = 100;
+        for (double bearing : bearings) {
+            double rad = Math.toRadians(bearing);
+            scene.addReceiver(new Coordinate(distance * Math.sin(rad), distance * Math.cos(rad), 1.5));
+        }
+
+        for (double favourableBearing : new double[]{0, 90, 180, 270}) {
+            AttenuationComputeOutput propDataOut = runFavourableRose(scene, favourableBearing);
+
+            double[] levels = new double[bearings.length];
+            Arrays.fill(levels, Double.NEGATIVE_INFINITY);
+            for (ReceiverNoiseLevel level : propDataOut.getVerticesSoundLevel()) {
+                levels[level.receiver.receiverIndex] = sumDbArray(level.levels);
+            }
+
+            int targetIndex = (int) Math.round(favourableBearing / 45.0);
+            for (int i = 0; i < bearings.length; i++) {
+                if (i == targetIndex) {
+                    continue;
+                }
+                assertTrue(levels[targetIndex] > levels[i], String.format(Locale.ROOT,
+                        "Receiver at %.0f° (%.2f dB) should be louder than receiver at %.0f° (%.2f dB)",
+                        favourableBearing, levels[targetIndex], bearings[i], levels[i]));
+            }
+            double homogeneousLevel = levels[(targetIndex + 1) % bearings.length];
+            for (int i = 0; i < bearings.length; i++) {
+                if (i == targetIndex) {
+                    continue;
+                }
+                assertEquals(homogeneousLevel, levels[i], ERROR_EPSILON_LOWEST, String.format(Locale.ROOT,
+                        "Receiver at %.0f° should have the homogeneous sound level %.2f dB", bearings[i], homogeneousLevel));
+            }
         }
     }
 
@@ -7373,5 +7426,73 @@ public class AttenuationComputeOutputCnossosTest {
         result[0] = Math.round(result[0] * 100.0) / 100.0;
         return result;
     }
-}
 
+
+    private static AttenuationComputeOutput runFavourableRose(SceneWithAttenuation scene, double favourableBearing) {
+        int sectorCount = DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length;
+        int roseIndex = (int) Math.round(favourableBearing / (360.0 / sectorCount)) - 1;
+        if (roseIndex < 0) {
+            roseIndex += sectorCount;
+        }
+        double[] windRose = new double[sectorCount];
+        windRose[roseIndex] = 1.0;
+        AttenuationParameters attData = scene.defaultCnossosParameters;
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+        attData.setWindRose(new DiscreteFavourableProbability(windRose));
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, false, scene);
+        PathFinder pathFinder = new PathFinder(scene);
+        pathFinder.setThreadCount(1);
+        pathFinder.run(propDataOut);
+        return propDataOut;
+    }
+
+    private static double getReceiverLevel(AttenuationComputeOutput propDataOut) {
+        double level = Double.NEGATIVE_INFINITY;
+        for (ReceiverNoiseLevel receiverLevel : propDataOut.getVerticesSoundLevel()) {
+            level = sumDbArray(receiverLevel.levels);
+        }
+        return level;
+    }
+
+    @Test
+    public void testFavourableConditionUsesSourceReceiverDirectionForReflection() {
+        ProfileBuilder builder = new ProfileBuilder()
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(100, -100, 20.0),
+                        new Coordinate(105, -100, 20.0),
+                        new Coordinate(105, 200, 20.0),
+                        new Coordinate(100, 200, 20.0)})
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, 40, 20.0),
+                        new Coordinate(5, 40, 20.0),
+                        new Coordinate(5, 45, 20.0),
+                        new Coordinate(-5, 45, 20.0)})
+                .finishFeeding();
+        GeometryFactory gf = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(builder);
+        scene.addSource(gf.createPoint(new Coordinate(0, 0, 1)));
+        scene.addReceiver(new Coordinate(0, 100, 1.5));
+        scene.setDefaultGroundAttenuation(0.5);
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(false);
+        scene.reflexionOrder = 1;
+        scene.maxSrcDist = 1500;
+
+        double sourceReceiverBearing = 0;
+        double reflectionBearing = Math.toDegrees(Math.atan2(100, 50));
+
+        AttenuationComputeOutput sourceReceiverOutput = runFavourableRose(scene, sourceReceiverBearing);
+        double sourceReceiverLevel = getReceiverLevel(sourceReceiverOutput);
+        assertTrue(sourceReceiverOutput.getAttenuationOutputs().stream()
+                        .anyMatch(output -> Math.abs(output.getCutProfile().getRaySourceReceiverDirectivity().yaw - reflectionBearing) < 1),
+                "The test scene must contain a reflected path");
+
+        AttenuationComputeOutput reflectionOutput = runFavourableRose(scene, reflectionBearing);
+        double reflectionLevel = getReceiverLevel(reflectionOutput);
+
+        assertTrue(sourceReceiverLevel > reflectionLevel, String.format(Locale.ROOT,
+                "Favourable probability along the source->receiver direction (%.2f dB) should be higher than along the first reflection direction (%.2f dB)",
+                sourceReceiverLevel, reflectionLevel));
+    }
+}
