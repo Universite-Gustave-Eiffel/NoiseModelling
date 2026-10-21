@@ -73,6 +73,46 @@ public class TableLoaderTest {
         }
     }
 
+    /**
+     * A road that follows a DEM triangle edge must keep its geometry. Before the fix the DEM
+     * profile zigzagged, increasing the line length and the number of source points (issue #1093).
+     */
+    @Test
+    public void testLineSourceAlongDemTriangleEdge() throws Exception {
+        int x0 = 650000;
+        int y0 = 6860000;
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), HEIGHT DOUBLE)");
+            st.execute("CREATE TABLE ROADS_1093(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154))");
+            st.execute("INSERT INTO ROADS_1093 VALUES (1, ST_SetSRID('LINESTRING Z(" +
+                    (x0 - 150) + " " + y0 + " 0.05, " + (x0 + 150) + " " + y0 + " 0.05)'::GEOMETRY, 2154))");
+            st.execute("CREATE TABLE RECEIVERS_1093(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO RECEIVERS_1093 VALUES (1, ST_SetSRID(ST_MakePoint(" + x0 + ", " + (y0 + 20) + ", 4), 2154))");
+            st.execute("CREATE TABLE DEM_1093(PK INT AUTO_INCREMENT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO DEM_1093(THE_GEOM) SELECT ST_SetSRID(ST_MakePoint(" + x0 + " + a.X * 20, " +
+                    y0 + " + b.X * 20, 0), 2154) FROM SYSTEM_RANGE(-10, 10) a, SYSTEM_RANGE(-10, 10) b");
+        }
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_1093", "RECEIVERS_1093");
+        noiseMap.geometryFactory = new GeometryFactory();
+        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMap.setDemTable("DEM_1093");
+        DefaultTableLoader loader = (DefaultTableLoader) noiseMap.getTableLoader();
+        loader.initialize(connection, noiseMap);
+
+        ProfileBuilder profile = new ProfileBuilder();
+        Envelope envelope = new Envelope(x0 - 200, x0 + 200, y0 - 200, y0 + 200);
+        loader.fetchCellDem(connection, envelope, profile);
+        profile.finishFeeding();
+        SceneWithEmission scene = new SceneWithEmission(profile, noiseMap.getSceneInputSettings());
+        loader.fetchCellSource(connection, envelope, scene, false);
+
+        assertEquals(1, scene.sourceGeometries.size());
+        Geometry source = scene.sourceGeometries.get(0);
+        assertInstanceOf(LineString.class, source);
+        assertEquals(300, source.getLength(), 1e-9);
+        assertEquals(2, source.getNumPoints());
+    }
+
     @Test
     public void testClippedLineSources() throws Exception {
         try (Statement st = connection.createStatement()) {

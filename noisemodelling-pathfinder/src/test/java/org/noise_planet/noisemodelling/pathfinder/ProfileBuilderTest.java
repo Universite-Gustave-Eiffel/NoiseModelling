@@ -148,6 +148,55 @@ public class ProfileBuilderTest {
     }
 
     /**
+     * A line that follows a DEM triangle edge and crosses its vertices must keep its length
+     * and all the ground elevation points. Navigation used to go back and forth along the
+     * edge, producing a zigzag profile and over-estimated line source power (issue #1093).
+     */
+    @Test
+    public void demLineSourceOnTriangleEdgeTest() {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        for (int x = -40; x <= 40; x += 20) {
+            for (int y = -40; y <= 40; y += 20) {
+                profileBuilder.addTopographicPoint(new Coordinate(x, y, 0.01 * x * x));
+            }
+        }
+        profileBuilder.finishFeeding();
+        LineString source = new GeometryFactory().createLineString(new Coordinate[]{
+                new Coordinate(-30, 0, 0.05), new Coordinate(30, 0, 0.05)});
+        LineString split = profileBuilder.splitGeometryLineToDem(source, ProfileBuilder.MILLIMETER);
+        assertEquals(source.getLength(), split.getLength(), DELTA);
+        double[] expectedZ = {10.05, 4.05, 0.05, 4.05, 10.05};
+        assertEquals(expectedZ.length, split.getNumPoints());
+        for (int i = 0; i < split.getNumPoints(); i++) {
+            assertEquals(expectedZ[i], split.getCoordinateN(i).z, DELTA);
+            if (i > 0) {
+                assertTrue(split.getCoordinateN(i).x > split.getCoordinateN(i - 1).x);
+            }
+        }
+    }
+
+    /**
+     * A line starting outside the DEM must keep all the ground elevation points once it
+     * enters the triangulation, and must not stop on the DEM boundary.
+     */
+    @Test
+    public void demLineSourceFromOutsideTest() {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        for (int x = -40; x <= 40; x += 20) {
+            for (int y = -40; y <= 40; y += 20) {
+                profileBuilder.addTopographicPoint(new Coordinate(x, y, 0.01 * (x * x + y * y)));
+            }
+        }
+        profileBuilder.finishFeeding();
+        LineString source = new GeometryFactory().createLineString(new Coordinate[]{
+                new Coordinate(-100, 7, 0.05), new Coordinate(100, 7, 0.05)});
+        LineString split = profileBuilder.splitGeometryLineToDem(source, ProfileBuilder.MILLIMETER);
+        assertEquals(source.getLength(), split.getLength(), DELTA);
+        assertEquals(6, split.getNumPoints());
+        assertEquals(1.45, split.getCoordinateN(3).z, DELTA);
+    }
+
+    /**
      * Test the ground adding to a {@link ProfileBuilder}.
      * @throws ParseException JTS WKT parsing exception.
      */
