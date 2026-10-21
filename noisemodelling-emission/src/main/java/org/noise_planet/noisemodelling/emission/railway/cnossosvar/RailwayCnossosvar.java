@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.logging.Logger;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -44,6 +45,8 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.railway.Railway {
+
+    private static final Logger LOGGER = Logger.getLogger(RailwayCnossosvar.class.getName());
 
     /**
      * Minimum speed used to determine the total effective roughness (Directive 2002/49/EC,
@@ -144,6 +147,15 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      */
     public boolean isLightRail(String typeVehicle) {
         return getVehicleNode(typeVehicle).path("Lightrail").asBoolean(false);
+    }
+
+    /**
+     * Get the minimum speed used to compute the total effective roughness for a vehicle.
+     * @param typeVehicle Vehicle type identifier
+     * @return 30 km/h for light rail, 50 km/h otherwise
+     */
+    private double getMinimumSpeed(String typeVehicle) {
+        return isLightRail(typeVehicle) ? MIN_SPEED_LIGHT_RAIL : MIN_SPEED_HEAVY_RAIL;
     }
 
     /**
@@ -335,6 +347,13 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         if (isTunnel) {
             return railWayParameters;
         } else {
+            double minimumSpeed = getMinimumSpeed(typeVehicle);
+            if (speed < minimumSpeed) {
+                LOGGER.warning(String.format(Locale.ROOT,
+                        "Vehicle %s: speed %.1f km/h is below the CNOSSOS minimum of %.0f km/h; " +
+                                "using %.0f km/h to compute the total effective roughness.",
+                        typeVehicle, speed, minimumSpeed, minimumSpeed));
+            }
             //  Rolling noise calcul
             double[] lW = getLWRolling(typeVehicle, trackRoughnessId, impactId,  curvature, speed, trackTransferId, axlesPerVeh);
             railWayParameters.addRailwaySource("ROLLING", new LineSource(lW,0.5, "ROLLING"));
@@ -531,8 +550,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         double[] lambdaToFreqLog = new double[35];
         double[] freqMedLog = new double[24];
         double[] Lambda = new double[35];
-        double calcSpeed = isLightRail(typeVehicle) ? max(MIN_SPEED_LIGHT_RAIL, speed) :
-                max(MIN_SPEED_HEAVY_RAIL, speed);
+        double calcSpeed = max(getMinimumSpeed(typeVehicle), speed);
 
         // Resolve impact noise node once before the loop
         boolean hasImpactNoise = false;
