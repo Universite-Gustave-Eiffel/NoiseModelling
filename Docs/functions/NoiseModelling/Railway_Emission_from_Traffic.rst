@@ -38,7 +38,7 @@ Mandatory inputs
    
    * BRIDGE : Bridge transfer function identifier, e.g. "EU3", empty for none (VARCHAR)
    
-   * TRACKSPD : Commercial speed on the section (in km/h) (DOUBLE)
+   * COMSPD : Commercial speed on the section (in km/h) (DOUBLE)
    
    * ISTUNNEL : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN)
 

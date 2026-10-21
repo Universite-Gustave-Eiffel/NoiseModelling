@@ -146,6 +146,20 @@ public class RailwayCnossos extends Railway {
     }
 
     /**
+     * Get the maximum speed of a vehicle
+     * @param typeVehicle Vehicle type identifier (e.g. "SNCF2")
+     * @return maximum speed of vehicle in km/h, or {@link Railway#NO_SPEED_LIMIT} when
+     * the vehicle has no valid speed limit
+     */
+    public double getMaxSpeed(String typeVehicle) {
+        JsonNode vMax = getVehicleNode(typeVehicle).path("Vmax");
+        if (!vMax.isNumber() || vMax.doubleValue() <= 0.) {
+            return NO_SPEED_LIMIT;
+        }
+        return vMax.doubleValue();
+    }
+
+    /**
      *
      * @param typeVehicle
      * @param runningCondition
@@ -332,7 +346,8 @@ public class RailwayCnossos extends Railway {
         int curvature = trackParameters.getCurvature();
 
         // get speed of the vehicle
-        double speed = min(speedVehicle, min(speedTrack, speedCommercial));
+        double maxTrainSpeed = getMaxSpeed(typeVehicle);
+        double speed = min(min(speedVehicle, maxTrainSpeed), min(speedTrack, speedCommercial));
 
         boolean isTunnel = trackParameters.getIsTunnel();
         // %% Take into account the number of coach and the number of units

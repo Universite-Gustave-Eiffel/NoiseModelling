@@ -16,6 +16,7 @@ Table SOURCES_GEOM definition
 .. warning::
     * In the list below, the columns noted with ``*`` are mandatory
     * This description is only valid :doc:`functions/NoiseModelling/Noise_level_from_source` Block. For the other Blocks, it is necessary to refer to the description of their input data
+    * Vehicle speeds are corrected to be in the range of 20 to 150 km/h. A warning is logged for each distinct out-of-range value.
 
 
 .. note::
@@ -44,18 +45,23 @@ Table SOURCES_GEOM definition
     * Type: Double
 * ``LV_SPD_D``, ``LV_SPD_E``, ``LV_SPD_N``
     * Description: Hourly average light vehicle speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``MV_SPD_D``, ``MV_SPD_E``, ``MV_SPD_N``
     * Description: Hourly average medium heavy vehicles speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``HGV_SPD_D``, ``HGV_SPD_E``, ``HGV_SPD_N``
     * Description: Hourly average heavy duty vehicles speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``WAV_SPD_D``, ``WAV_SPD_E``, ``WAV_SPD_N``
     * Description: Hourly average mopeds, tricycles or quads ≤ 50 cc speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``WBV_SPD_D``, ``WBV_SPD_E``, ``WBV_SPD_N``
     * Description: Hourly average motorcycles, tricycles or quads > 50 cc speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``PVMT``
     * Description: `CNOSSOS road pavement identifier`_ *(Default* ``DEF`` *)* (`See NM possible values`_)
@@ -122,18 +128,23 @@ The script ``Road_Emission_from_Traffic`` can convert this traffic into the ``LW
     * Type: Double
 * ``LV_SPD``
     * Description: Hourly average light vehicle speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``MV_SPD``
     * Description: Hourly average medium heavy vehicles speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``HGV_SPD``
     * Description: Hourly average heavy duty vehicles speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``WAV_SPD``
     * Description: Hourly average mopeds, tricycles or quads ≤ 50 cc speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``WBV_SPD``
     * Description: Hourly average motorcycles, tricycles or quads > 50 cc speed *(km/h)*
+    * Range: 20 to 150 km/h
     * Type: Double
 * ``PVMT``
     * Description: `CNOSSOS road pavement identifier`_ *(Default* ``DEF`` *)* (`See NM possible values`_)
