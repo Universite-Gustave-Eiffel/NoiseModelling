@@ -56,7 +56,7 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
      * @return distance
      */
     private static double getDistance(double theta, double phi, DirectivityRecord b) {
-        return Math.acos(Math.sin(phi) * Math.sin(b.phi) + Math.cos(phi) * Math.cos(b.phi) * Math.cos(theta - b.theta));
+        return Math.acos(Math.sin(theta) * Math.sin(b.theta) + Math.cos(theta) * Math.cos(b.theta) * Math.cos(phi - b.phi));
     }
 
     /**
@@ -241,7 +241,7 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
             double yLength = getDistance(allRecords[0].theta, allRecords[2].phi, allRecords[0]);
             // compute expected phi, theta as a normalized vector
             double x = Math.max(0, Math.min(1, getDistance(x1, record.phi, record) / xLength));
-            double y = Math.max(0, Math.min(1, getDistance(record.theta, y1, record) / yLength));
+            double y = Math.max(0, Math.min(1, getDistance(x1, record.phi, allRecords[0]) / yLength));
             if (Double.isNaN(x)) {
                 x = 0;
             }
