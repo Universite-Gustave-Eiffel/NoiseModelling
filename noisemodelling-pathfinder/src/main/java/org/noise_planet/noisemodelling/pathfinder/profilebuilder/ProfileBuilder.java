@@ -1363,14 +1363,17 @@ public class ProfileBuilder {
         profile.hasTopographyIntersection = !freeField;
 
         List<CutPointTopography> topographyList = new ArrayList<>(coordinates.size());
+        // Compare with the last kept point, not the raw neighbour, so smooth relief made of many small slope
+        // changes is not entirely dropped
+        Coordinate previous = coordinates.get(0);
         for(int idPoint = 1; idPoint < coordinates.size() - 1; idPoint++) {
-            final Coordinate previous = coordinates.get(idPoint - 1);
             final Coordinate current = coordinates.get(idPoint);
             final Coordinate next = coordinates.get(idPoint+1);
             // Do not add topographic points which are simply the linear interpolation between two points
             // triangulation add a lot of interpolated lines from line segment DEM
             if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= DELTA) {
                 topographyList.add(new CutPointTopography(current));
+                previous = current;
             }
         }
         profile.insertCutPoint(true, topographyList.toArray(CutPoint[]::new));
