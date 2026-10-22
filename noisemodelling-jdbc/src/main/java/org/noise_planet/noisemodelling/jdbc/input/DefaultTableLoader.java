@@ -164,6 +164,11 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                 frequencySet.addAll(readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend()+periodFieldName, sourceFields));
             }
+            if(!noiseMapByReceiverMaker.getSourcesEmissionTableName().isEmpty()) {
+                // D, E and N are values of the PERIOD field, the band fields have no period suffix (ex. HZ63)
+                frequencySet.addAll(readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend(),
+                        JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName())));
+            }
             frequencyArray = new ArrayList<>(frequencySet);
             exactFrequencyArray = new ArrayList<>();
             aWeightingArray = new ArrayList<>();
