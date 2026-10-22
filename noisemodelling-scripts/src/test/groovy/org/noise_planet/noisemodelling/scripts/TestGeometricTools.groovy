@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_Landcover_with_rail
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Asc_File
@@ -282,5 +283,28 @@ class TestGeometricTools extends JdbcTestCase {
             assertTrue(file.length() > 0, "KML file ${file.name} is empty")
         }
         assertTrue(kmlFileCount > 0, "No KML files found in directory ${kmlLocation}")
+    }
+
+    @Test
+    void testEnrichLandcoverWithRail() {
+        def sql = new Sql(connection)
+        sql.execute("CREATE TABLE LANDCOVER(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), GROUND_G DOUBLE)")
+        sql.execute("""INSERT INTO LANDCOVER VALUES
+            (1, ST_GeomFromText('POLYGON((0 -50, 100 -50, 100 50, 0 50, 0 -50))', 2154), 0.7),
+            (2, ST_GeomFromText('POLYGON((200 0, 300 0, 300 100, 200 100, 200 0))', 2154), 1),
+            (3, ST_GeomFromText('POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))', 2154), 0.1),
+            (4, ST_GeomFromText('POLYGON((0 -200, 100 -200, 100 -100, 0 -100, 0 -200))', 2154), 0)""")
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE)")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 110 0 1)', 2154), 10)")
+
+        new Enrich_Landcover_with_rail().exec(connection,
+                ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL", "railWidth": "WIDTH"])
+
+        // Outside the rail strip, every input class is kept with its own G
+        def areas = [:]
+        sql.eachRow("SELECT G, SUM(ST_AREA(ST_DIFFERENCE(THE_GEOM, ST_MakeEnvelope(-20, -5, 120, 5, 2154)))) A FROM LANDCOVER_ENRICHED GROUP BY G") {
+            areas[it.G as Double] = it.A as Double
+        }
+        assertEquals([0.0d: 10000d, 0.1d: 10000d, 0.7d: 9000d, 1.0d: 10000d], areas)
     }
 }
