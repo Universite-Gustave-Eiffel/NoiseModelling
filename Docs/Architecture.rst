@@ -45,7 +45,7 @@ In both cases, database can be local or remote.
 
 
 .. _H2 : https://www.h2database.com
-.. _H2GIS: https://www.h2gis.org/
+.. _H2GIS: https://h2gis.org/
 .. _PostgreSQL: https://www.postgresql.org/
 .. _PostGIS: https://postgis.net/
 
