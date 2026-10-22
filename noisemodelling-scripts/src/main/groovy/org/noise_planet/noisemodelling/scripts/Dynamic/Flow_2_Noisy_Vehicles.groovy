@@ -154,8 +154,11 @@ def exec(Connection connection, input) {
     if (method.equalsIgnoreCase("PROBA")){
         System.println("Create the random road traffic table over the number of iterations... ")
 
+        // Q/v is a density of vehicles per metre, and each source point stands for SPACING metres of its road,
+        // so the probability that a vehicle is near a point is the density times SPACING
         sql.execute("drop table VEHICLES_PROBA IF EXISTS;" +
-                "create table VEHICLES_PROBA AS SELECT *,case when LV_SPD  < 20 then 0.001*LV/20 else 0.001*LV/LV_SPD end  LV_DENS_D, case when HV_SPD  < 20 then 0.001*HV/20 else 0.001*HV/HV_SPD end HGV_DENS_D  FROM SOURCES_GEOM ;" +
+                "create table VEHICLES_PROBA AS SELECT s.*, LEAST(1, n.SPACING * case when s.LV_SPD  < 20 then 0.001*s.LV/20 else 0.001*s.LV/s.LV_SPD end)  LV_DENS_D, LEAST(1, n.SPACING * case when s.HV_SPD  < 20 then 0.001*s.HV/20 else 0.001*s.HV/s.HV_SPD end) HGV_DENS_D  FROM SOURCES_GEOM s, " +
+                "(SELECT r.PK ROAD_ID, ST_Length(r.THE_GEOM) / c.N SPACING FROM " + sources_table_name + " r, (SELECT ROAD_ID, COUNT(*) N FROM SOURCES_GEOM GROUP BY ROAD_ID) c WHERE r.PK = c.ROAD_ID) n WHERE s.ROAD_ID = n.ROAD_ID ;" +
                 "alter table VEHICLES_PROBA add LENGTH double as select ST_LENGTH(the_geom) ;" +
                 "ALTER TABLE VEHICLES_PROBA ALTER COLUMN LV_DENS_D double;" +
                 "ALTER TABLE VEHICLES_PROBA ALTER COLUMN HGV_DENS_D double;" )
@@ -784,12 +787,7 @@ class IndividualVehicleEmissionProcessData {
     static double[] combineSpectrums(double[] res_LV, double[] res_HV) {
         double[] res_d = new double[res_LV.length]
         for (int kk = 0; kk < res_d.length; kk++) {
-            res_d[kk] = 10 * Math.log10(
-                    (1.0 / 2.0) *
-                            (Math.pow(10, (10 * Math.log10(Math.pow(10, res_LV[kk] / 10))) / 10)
-                                    + Math.pow(10, (10 * Math.log10(Math.pow(10, res_HV[kk] / 10))) / 10)
-                            )
-            )
+            res_d[kk] = 10 * Math.log10(Math.pow(10, res_LV[kk] / 10) + Math.pow(10, res_HV[kk] / 10))
         }
         return res_d
     }
@@ -811,12 +809,11 @@ class IndividualVehicleEmissionProcessData {
             SPEED_HV.put(pk, (double) row[3])
             HV.put(pk, (double) row[4])
         }
-        double[] noVehicle = new double[8]
         for (Integer pk : SPEED_LV.keySet()) {
             double[] lv = vehicleSpectrum(SPEED_LV.get(pk), "1")
             double[] hv = vehicleSpectrum(SPEED_HV.get(pk), "3")
-            LEVEL_LV_ONLY.put(pk, combineSpectrums(lv, noVehicle))
-            LEVEL_HV_ONLY.put(pk, combineSpectrums(noVehicle, hv))
+            LEVEL_LV_ONLY.put(pk, lv)
+            LEVEL_HV_ONLY.put(pk, hv)
             LEVEL_LV_AND_HV.put(pk, combineSpectrums(lv, hv))
         }
     }
