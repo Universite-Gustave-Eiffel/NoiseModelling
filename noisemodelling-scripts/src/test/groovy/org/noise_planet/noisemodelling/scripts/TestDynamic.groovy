@@ -410,10 +410,23 @@ class TestDynamic extends JdbcTestCase {
      */
     @Test
     void testDynamicFlowProbaMeanEmission() {
+        // 1 km road, 1000 light and 200 heavy vehicles per hour at 50 km/h: 20 light and 4 heavy vehicles
+        assertProbaMeanEmission(1000, 200, 50, 20, 4)
+    }
+
+    /**
+     * Same check when the traffic puts more than one vehicle on each source point
+     */
+    @Test
+    void testDynamicFlowProbaMeanEmissionDenseTraffic() {
+        // 1 km road, 4000 light vehicles per hour at 20 km/h: 200 vehicles on about 100 source points
+        assertProbaMeanEmission(4000, 0, 20, 200, 0)
+    }
+
+    void assertProbaMeanEmission(int lv, int hv, double speed, double nLight, double nHeavy) {
         Sql sql = new Sql(connection)
-        // 1 km road, 1000 light and 200 heavy vehicles per hour at 50 km/h
         sql.execute("CREATE TABLE ROADS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRING, 2154), LV_D INT, LV_SPD_D DOUBLE, HGV_D INT, HGV_SPD_D DOUBLE)")
-        sql.execute("INSERT INTO ROADS VALUES (1, ST_GeomFromText('LINESTRING(0 0, 1000 0)', 2154), 1000, 50, 200, 50)")
+        sql.execute("INSERT INTO ROADS VALUES (1, ST_GeomFromText('LINESTRING(0 0, 1000 0)', 2154), " + lv + ", " + speed + ", " + hv + ", " + speed + ")")
 
         new Flow_2_Noisy_Vehicles().exec(connection,
                 ["tableRoads": "ROADS",
@@ -427,10 +440,9 @@ class TestDynamic extends JdbcTestCase {
         double energy = sql.firstRow("SELECT SUM(POWER(10, HZ1000 / 10)) FROM SOURCES_EMISSION")[0] as double
         double meanLevel = 10 * Math.log10(energy / steps)
 
-        // Q / v vehicles are on the 1 km road on average: 20 light and 4 heavy vehicles
-        double lwLight = IndividualVehicleEmissionProcessData.vehicleSpectrum(50, "1")[4]
-        double lwHeavy = IndividualVehicleEmissionProcessData.vehicleSpectrum(50, "3")[4]
-        double expectedLevel = 10 * Math.log10(20 * Math.pow(10, lwLight / 10) + 4 * Math.pow(10, lwHeavy / 10))
+        double lwLight = IndividualVehicleEmissionProcessData.vehicleSpectrum(speed, "1")[4]
+        double lwHeavy = IndividualVehicleEmissionProcessData.vehicleSpectrum(speed, "3")[4]
+        double expectedLevel = 10 * Math.log10(nLight * Math.pow(10, lwLight / 10) + nHeavy * Math.pow(10, lwHeavy / 10))
 
         assertEquals(expectedLevel, meanLevel, 0.5)
     }

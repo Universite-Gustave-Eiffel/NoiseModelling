@@ -155,9 +155,9 @@ def exec(Connection connection, input) {
         System.println("Create the random road traffic table over the number of iterations... ")
 
         // Q/v is a density of vehicles per metre, and each source point stands for SPACING metres of its road,
-        // so the probability that a vehicle is near a point is the density times SPACING
+        // so a point carries on average density times SPACING vehicles
         sql.execute("drop table VEHICLES_PROBA IF EXISTS;" +
-                "create table VEHICLES_PROBA AS SELECT s.*, LEAST(1, n.SPACING * case when s.LV_SPD  < 20 then 0.001*s.LV/20 else 0.001*s.LV/s.LV_SPD end)  LV_DENS_D, LEAST(1, n.SPACING * case when s.HV_SPD  < 20 then 0.001*s.HV/20 else 0.001*s.HV/s.HV_SPD end) HGV_DENS_D  FROM SOURCES_GEOM s, " +
+                "create table VEHICLES_PROBA AS SELECT s.*, n.SPACING * case when s.LV_SPD  < 20 then 0.001*s.LV/20 else 0.001*s.LV/s.LV_SPD end  LV_DENS_D, n.SPACING * case when s.HV_SPD  < 20 then 0.001*s.HV/20 else 0.001*s.HV/s.HV_SPD end HGV_DENS_D  FROM SOURCES_GEOM s, " +
                 "(SELECT r.PK ROAD_ID, ST_Length(r.THE_GEOM) / c.N SPACING FROM " + sources_table_name + " r, (SELECT ROAD_ID, COUNT(*) N FROM SOURCES_GEOM GROUP BY ROAD_ID) c WHERE r.PK = c.ROAD_ID) n WHERE s.ROAD_ID = n.ROAD_ID ;" +
                 "alter table VEHICLES_PROBA add LENGTH double as select ST_LENGTH(the_geom) ;" +
                 "ALTER TABLE VEHICLES_PROBA ALTER COLUMN LV_DENS_D double;" +
@@ -740,6 +740,8 @@ class IndividualVehicleEmissionProcessData {
     Map<Integer, Double> SPEED_HV = new HashMap<>()
     Map<Integer, Double> LV = new HashMap<>()
     Map<Integer, Double> HV = new HashMap<>()
+    Map<Integer, Double> LV_WEIGHT = new HashMap<>()
+    Map<Integer, Double> HV_WEIGHT = new HashMap<>()
     // The spectra only depend on the source speeds, so the possible outputs of
     // getCarsLevel are computed once per source instead of once per source and time step
     Map<Integer, double[]> LEVEL_LV_ONLY = new HashMap<>()
@@ -792,6 +794,13 @@ class IndividualVehicleEmissionProcessData {
         return res_d
     }
 
+    static double[] addLevel(double[] spectrum, double dB) {
+        for (int kk = 0; kk < spectrum.length; kk++) {
+            spectrum[kk] += dB
+        }
+        return spectrum
+    }
+
     int getCarsPositions(){
         nCars = SPEED_LV.size()
         return nCars
@@ -805,13 +814,17 @@ class IndividualVehicleEmissionProcessData {
         sql.eachRow('SELECT PK,  LV_SPD, LV_DENS_D,  HV_SPD, HGV_DENS_D FROM ' + tablename + ';') { row ->
             int pk = (int) row[0]
             SPEED_LV.put(pk, (double) row[1])
-            LV.put(pk, (double) row[2])
+            // a mean count above 1 cannot be a presence probability, so the point is always
+            // occupied and its vehicle emits the energy of the whole count
+            LV.put(pk, Math.min(1d, (double) row[2]))
+            LV_WEIGHT.put(pk, Math.max(1d, (double) row[2]))
             SPEED_HV.put(pk, (double) row[3])
-            HV.put(pk, (double) row[4])
+            HV.put(pk, Math.min(1d, (double) row[4]))
+            HV_WEIGHT.put(pk, Math.max(1d, (double) row[4]))
         }
         for (Integer pk : SPEED_LV.keySet()) {
-            double[] lv = vehicleSpectrum(SPEED_LV.get(pk), "1")
-            double[] hv = vehicleSpectrum(SPEED_HV.get(pk), "3")
+            double[] lv = addLevel(vehicleSpectrum(SPEED_LV.get(pk), "1"), 10 * Math.log10(LV_WEIGHT.get(pk)))
+            double[] hv = addLevel(vehicleSpectrum(SPEED_HV.get(pk), "3"), 10 * Math.log10(HV_WEIGHT.get(pk)))
             LEVEL_LV_ONLY.put(pk, lv)
             LEVEL_HV_ONLY.put(pk, hv)
             LEVEL_LV_AND_HV.put(pk, combineSpectrums(lv, hv))
