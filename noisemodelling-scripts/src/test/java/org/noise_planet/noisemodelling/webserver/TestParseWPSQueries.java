@@ -82,6 +82,19 @@ public class TestParseWPSQueries {
         assertEquals(600.0, (double) executionPlan.getInputs().get("maxCellDist"), 0.01);
     }
 
+    @Test
+    public void testInvalidInputValueIsRejected() {
+        // A value that cannot be converted to the declared type must not be replaced by the default value
+        String requestBody = "<p0:Execute xmlns:p0=\"http://www.opengis.net/wps/1.0.0\" service=\"WPS\" version=\"1.0" +
+                ".0\"><p1:Identifier xmlns:p1=\"http://www.opengis.net/ows/1" +
+                ".1\">Receivers:Delaunay_Grid</p1:Identifier><p0:DataInputs><p0:Input><p1:Identifier " +
+                "xmlns:p1=\"http://www.opengis.net/ows/1" +
+                ".1\">maxCellDist</p1:Identifier><p0:Data><p0:LiteralData>6OO</p0:LiteralData></p0:Data></p0" +
+                ":Input></p0:DataInputs></p0:Execute>";
+        assertThrows(IOException.class, () -> OwsController.generateExecutionPlanFromWPS(
+                new ByteArrayInputStream(requestBody.getBytes()), wrappers));
+    }
+
     private static @NonNull Map<String, ScriptMetadata> getWrappers() throws IOException {
         return WpsScriptWrapper.scanScriptsGrouped(ClassLoader.getSystemClassLoader(), "scripts");
     }
