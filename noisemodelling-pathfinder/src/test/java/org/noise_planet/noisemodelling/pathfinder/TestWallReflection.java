@@ -299,4 +299,50 @@ public class TestWallReflection {
         current = it.next();
         assertInstanceOf(CutPointReceiver.class, current);
     }
+
+    /**
+     * Order 2 reflection in a street canyon whose middle leg (between the two reflection points) is blocked by a
+     * building, with diffraction over roofs disabled: the whole path must be rejected, not emitted with the first
+     * reflection point dropped.
+     */
+    @Test
+    public void testSecondOrderReflectionBlockedBetweenReflectionPoints() {
+        GeometryFactory factory = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        // North facade along y = 10, south facade along y = -10
+        profileBuilder.addBuilding(new Coordinate[]{new Coordinate(-20, 10, 10), new Coordinate(60, 10, 10),
+                new Coordinate(60, 20, 10), new Coordinate(-20, 20, 10), new Coordinate(-20, 10, 10)}, 1);
+        profileBuilder.addBuilding(new Coordinate[]{new Coordinate(-20, -20, 10), new Coordinate(60, -20, 10),
+                new Coordinate(60, -10, 10), new Coordinate(-20, -10, 10), new Coordinate(-20, -20, 10)}, 2);
+        // Small building between the reflection points (10, 10) and (30, -10)
+        profileBuilder.addBuilding(new Coordinate[]{new Coordinate(14, 3, 4), new Coordinate(17, 3, 4),
+                new Coordinate(17, 7, 4), new Coordinate(14, 7, 4), new Coordinate(14, 3, 4)}, 3);
+        profileBuilder.finishFeeding();
+
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addSource(factory.createPoint(new Coordinate(0, 0, 2)));
+        inputData.addReceiver(new Coordinate(40, 0, 2));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 50;
+        inputData.maxSrcDist = 150;
+        inputData.setReflexionOrder(2);
+        PathFinder computeRays = new PathFinder(inputData);
+        computeRays.setThreadCount(1);
+        DefaultCutPlaneVisitor defaultCutPlaneVisitor = new DefaultCutPlaneVisitor(true, inputData);
+        computeRays.run(defaultCutPlaneVisitor);
+
+        for (CutProfile profile : defaultCutPlaneVisitor.cutProfiles) {
+            List<CutPoint> reflections = new ArrayList<>();
+            for (CutPoint cutPoint : profile.cutPoints) {
+                if (cutPoint instanceof CutPointReflection) {
+                    reflections.add(cutPoint);
+                }
+            }
+            // A single reflection between the two facades is specular only at mid-distance (x = 20)
+            if (reflections.size() == 1) {
+                assertEquals(20, reflections.get(0).coordinate.x, 0.01);
+            }
+        }
+    }
 }
