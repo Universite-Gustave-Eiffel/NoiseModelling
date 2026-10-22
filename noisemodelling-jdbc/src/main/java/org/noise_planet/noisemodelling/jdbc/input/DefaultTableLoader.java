@@ -805,9 +805,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
 
         // group bridge points by BRIDGE_PK, preserving insertion order (= PK order from the query)
         Map<Long, List<BridgePoint>> pointsByBridge = new LinkedHashMap<>();
+        // Load every point of a bridge that has at least one point in the envelope, rather than
+        // only the points inside it: otherwise a bridge spanning a cell boundary is loaded as a
+        // truncated deck (a spurious end edge appears mid-span, and road points beyond the cut
+        // find no deck under them and fall back to terrain level).
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT * FROM " + bridgeTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(geomName, dbType) + " && ?::geometry ORDER BY BRIDGE_PK, PK")) {
+                "SELECT * FROM " + bridgeTableName + " WHERE BRIDGE_PK IN (SELECT BRIDGE_PK FROM " + bridgeTableName + " WHERE " +
+                        TableLocation.quoteIdentifier(geomName, dbType) + " && ?::geometry) ORDER BY BRIDGE_PK, PK")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
