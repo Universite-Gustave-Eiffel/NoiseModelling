@@ -11,6 +11,8 @@ package org.noise_planet.noisemodelling.emission.railway;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
+import org.noise_planet.noisemodelling.emission.LineSource;
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayVehicleCnossosParameters;
@@ -1118,5 +1120,15 @@ public class RailwayCnossosTest {
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
         }
+    }
+
+    @Test
+    public void testSumRailwaySourceWithEmptyFirstSource() {
+        // A traffic row with no train in the period gives an empty source list, it must not drop the next rows
+        RailWayCnossosParameters empty = new RailWayCnossosParameters();
+        RailWayCnossosParameters night = new RailWayCnossosParameters();
+        night.addRailwaySource("ROLLING", new LineSource(new double[]{80, 90}, 0.05, "ROLLING"));
+        RailWayCnossosParameters sum = RailWayCnossosParameters.sumRailwaySource(empty, night);
+        assertArrayEquals(new double[]{80, 90}, sum.getRailwaySourceList().get("ROLLING").getlW(), EPSILON_TEST1);
     }
 }
