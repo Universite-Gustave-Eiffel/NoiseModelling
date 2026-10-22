@@ -1119,4 +1119,99 @@ public class RailwayCnossosTest {
             assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
         }
     }
+
+    @Test
+    public void Test_Cnossos_Rail_Lightrail_Indication() throws IOException {
+        loadCnossosData();
+
+        assertTrue(railwayCnossos.isLightRail("SNCF67"));
+        assertTrue(railwayCnossos.isLightRail("SNCF68"));
+        assertTrue(railwayCnossos.isLightRail("NL_CAT7"));
+        assertTrue(railwayCnossos.isLightRail("NL_CAT10"));
+        assertTrue(railwayCnossos.isLightRail("NL_trams"));
+
+        // Missing Lightrail field defaults to heavy rail
+        assertFalse(railwayCnossos.isLightRail("NL_CAT8"));
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Minimum_Speed() throws IOException {
+        loadCnossosData();
+
+        // Vehicle flow is proportional to speed here, so the flow correction cancels and
+        // the emitted level only depends on the speed used for the total effective roughness.
+        double[] heavy20 = evaluateSource("NL_CAT8", 20, 20_000, "0", "ROLLING");
+        double[] heavy40 = evaluateSource("NL_CAT8", 40, 40_000, "0", "ROLLING");
+        double[] heavy50 = evaluateSource("NL_CAT8", 50, 50_000, "0", "ROLLING");
+        assertArrayEquals(heavy50, heavy20, EPSILON_TEST1);
+        assertArrayEquals(heavy50, heavy40, EPSILON_TEST1);
+
+        double[] light20 = evaluateSource("NL_CAT10", 20, 20_000, "0", "ROLLING");
+        double[] light30 = evaluateSource("NL_CAT10", 30, 30_000, "0", "ROLLING");
+        double[] light40 = evaluateSource("NL_CAT10", 40, 40_000, "0", "ROLLING");
+        assertArrayEquals(light30, light20, EPSILON_TEST1);
+
+        boolean differs = false;
+        for (int idFreq = 0; idFreq < light30.length; idFreq++) {
+            if (Math.abs(light30[idFreq] - light40[idFreq]) > EPSILON_TEST1) {
+                differs = true;
+                break;
+            }
+        }
+        assertTrue(differs, "40 km/h is above the light-rail minimum and must not be clamped");
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Minimum_Speed_Bridge() throws IOException {
+        loadCnossosData();
+
+        // CNOSSOS formula (2.3.18) also uses the total effective roughness, so the minimum
+        // speed applies to the bridge source as well.
+        double[] bridge20 = evaluateSource("NL_CAT8", 20, 20_000, "EU2", "BRIDGE");
+        double[] bridge50 = evaluateSource("NL_CAT8", 50, 50_000, "EU2", "BRIDGE");
+        assertArrayEquals(bridge50, bridge20, EPSILON_TEST1);
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Minimum_Speed_Does_Not_Affect_Flow() throws IOException {
+        loadCnossosData();
+
+        // Same flow and same clamped roughness speed, but different actual speeds: the only
+        // difference must be the flow correction, which uses the actual speed.
+        double flow = 20_000;
+        double[] at20 = evaluateSource("NL_CAT8", 20, flow, "0", "ROLLING");
+        double[] at50 = evaluateSource("NL_CAT8", 50, flow, "0", "ROLLING");
+        double expectedFlowDelta = 10 * Math.log10(50. / 20.);
+        for (int idFreq = 0; idFreq < at20.length; idFreq++) {
+            assertEquals(at50[idFreq] + expectedFlowDelta, at20[idFreq], EPSILON_TEST1);
+        }
+    }
+
+    private void loadCnossosData() throws IOException {
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
+    }
+
+    private double[] evaluateSource(String vehCat, double vehicleSpeed, double vehiclePerHour,
+                                    String bridgeTransfert, String source) throws IOException {
+        int rollingCondition = 0;
+        double idlingTime = 0;
+        int nTracks = 1;
+        String trackTransfer = "NL_BB1";
+        String railRoughness = "NL";
+        String impactNoise = "1";
+        int curvature = 0;
+        boolean isTunnel = false;
+        double vMaxInfra = 160;
+        double vehicleCommercial = 140;
+
+        RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(vehCat,
+                vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
+        RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra,
+                trackTransfer, railRoughness, impactNoise, bridgeTransfert, curvature,
+                vehicleCommercial, isTunnel, nTracks);
+        return railwayCnossos.evaluate(vehicleParameters, trackParameters)
+                .getRailwaySourceList().get(source).getlW();
+    }
 }
