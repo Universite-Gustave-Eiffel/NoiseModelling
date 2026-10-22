@@ -6003,7 +6003,7 @@ public class AttenuationComputeOutputCnossosTest {
     public void testDutchDay() {
         FavourableProbability favourableProbability = new DutchFavourableProbabilityFactory.DProbabilityGenerator("D");
         double[] favFractions = {
-                favourableProbability.getFavourableProbability(Math.PI),              //to south
+                favourableProbability.getFavourableProbability(Math.PI),                    //to south
                 favourableProbability.getFavourableProbability(3 * Math.PI / 2),      //to west
                 favourableProbability.getFavourableProbability(0),                    //to north
                 favourableProbability.getFavourableProbability(Math.PI / 2)           //to east
@@ -6016,7 +6016,7 @@ public class AttenuationComputeOutputCnossosTest {
     public void testDutchNight() {
         FavourableProbability favourableProbability = new DutchFavourableProbabilityFactory.ENProbabilityGenerator("N");
         double[] favFractions = {
-                favourableProbability.getFavourableProbability(Math.PI),              //to south
+                favourableProbability.getFavourableProbability(Math.PI),                    //to south
                 favourableProbability.getFavourableProbability(3 * Math.PI / 2),      //to west
                 favourableProbability.getFavourableProbability(0),                    //to north
                 favourableProbability.getFavourableProbability(Math.PI / 2)           //to east

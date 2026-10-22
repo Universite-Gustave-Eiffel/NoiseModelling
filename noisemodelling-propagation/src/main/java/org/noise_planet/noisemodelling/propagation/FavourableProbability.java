@@ -40,6 +40,7 @@ public interface FavourableProbability {
      */
     static double getPropagationAngle(Coordinate source, Coordinate receiver) {
         double angle = Math.atan2(receiver.getX() - source.getX(), receiver.getY() - source.getY());
+        //Note: atan2 normally takes (y,x) not (x,y), but here angle=0 is to the north, not along positive x-axes
         return angle < 0 ? angle + 2 * Math.PI : angle;
     }
 
