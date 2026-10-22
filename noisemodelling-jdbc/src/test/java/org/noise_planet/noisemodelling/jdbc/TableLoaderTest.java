@@ -258,6 +258,27 @@ public class TableLoaderTest {
     }
 
     @Test
+    public void testNoiseEmissionRailWayLastSectionSingleTrain() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two tracks, the last one with a single train
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK ORDER BY PK LIMIT 2)");
+        connection.createStatement().execute("DELETE FROM RAILTRAIN WHERE IDSECTION = (SELECT IDSECTION FROM RAILTRACK ORDER BY PK DESC LIMIT 1)"
+                + " AND PK <> (SELECT MIN(T.PK) FROM RAILTRAIN T, RAILTRACK R WHERE T.IDSECTION = R.IDSECTION"
+                + " AND R.PK = (SELECT MAX(PK) FROM RAILTRACK))");
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(2, numberOfRows);
+    }
+
+    @Test
     public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
