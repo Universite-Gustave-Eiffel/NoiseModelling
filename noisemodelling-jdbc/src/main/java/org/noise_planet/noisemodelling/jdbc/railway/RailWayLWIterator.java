@@ -16,6 +16,7 @@ import org.h2gis.utilities.Tuple;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
+import org.noise_planet.noisemodelling.emission.railway.Railway;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters;
@@ -283,7 +284,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
         String railRoughnessStr = "SNCF1";
         int nbTrack = 2;
         double vMaxInfra = 160;
-        double commercialSpeed = 160;
+        double commercialSpeed = Railway.NO_SPEED_LIMIT;
         boolean isTunnel = false;
         String idSection = "";
 
