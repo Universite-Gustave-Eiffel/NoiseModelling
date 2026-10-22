@@ -548,20 +548,26 @@ public class CnossosPathBuilder {
         seg1.dPrime = srcPrime.distance(c0);
         seg2.dPrime = cn.distance(rcvPrime);
 
-        if(!favourable || !(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT || cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION)) {
+        // A bridge deck's outer edge (source on the deck, receiver below/beside it) is located by
+        // a shortest-path search along the edge, like a vertical-edge pivot, so it is not
+        // guaranteed to lie on the straight source-receiver line, nor on the single 2D cut plane
+        // that the "curved path" (favourable-conditions) formula below assumes (it tests the
+        // pivot's side of the 2D-unfolded source-receiver segment and can fold the path through a
+        // point computed along that segment). For this edge that collinearity assumption can be
+        // violated even though the point is typed DIFH, not DIFV, so it is not caught by the
+        // existing DIFV-only checks. Always fall back to the simple, dc-based formula for it,
+        // the same way genuine lateral (LEFT/RIGHT) DIFV paths already skip the curved formula.
+        boolean hasOffAxisBridgeEdge = cutProfile.cutPoints.stream()
+                .anyMatch(cutPoint -> cutPoint instanceof CutPointBridgeWall
+                        && ((CutPointBridgeWall) cutPoint).getWallDirection() == CutPointBridgeWall.WallDirection.OTHER);
+        if(!favourable || !(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT || cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION)
+                || hasOffAxisBridgeEdge) {
             long difVPointCount = cnossosPath.getPointList().stream().
                     filter(pointPath -> pointPath.type.equals(DIFV)).count();
-            // A bridge deck's outer edge (source on the deck, receiver below/beside it) is
-            // located by a shortest-path search along the edge, like a vertical-edge pivot, so it
-            // is not guaranteed to lie on the straight source-receiver line. "d" is a cumulative
-            // 2D distance through the cut-profile points and is only valid when they are all
-            // collinear with source and receiver (see JTSUtility#getNewCoordinateSystem); for
-            // this edge that assumption can be violated even though the point is typed DIFH, not
-            // DIFV, so it is not caught by the check above. Route it through the same "dc" (true
-            // 3D source-receiver distance) fallback.
-            boolean hasOffAxisBridgeEdge = cutProfile.cutPoints.stream()
-                    .anyMatch(cutPoint -> cutPoint instanceof CutPointBridgeWall
-                            && ((CutPointBridgeWall) cutPoint).getWallDirection() == CutPointBridgeWall.WallDirection.OTHER);
+            // "d" is a cumulative 2D distance through the cut-profile points and is only valid
+            // when they are all collinear with source and receiver (see
+            // JTSUtility#getNewCoordinateSystem). Route DIFV and the off-axis bridge edge through
+            // the "dc" (true 3D source-receiver distance) fallback instead.
             double distance = (difVPointCount == 0 && !hasOffAxisBridgeEdge)
                     ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
             cnossosPath.delta = sr.orientationIndex(c0) * (dSO0 + cnossosPath.e + dOnR - distance);

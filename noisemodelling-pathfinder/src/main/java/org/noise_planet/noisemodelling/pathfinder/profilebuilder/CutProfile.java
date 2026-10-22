@@ -416,6 +416,26 @@ public class CutProfile {
         for (Coordinate coordinate : convexHullPoints) {
             hullIndices.add(coordinateIndex.getOrDefault(coordinate, -1));
         }
+        // A bridge deck's off-axis edge (source on the deck, receiver below/beside it) is located
+        // by a shortest-path search along the edge, not a straight intersection, so its 2D
+        // projection here (built assuming collinearity with source and receiver, see
+        // JTSUtility#getNewCoordinateSystem) is not reliable enough to decide, by height alone,
+        // whether it belongs on the convex hull - under favourable-conditions curvature it can
+        // drop out entirely at longer range, silently turning a shielded path into a direct one.
+        // Its necessity as an obstacle is already established by the real 3D bridge geometry
+        // (BridgeService), so always keep it, inserting it back in index order if the generic
+        // hull test above dropped it.
+        for (int idPoint = 1; idPoint < cutPoints.size() - 1; idPoint++) {
+            if (cutPoints.get(idPoint) instanceof CutPointBridgeWall
+                    && ((CutPointBridgeWall) cutPoints.get(idPoint)).getWallDirection() == CutPointBridgeWall.WallDirection.OTHER
+                    && !hullIndices.contains(idPoint)) {
+                int insertAt = 0;
+                while (insertAt < hullIndices.size() && hullIndices.get(insertAt) < idPoint) {
+                    insertAt++;
+                }
+                hullIndices.add(insertAt, idPoint);
+            }
+        }
         return hullIndices;
     }
 
