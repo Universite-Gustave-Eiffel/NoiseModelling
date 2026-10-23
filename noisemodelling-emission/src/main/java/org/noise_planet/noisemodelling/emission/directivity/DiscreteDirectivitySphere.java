@@ -238,10 +238,11 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
             double y1 = allRecords[0].phi;
 
             double xLength = getDistance(allRecords[1].theta, allRecords[0].phi, allRecords[0]);
-            double yLength = getDistance(allRecords[0].theta, allRecords[2].phi, allRecords[0]);
+            // azimuth angles, not distances on the sphere, so that they stay defined at the poles
+            double yLength = Math.acos(Math.cos(allRecords[2].phi - y1));
             // compute expected phi, theta as a normalized vector
             double x = Math.max(0, Math.min(1, getDistance(x1, record.phi, record) / xLength));
-            double y = Math.max(0, Math.min(1, getDistance(x1, record.phi, allRecords[0]) / yLength));
+            double y = Math.max(0, Math.min(1, Math.acos(Math.cos(record.phi - y1)) / yLength));
             if (Double.isNaN(x)) {
                 x = 0;
             }
