@@ -388,32 +388,42 @@ public class EmissionTableGenerator {
                         break;
                 }
 
-                PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
-                for (Geometry trackGeometry : geometries) {
 
-                    Geometry sourceGeometry = ST_UpdateZ.updateZ(ST_Force3D.force3D(trackGeometry), heightSource).copy() ;
 
-                    int cursor = 1;
-                    ps.setInt(cursor++, pk);
-                    ps.setObject(cursor++, sourceGeometry);
-                    ps.setInt(cursor++, directivityId);
-                    ps.setDouble(cursor++, railWayLWGeom.getGs());
-                    ps.setDouble(cursor++, hRail);
-                    ps.setDouble(cursor++, railWayLWGeom.getCref());
-                    for (double v : LWDay) {
-                        ps.setDouble(cursor++, v);
+                //Speed-up: only write to database when there is significant emission
+                //this means, the sum of all emission during the 24 hours in all 24 terts bands should be > 0 dB.
+                if (10.0 * Math.log10(
+                        12.0 * Arrays.stream(LWDay).map(x ->    Math.pow(10.0, x / 10.0)).sum() +
+                        4.0 * Arrays.stream(LWEvening).map(x -> Math.pow(10.0, x / 10.0)).sum() +
+                        8.0 * Arrays.stream(LWNight).map(x ->   Math.pow(10.0, x / 10.0)).sum())
+                    > 0.0) {
+
+                    PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
+                    for (Geometry trackGeometry : geometries) {
+
+                        Geometry sourceGeometry = ST_UpdateZ.updateZ(ST_Force3D.force3D(trackGeometry), heightSource).copy();
+
+                        int cursor = 1;
+                        ps.setInt(cursor++, pk);
+                        ps.setObject(cursor++, sourceGeometry);
+                        ps.setInt(cursor++, directivityId);
+                        ps.setDouble(cursor++, railWayLWGeom.getGs());
+                        ps.setDouble(cursor++, hRail);
+                        ps.setDouble(cursor++, railWayLWGeom.getCref());
+                        for (double v : LWDay) {
+                            ps.setDouble(cursor++, v);
+                        }
+                        for (double v : LWEvening) {
+                            ps.setDouble(cursor++, v);
+                        }
+                        for (double v : LWNight) {
+                            ps.setDouble(cursor++, v);
+                        }
+                        ps.addBatch();
                     }
-                    for (double v : LWEvening) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWNight) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    ps.addBatch();
+                    ps.executeBatch();
                 }
-                ps.executeBatch();
             }
-
         }
 
         // Add primary key to the LW table
