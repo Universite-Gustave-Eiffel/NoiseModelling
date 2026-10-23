@@ -39,6 +39,11 @@ public class CnossosPathBuilder {
 
         Coordinate src = pts2D.getFirst();
         Coordinate rcv = pts2D.getLast();
+        // Attenuation reference source. For a reflected path it is the unfolded (image source)
+        // line start; it differs from the real source position.
+        Coordinate attSrc = dSR.p0;
+        boolean unfolded = !attSrc.equals2D(src);
+        double refLen = dSR.getLength();
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
         for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
@@ -50,9 +55,9 @@ public class CnossosPathBuilder {
             int iO = cut2DGroundIndex.get(i0Cut);
             Coordinate o = pts2DGround[iO];
 
-            double dSO = src.distance(o);
+            double dSO = attSrc.distance(o);
             double dOR = o.distance(rcv);
-            double deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
+            double deltaH = dSR.orientationIndex(o) * (dSO + dOR - refLen);
             boolean rcrit = false;
             for(double f : exactFrequencyArray) {
                 if(deltaH > -(340./f) / 20) {
@@ -74,15 +79,19 @@ public class CnossosPathBuilder {
                 double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
                 SegmentPath seg2 = computeSegment(o, rcv, abr);
 
-                Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
-                Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
+                // Attenuation sub segments: unfolded reference when the path is reflected.
+                SegmentPath seg1Att = unfolded ? computeSegment(attSrc, o, abs) : seg1;
+                SegmentPath seg2Att = unfolded ? computeSegment(o, rcv, abr) : seg2;
+
+                Coordinate srcPrime = new Coordinate(attSrc.x + (seg1Att.sMeanPlane.x - attSrc.x) * 2, attSrc.y + (seg1Att.sMeanPlane.y - attSrc.y) * 2);
+                Coordinate rcvPrime = new Coordinate(rcv.x + (seg2Att.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2Att.rMeanPlane.y - rcv.y) * 2);
 
                 LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-                srSeg.dPrime = srcPrime.distance(rcvPrime);
-                seg1.dPrime = srcPrime.distance(o);
-                seg2.dPrime = o.distance(rcvPrime);
+                double srSegDPrime = srcPrime.distance(rcvPrime);
+                double seg1DPrime = srcPrime.distance(o);
+                double seg2DPrime = o.distance(rcvPrime);
 
-                double deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
+                double deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1DPrime + seg2DPrime - srSegDPrime);
                 for(double f : exactFrequencyArray) {
                     if(deltaH > (340./f) / 4 - deltaPrimeH) {
                         rcrit = true;
@@ -92,33 +101,33 @@ public class CnossosPathBuilder {
                 if (rcrit) {
                     seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut), Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
                     seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut, Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
-                    double dSPrimeO = seg1.sPrime.distance(o);
-                    double dSPrimeR = seg1.sPrime.distance(rcv);
-                    double dORPrime = o.distance(seg2.rPrime);
-                    double dSRPrime = src.distance(seg2.rPrime);
+                    double dSPrimeO = seg1Att.sPrime.distance(o);
+                    double dSPrimeR = seg1Att.sPrime.distance(rcv);
+                    double dORPrime = o.distance(seg2Att.rPrime);
+                    double dSRPrime = attSrc.distance(seg2Att.rPrime);
                     if(!pathParameters.isFavourable()) {
                         pathParameters.delta = deltaH;
                         pathParameters.deltaPrime = deltaPrimeH;
-                        LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
+                        LineSegment sPrimeR = new LineSegment(seg1Att.sPrime, rcv);
                         pathParameters.deltaSPrimeR = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
-                        LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
+                        LineSegment sRPrime = new LineSegment(attSrc, seg2Att.rPrime);
                         pathParameters.deltaSRPrime = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
                     } else {
-                        double dOnR = seg2.d;
-                        double dSO0 = seg1.d;
+                        double dOnR = seg2Att.d;
+                        double dSO0 = seg1Att.d;
                         pathParameters.deltaSPrimeR = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
                         pathParameters.deltaSRPrime = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
                         if(dSR.orientationIndex(o) == 1) {
-                            pathParameters.delta = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                            pathParameters.delta = toCurve(dSO, refLen) + toCurve(dOR, refLen) - toCurve(refLen, refLen);
                         } else {
-                            Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
-                            pathParameters.delta =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                            Coordinate pA = dSR.pointAlong((o.x-attSrc.x)/(rcv.x-attSrc.x));
+                            pathParameters.delta =2*toCurve(attSrc.distance(pA), refLen) + 2*toCurve(pA.distance(rcv), refLen) - toCurve(dSO, refLen) - toCurve(dOR, refLen) - toCurve(refLen, refLen);
                         }
                         if(dSPrimeRPrime.orientationIndex(o) == 1) {
-                            pathParameters.deltaPrime = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                            pathParameters.deltaPrime = toCurve(seg1DPrime, srSegDPrime) + toCurve(seg2DPrime, srSegDPrime) - toCurve(srSegDPrime, srSegDPrime);
                         } else {
                             Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                            pathParameters.deltaPrime =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(rcvPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                            pathParameters.deltaPrime =2*toCurve(srcPrime.distance(pA), srSegDPrime) + 2*toCurve(pA.distance(rcvPrime), srSegDPrime) - toCurve(seg1DPrime, srSegDPrime) - toCurve(seg2DPrime, srSegDPrime) - toCurve(srSegDPrime, srSegDPrime);
                         }
                     }
 
@@ -472,6 +481,25 @@ public class CnossosPathBuilder {
             if(!horizontalPlaneDiffraction) {
                 // Check for Rayleigh criterion for segments computation
                 LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
+                if(cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
+                    // The real propagation path is Source -> Reflection(s) -> Receiver. Following the
+                    // Directive the propagation attenuations are computed on the unfolded path
+                    // (image source -> receiver), so the reference line is the straight line through
+                    // the reflection point and the receiver, not the direct source-receiver line.
+                    int reflectionIndex = -1;
+                    for(int i = 1; i < cutProfile.cutPoints.size() - 1; i++) {
+                        if(cutProfile.cutPoints.get(i) instanceof CutPointReflection) {
+                            reflectionIndex = i;
+                            break;
+                        }
+                    }
+                    if(reflectionIndex >= 0) {
+                        Coordinate reflectionPoint = pts2D.get(reflectionIndex);
+                        double slope = (lastPts2D.y - reflectionPoint.y) / (lastPts2D.x - reflectionPoint.x);
+                        Coordinate unfoldedSource = new Coordinate(0, reflectionPoint.y - slope * reflectionPoint.x);
+                        dSR = new LineSegment(unfoldedSource, lastPts2D);
+                    }
+                }
                 // Look for diffraction over edge on free field (frequency dependent)
                 computeRayleighDiff(srPath, cutProfile, cnossosPath, dSR, rayleighSegments, rayleighPoints, pts2D,
                         pts2DGround, cut2DGroundIndex, exactFrequencyArray);
@@ -490,7 +518,16 @@ public class CnossosPathBuilder {
                 long difVPointCount = cnossosPath.getPointList().stream().
                         filter(pointPath -> pointPath.type.equals(DIFV)).count();
                 double distance = difVPointCount == 0 ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
-                cnossosPath.delta = segments.getFirst().d + cnossosPath.e + segments.getLast().d - distance;
+                if(cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
+                    // No diffraction on the reflected path: there is no path length difference,
+                    // do not report a distance nor leave the delta parameters unset.
+                    cnossosPath.delta = 0;
+                    cnossosPath.deltaPrime = 0;
+                    cnossosPath.deltaSPrimeR = 0;
+                    cnossosPath.deltaSRPrime = 0;
+                } else {
+                    cnossosPath.delta = segments.getFirst().d + cnossosPath.e + segments.getLast().d - distance;
+                }
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
