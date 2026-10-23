@@ -29,12 +29,12 @@ public class DutchFavourableProbabilityFactory {
     }
 
     /**
-     * DutchFavourableProbability is using another convention for the angle than the standard polar angle
-     * @param angle the angle in radians
+     * Rotate the propagation angle to the convention used by the Dutch favourable probability formulations.
+     * @param angle propagation angle in radians, 0 = north, increasing clockwise
      * @return the rotated angle in radians
      */
     public static double rotateAngle(double angle) {
-        double theta1 = -Math.PI / 2.0 - angle;
+        double theta1 = angle - Math.PI;
 
         // Normalize the angle to be within [-PI, PI]
         if (theta1 <= -Math.PI) theta1 += 2 * Math.PI;
