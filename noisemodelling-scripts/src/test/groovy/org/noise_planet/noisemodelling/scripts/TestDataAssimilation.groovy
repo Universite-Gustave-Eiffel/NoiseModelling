@@ -11,6 +11,7 @@
  */
 
 package org.noise_planet.noisemodelling.scripts
+import groovy.sql.Sql
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Data_Assimilation.*
@@ -21,6 +22,8 @@ import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_s
 import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 class TestDataAssimilation extends JdbcTestCase {
     Logger logger = LoggerFactory.getLogger(TestDataAssimilation.class)
@@ -126,5 +129,25 @@ class TestDataAssimilation extends JdbcTestCase {
 
         logger.info('End of Test for Data Assimilation.')
 
+    }
+
+    @Test
+    void testExtractBestConfigurationComparesSameSensor() {
+        Sql sql = new Sql(connection)
+        // Map 1 matches every sensor, map 2 is flat at 65 dB
+        sql.execute("CREATE TABLE OBS (IDRECEIVER INTEGER, EPOCH INTEGER, LAEQ DOUBLE PRECISION, TEMP DOUBLE PRECISION)")
+        sql.execute("INSERT INTO OBS VALUES (1, 1, 70, 15), (2, 1, 60, 15), (3, 1, 50, 15)")
+        sql.execute("CREATE TABLE RECEIVERS_LEVEL (IDRECEIVER INTEGER, PERIOD CHARACTER VARYING, LAEQ DOUBLE PRECISION)")
+        sql.execute("INSERT INTO RECEIVERS_LEVEL VALUES (1, '1', 70), (2, '1', 60), (3, '1', 50), (1, '2', 65), (2, '2', 65), (3, '2', 65)")
+        sql.execute("CREATE TABLE FILTERED_CONFIGURATIONS (IT INTEGER, TEMP_VAL DOUBLE PRECISION)")
+        sql.execute("INSERT INTO FILTERED_CONFIGURATIONS VALUES (1, 15), (2, 15)")
+
+        new Extract_Best_Configuration().exec(connection, [
+                "observationTable": "OBS",
+                "noiseMapTable": "RECEIVERS_LEVEL",
+                "tempToleranceThreshold": 5
+        ])
+
+        assertEquals([1], sql.rows("SELECT IT FROM BEST_CONFIGURATION_FULL").collect { it.IT })
     }
 }
