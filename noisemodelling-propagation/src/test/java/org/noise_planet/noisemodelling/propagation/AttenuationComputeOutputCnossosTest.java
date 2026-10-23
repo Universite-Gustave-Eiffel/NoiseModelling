@@ -6413,6 +6413,55 @@ public class AttenuationComputeOutputCnossosTest {
     }
 
     /**
+     * Directive 2002/49/EC, Annex II, §2.5.6: "Si dB > 5hB ou α(f) > 0,8, il n'est pas tenu compte de
+     * l'interaction entre le train et l'obstacle". Bands with α > 0.8 must keep the level computed without
+     * interaction (Cref=0), and a band with α = 0.8 must still get the interaction.
+     */
+    @Test
+    public void testBodyBarrierAbsorbingBands() {
+        GeometryFactory f = new GeometryFactory();
+        List<Double> alphas = Arrays.asList(0.0, 0.0, 0.0, 0.0, 0.8, 0.9, 1.0, 1.0);
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addWall(new Coordinate[]{
+                        new Coordinate(3, -100, 2),
+                        new Coordinate(3, 100, 2)
+                },alphas,1)
+                .finishFeeding();
+
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(0L, f.createPoint(new Coordinate(0, 0, 0.)));
+        scene.addReceiver(new Coordinate(28, 0, 3.5));
+        scene.defaultGroundAttenuation = 1.0;
+        scene.reflexionOrder = 1;
+        scene.maxSrcDist = 1000;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(true);
+        scene.bodyBarrierMaxReflectionOrder = 3;
+        AttenuationParameters attData = new AttenuationParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+        scene.defaultCnossosParameters = attData;
+
+        scene.sourceCref.put(0L, 1.0);
+        AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true, scene);
+        new PathFinder(scene).run(propDataOut0);
+        double[] values0 = propDataOut0.receiversAttenuationLevels.pop().levels;
+
+        scene.sourceCref.put(0L, 0.0);
+        AttenuationComputeOutput propDataOut1 = new AttenuationComputeOutput(true, true, scene);
+        new PathFinder(scene).run(propDataOut1);
+        double[] values1 = propDataOut1.receiversAttenuationLevels.pop().levels;
+
+        for (int i = 0; i <= 4; i++) {
+            assertTrue(values0[i] > values1[i] + 1, "Interaction expected for alpha <= 0.8 at band " + i);
+        }
+        for (int i = 5; i < values0.length; i++) {
+            assertEquals(values1[i], values0[i], ERROR_EPSILON_LOWEST, "No interaction expected for alpha > 0.8 at band " + i);
+        }
+    }
+
+    /**
      * Test body-barrier correction convergence against NMPB programmer's guide
      * ScreenBodyInteraction correction table.
      * <p>

@@ -675,7 +675,7 @@ public class AttenuationCnossos {
                 if (db < 5 * hbRel) {
                     double[] deltaL = new double[data.getFrequencies().size()];
                     for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
-                        if (pDif.alphaWall.get(idfreq) < 0.8){
+                        if (pDif.alphaWall.get(idfreq) <= 0.8){
 
                             double ch = 1.0;
                             double lambda = 340.0 / data.getFrequencies().get(idfreq);
@@ -760,6 +760,9 @@ public class AttenuationCnossos {
                                 deltaL[idfreq] += dBToW(deltaGeo[i][0] + deltaDif[i][0]
                                         + deltaAbs[i][0] + deltaRef[i][0] + deltaRetroDif[i]);
                             }
+                        } else {
+                            // α(f) > 0.8: no train/barrier interaction in this band (0 dB)
+                            deltaL[idfreq] = 1.0;
                         }
                     }
                     deltaBodyScreen = wToDb(deltaL);
