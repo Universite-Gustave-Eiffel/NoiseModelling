@@ -133,6 +133,7 @@
                 <configuration>
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
+                    <skip>${buildnumber.skip}</skip>
                 </configuration>
             </plugin>
             <!-- Javadoc generation -->
