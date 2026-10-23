@@ -7201,6 +7201,53 @@ public class AttenuationComputeOutputCnossosTest {
         }
     }
 
+    /**
+     * A Rayleigh point found after the reflection point must not be placed before it:
+     * the point list and the 3D geometry must follow the profile order.
+     */
+    @Test
+    public void testRayleighPointAfterReflectionKeepsProfileOrder() {
+        // Wall along y=30, terrain ridge just below the ray on the wall-receiver leg
+        ProfileBuilder builder = new ProfileBuilder()
+                .addWall(new Coordinate[]{new Coordinate(0, 30, 10), new Coordinate(100, 30, 10)}, -1)
+                .addTopographicLine(60, 0, 2.95, 80, 40, 2.95)
+                .addTopographicPoint(new Coordinate(-50, -50, 0))
+                .addTopographicPoint(new Coordinate(150, -50, 0))
+                .addTopographicPoint(new Coordinate(150, 100, 0))
+                .addTopographicPoint(new Coordinate(-50, 100, 0));
+        builder.finishFeeding();
+        Scene scene = new ProfileBuilderDecorator(builder)
+                .addSource(10, 10, 3)
+                .addReceiver(90, 10, 3)
+                .setGs(0.)
+                .build();
+        scene.reflexionOrder = 1;
+        DefaultCutPlaneVisitor visitor = new DefaultCutPlaneVisitor(true);
+        PathFinder pathFinder = new PathFinder(scene);
+        pathFinder.setThreadCount(1);
+        pathFinder.run(visitor);
+
+        CutProfile reflection = visitor.getCutProfiles().stream()
+                .filter(p -> p.getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION).findFirst().orElseThrow();
+        CnossosPath path = CnossosPathBuilder.computeCnossosPathsFromCutProfile(reflection,
+                builder.exactFrequencyArray, 0.0).getFirst();
+        List<PointPath> points = path.getPointList();
+        assertEquals(List.of(PointPath.POINT_TYPE.SRCE, PointPath.POINT_TYPE.DIFH_RCRIT, PointPath.POINT_TYPE.REFL,
+                        PointPath.POINT_TYPE.DIFH_RCRIT, PointPath.POINT_TYPE.RECV),
+                points.stream().map(p -> p.type).collect(Collectors.toList()));
+        for (int i = 1; i < points.size(); i++) {
+            assertTrue(points.get(i - 1).coordinate.x <= points.get(i).coordinate.x, "Point " + i + " out of profile order");
+        }
+        // Source, terrain point, wall, ridge, receiver
+        double[][] expectedXY = {{10, 10}, {35.16, 22.58}, {50, 30}, {70, 20}, {90, 10}};
+        Coordinate[] geom = path.asGeom().getCoordinates();
+        assertEquals(expectedXY.length, geom.length);
+        for (int i = 0; i < geom.length; i++) {
+            assertEquals(expectedXY[i][0], geom[i].x, DELTA_COORDS, "asGeom point " + i + " X");
+            assertEquals(expectedXY[i][1], geom[i].y, DELTA_COORDS, "asGeom point " + i + " Y");
+        }
+    }
+
     private AttenuationComputeOutput computeReflectionOnBuildingWallNearReceiver(boolean enableReflectionProfileFilter)
             throws IOException {
         GeometryFactory geometryFactory = new GeometryFactory();
