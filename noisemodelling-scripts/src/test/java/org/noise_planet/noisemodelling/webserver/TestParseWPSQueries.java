@@ -91,8 +91,9 @@ public class TestParseWPSQueries {
                 "xmlns:p1=\"http://www.opengis.net/ows/1" +
                 ".1\">maxCellDist</p1:Identifier><p0:Data><p0:LiteralData>6OO</p0:LiteralData></p0:Data></p0" +
                 ":Input></p0:DataInputs></p0:Execute>";
-        assertThrows(IOException.class, () -> OwsController.generateExecutionPlanFromWPS(
+        IOException ex = assertThrows(IOException.class, () -> OwsController.generateExecutionPlanFromWPS(
                 new ByteArrayInputStream(requestBody.getBytes()), wrappers));
+        assertTrue(ex.getMessage().contains("maxCellDist"));
     }
 
     private static @NonNull Map<String, ScriptMetadata> getWrappers() throws IOException {
