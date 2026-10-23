@@ -1074,7 +1074,7 @@
         "Default": "true",
         "Reference": "Cat5",
         "Description": "NA",
-        "values": [
+        "Values": [
           24.8,
           24.8,
           24.8,
