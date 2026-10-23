@@ -554,7 +554,22 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                 }
                                 if (fetchHeight) {
                                     double height = rs.getDouble(buildingTableParameters.heightField);
-                                    if (needsToUpdateZ) {
+                                    if (needsToUpdateZ && geometry instanceof LineString) {
+                                        // The screen top follows the DEM, with a vertex at each DEM triangle edge
+                                        CoordinateList top = new CoordinateList();
+                                        for (int vertex = 0; vertex < coordinates.length - 1; vertex++) {
+                                            List<Coordinate> ground = new ArrayList<>();
+                                            builder.fetchTopographicProfile(ground, coordinates[vertex], coordinates[vertex + 1], false);
+                                            if (ground.isEmpty()) {
+                                                ground.add(new Coordinate(coordinates[vertex].x, coordinates[vertex].y, builder.getZGround(coordinates[vertex])));
+                                                ground.add(new Coordinate(coordinates[vertex + 1].x, coordinates[vertex + 1].y, builder.getZGround(coordinates[vertex + 1])));
+                                            }
+                                            for (Coordinate groundPoint : ground) {
+                                                top.add(new Coordinate(groundPoint.x, groundPoint.y, groundPoint.z + height), false);
+                                            }
+                                        }
+                                        geometry = geometry.getFactory().createLineString(top.toCoordinateArray());
+                                    } else if (needsToUpdateZ) {
                                         double minTopoZ = Arrays.stream(coordinates).mapToDouble(builder::getZGround).min().orElse(0.0);
                                         geometry = ST_UpdateZ.updateZ(geometry, minTopoZ + height);
                                     }
