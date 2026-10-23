@@ -152,6 +152,32 @@ public class TestPathFinder {
     }
 
     /**
+     * The point sources of a line source that doubles back over itself must keep the heading of their own leg
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceOrientationOnReturnLeg() throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addSource(new WKTReader().read("LINESTRING (0 0 0.05, 100 0 0.05, 0 0 0.05)"))
+                .addReceiver(50, 50, 4)
+                .build();
+        int east = 0;
+        int west = 0;
+        for (CutProfile cutProfile : computeCutProfiles(scene)) {
+            double yaw = (cutProfile.getSource().orientation.yaw + 360) % 360;
+            if (Math.abs(yaw - 90) < 1e-6) {
+                east++;
+            } else if (Math.abs(yaw - 270) < 1e-6) {
+                west++;
+            }
+        }
+        // the outward leg heads east, the return leg heads west
+        assertTrue(east > 0);
+        assertEquals(east, west);
+    }
+
+    /**
      * The user PITCH and ROLL of a line source must be kept on its point sources
      *
      * @throws ParseException

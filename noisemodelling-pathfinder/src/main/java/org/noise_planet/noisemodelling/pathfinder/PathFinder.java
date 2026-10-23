@@ -18,7 +18,6 @@ import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory;
 import org.locationtech.jts.io.WKTWriter;
-import org.locationtech.jts.linearref.LocationIndexedLine;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -807,6 +806,18 @@ public class PathFinder {
      */
     public static double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                                                    List<Coordinate> pts) {
+        return splitLineStringIntoPoints(geom, segmentSizeConstraint, pts, new ArrayList<>());
+    }
+
+    /**
+     * @param geom Geometry
+     * @param segmentSizeConstraint Maximal distance between points
+     * @return Fixed distance between points
+     * @param pts computed points
+     * @param ptsSegment index of the geometry segment each computed point lies on
+     */
+    public static double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
+                                                   List<Coordinate> pts, List<Integer> ptsSegment) {
         // If the linear sound source length is inferior to half the distance between the nearest point of the sound
         // source and the receiver then it can be modelled as a single point source
         double geomLength = geom.getLength();
@@ -828,6 +839,7 @@ public class PathFinder {
                             a.y + segmentLengthFraction * (b.y - a.y),
                             a.z + segmentLengthFraction * (b.z - a.z));
                     pts.add(midPoint);
+                    ptsSegment.add(i);
                     break;
                 }
                 segmentLength += length;
@@ -840,6 +852,7 @@ public class PathFinder {
 
             // Mid point of segmented line source
             Coordinate midPoint = null;
+            int midPointSegment = 0;
             for (int i = 0; i < points.length - 1; i++) {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
@@ -858,8 +871,10 @@ public class PathFinder {
                         midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                                 a.y + segmentLengthFraction * (b.y - a.y),
                                 a.z + segmentLengthFraction * (b.z - a.z));
+                        midPointSegment = i;
                     }
                     pts.add(midPoint);
+                    ptsSegment.add(midPointSegment);
                     a = splitPoint;
                     length = a.distance3D(b);
                     if (isNaN(length)) {
@@ -873,11 +888,13 @@ public class PathFinder {
                     midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                             a.y + segmentLengthFraction * (b.y - a.y),
                             a.z + segmentLengthFraction * (b.z - a.z));
+                    midPointSegment = i;
                 }
                 segmentLength += length;
             }
             if (midPoint != null) {
                 pts.add(midPoint);
+                ptsSegment.add(midPointSegment);
             }
             return targetSegmentSize;
         }
@@ -899,14 +916,14 @@ public class PathFinder {
         if (isNaN(segmentSizeConstraint)) {
             segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / this.data.lineSourceSpacingRatio);
         }
-        double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
-        LocationIndexedLine sourceLine = new LocationIndexedLine(source);
+        ArrayList<Integer> ptsSegment = new ArrayList<>();
+        double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts, ptsSegment);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
                 // use the orientation of the line source segment the point lies on
-                LineSegment segment = sourceLine.project(pt).getSegment(source);
-                Vector3D v = new Vector3D(segment.p0, segment.p1);
+                int segmentIndex = ptsSegment.get(ptIndex);
+                Vector3D v = new Vector3D(source.getCoordinateN(segmentIndex), source.getCoordinateN(segmentIndex + 1));
                 Orientation orientation;
                 if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
                     // If the line source already provide an orientation then alter the line orientation
