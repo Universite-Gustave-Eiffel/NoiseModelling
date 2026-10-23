@@ -306,5 +306,7 @@ class TestGeometricTools extends JdbcTestCase {
             areas[it.G as Double] = it.A as Double
         }
         assertEquals([0.0d: 10000d, 0.1d: 10000d, 0.7d: 9000d, 1.0d: 10000d], areas)
+        // Inside the rail strip, the G=0.7 landcover is cut away
+        assertEquals(0d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(THE_GEOM, ST_MakeEnvelope(-20, -5, 120, 5, 2154)))), 0) A FROM LANDCOVER_ENRICHED WHERE G = 0.7").A as double, 1e-6)
     }
 }
