@@ -132,6 +132,33 @@ public class TestPathFinder {
     }
 
     /**
+     * Test regression on https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues/684
+     * The point sources of a line source must not move when only the receiver height changes
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceSplitIndependentOfReceiverHeight() throws ParseException {
+        assertEquals(computeLineSourcePoints(4), computeLineSourcePoints(40));
+    }
+
+    private static List<Coordinate> computeLineSourcePoints(double receiverHeight) throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addSource(new WKTReader().read("LINESTRING (0 0 0.05, 200 0 0.05)"))
+                .addReceiver(100, 50, receiverHeight)
+                .build();
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        List<Coordinate> sourcePoints = new ArrayList<>();
+        for (CutProfile cutProfile : propDataOut.cutProfiles) {
+            sourcePoints.add(cutProfile.getSource().getCoordinate());
+        }
+        return sourcePoints;
+    }
+
+    /**
      * Test vertical edge diffraction ray computation
      *
      */
