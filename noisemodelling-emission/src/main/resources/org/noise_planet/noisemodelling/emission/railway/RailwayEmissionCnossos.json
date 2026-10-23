@@ -2018,10 +2018,10 @@
       "NL_50kN_680mm": {
         "Default": "true",
         "Reference": "IMAGINE",
-        "Description": "Wheel load 50kN wheel diameter 920mm",
+        "Description": "Wheel load 50kN wheel diameter 680mm",
         "Load": "50",
-        "WheelDiameter": "920",
-        "WheelDiameterCode": "large, >800mm",
+        "WheelDiameter": "680",
+        "WheelDiameterCode": "medium, 500 to 800mm",
         "Values": [
           0.0,
           0.0,
