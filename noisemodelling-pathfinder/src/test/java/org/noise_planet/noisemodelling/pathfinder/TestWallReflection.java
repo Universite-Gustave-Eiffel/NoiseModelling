@@ -165,6 +165,37 @@ public class TestWallReflection {
     }
 
     @Test
+    public void testDirectPathKeepsSkipReceiverStrategy() {
+        // A lateral diffraction path returning CONTINUE must not cancel a PROCESS_SOURCE_BUT_SKIP_RECEIVER
+        // requested by the vertical diffraction path of the same source (maximum error pruning)
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.addBuilding(new Coordinate[]{new Coordinate(-5, 0, 10), new Coordinate(5, 0, 10),
+                new Coordinate(5, 10, 10), new Coordinate(-5, 10, 10), new Coordinate(-5, 0, 10)}, 1);
+        profileBuilder.finishFeeding();
+        Coordinate receiver = new Coordinate(0, 20, 4);
+        Coordinate source = new Coordinate(0, -20, 1);
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(receiver);
+        inputData.addSource(new GeometryFactory().createPoint(source));
+        // Only the first path (vertical diffraction) asks to stop, the lateral paths return CONTINUE
+        DefaultCutPlaneVisitor visitor = new DefaultCutPlaneVisitor(true, inputData) {
+            @Override
+            public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+                super.onNewCutPlane(cutProfile);
+                return cutProfiles.size() == 1 ? PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER
+                        : PathSearchStrategy.CONTINUE;
+            }
+        };
+
+        CutPlaneVisitor.PathSearchStrategy strategy = new PathFinder(inputData).directPath(
+                new PathFinder.SourcePointInfo(0, 0, source, 1.0, new Orientation()),
+                new PathFinder.ReceiverPointInfo(0, 0, receiver), true, true, visitor);
+
+        assertTrue(visitor.cutProfiles.size() > 1, "Expected lateral diffraction paths");
+        assertEquals(CutPlaneVisitor.PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER, strategy);
+    }
+
+    @Test
     public void testNReflexion() throws ParseException, IOException, SQLException {
         GeometryFactory factory = new GeometryFactory();
 
