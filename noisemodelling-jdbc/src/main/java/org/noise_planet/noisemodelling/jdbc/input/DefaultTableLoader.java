@@ -554,7 +554,24 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                 }
                                 if (fetchHeight) {
                                     double height = rs.getDouble(buildingTableParameters.heightField);
-                                    if (needsToUpdateZ) {
+                                    if (needsToUpdateZ && geometry instanceof LineString) {
+                                        // Split the screen into panels, each one at its lowest ground Z plus the height
+                                        for (int vertex = 0; vertex < coordinates.length - 1; vertex++) {
+                                            LineSegment segment = new LineSegment(coordinates[vertex], coordinates[vertex + 1]);
+                                            int panels = Math.max(1, (int) Math.ceil(segment.getLength() / buildingTableParameters.screenPanelLength));
+                                            for (int panel = 0; panel < panels; panel++) {
+                                                Coordinate p0 = segment.pointAlong((double) panel / panels);
+                                                Coordinate p1 = segment.pointAlong((double) (panel + 1) / panels);
+                                                double z = Math.min(builder.getZGround(p0), builder.getZGround(p1)) + height;
+                                                Wall wall = new Wall(new Coordinate(p0.x, p0.y, z), new Coordinate(p1.x, p1.y, z),
+                                                        -1, ProfileBuilder.IntersectionType.WALL);
+                                                wall.setG(oldAlpha);
+                                                wall.setPrimaryKey(pk);
+                                                walls.add(wall);
+                                            }
+                                        }
+                                        continue;
+                                    } else if (needsToUpdateZ) {
                                         double minTopoZ = Arrays.stream(coordinates).mapToDouble(builder::getZGround).min().orElse(0.0);
                                         geometry = ST_UpdateZ.updateZ(geometry, minTopoZ + height);
                                     }
@@ -586,6 +603,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         public String heightField = "HEIGHT";
         public String alphaFieldName = "G";
         public double defaultWallAbsorption = 100000;
+        /** Maximum length (m) of the flat panels a screen without Z is split into, like pre-built screen panels */
+        public double screenPanelLength = 4;
 
         public BuildingTableParameters() {
         }
