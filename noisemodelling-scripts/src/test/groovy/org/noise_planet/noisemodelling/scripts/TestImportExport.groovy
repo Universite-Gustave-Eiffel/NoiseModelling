@@ -207,7 +207,8 @@ class TestImportExport extends JdbcTestCase {
         String nodes = ""
         String ways = ""
         def tags = ["<tag k=\"height\" v=\"12.5\"/>", "<tag k=\"building:levels\" v=\"2.5\"/>",
-                    "<tag k=\"height\" v=\"unknown\"/>", "<tag k=\"building:levels\" v=\"1;2\"/>"]
+                    "<tag k=\"height\" v=\"unknown\"/>", "<tag k=\"building:levels\" v=\"1;2\"/>",
+                    "<tag k=\"building:levels\" v=\";\"/>"]
         tags.eachWithIndex { String tag, int i ->
             double x = 2.0 + i * 0.001
             [[x, 47.0], [x + 0.0002, 47.0], [x + 0.0002, 47.0002], [x, 47.0002]].eachWithIndex { c, int j ->
@@ -228,11 +229,12 @@ class TestImportExport extends JdbcTestCase {
         ])
 
         def heights = new Sql(connection).rows("SELECT PK, HEIGHT FROM BUILDINGS ORDER BY PK")
-        assertEquals(4, heights.size())
+        assertEquals(5, heights.size())
         assertEquals(12.5, heights[0].HEIGHT as double, 1e-6)
         assertTrue((heights[1].HEIGHT as double) >= 7.5 && (heights[1].HEIGHT as double) <= 9.6)
         assertTrue((heights[2].HEIGHT as double) >= 4.0 && (heights[2].HEIGHT as double) <= 6.1)
         assertTrue((heights[3].HEIGHT as double) >= 3.0 && (heights[3].HEIGHT as double) <= 5.1)
+        assertTrue((heights[4].HEIGHT as double) >= 4.0 && (heights[4].HEIGHT as double) <= 6.1)
     }
 
     /**
