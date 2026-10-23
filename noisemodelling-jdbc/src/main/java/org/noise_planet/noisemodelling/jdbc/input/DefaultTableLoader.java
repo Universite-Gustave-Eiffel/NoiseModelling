@@ -799,20 +799,32 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         if (bridgeTableName == null || bridgeTableName.isEmpty()) {
             return;
         }
-        GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         String geomName = getGeometryColumnNames(connection, TableLocation.parse(bridgeTableName, dbType)).get(0);
 
         // group bridge points by BRIDGE_PK, preserving insertion order (= PK order from the query)
         Map<Long, List<BridgePoint>> pointsByBridge = new LinkedHashMap<>();
-        // Load every point of a bridge that has at least one point in the envelope, rather than
-        // only the points inside it: otherwise a bridge spanning a cell boundary is loaded as a
-        // truncated deck (a spurious end edge appears mid-span, and road points beyond the cut
-        // find no deck under them and fall back to terrain level).
+        // Load every point of a bridge whose own extent overlaps the envelope, rather than only
+        // bridges with an individual point inside it: a bridge can span clean across a (narrow)
+        // cell with both of its own points outside that cell, and testing individual points would
+        // miss it entirely - the bridge would be silently absent from that cell, and a relative-
+        // height source carrying its BRIDGE_PK would fail to resolve. Loading only the points
+        // inside the envelope would separately truncate a bridge that does have a point in it (a
+        // spurious end edge appears mid-span, and road points beyond the cut fall back to terrain
+        // level); comparing each bridge's own bounding box against the envelope - a per-BRIDGE_PK
+        // aggregate, not the individual THE_GEOM points - avoids both at once.
+        String quotedGeom = TableLocation.quoteIdentifier(geomName, dbType);
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT * FROM " + bridgeTableName + " WHERE BRIDGE_PK IN (SELECT BRIDGE_PK FROM " + bridgeTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(geomName, dbType) + " && ?::geometry) ORDER BY BRIDGE_PK, PK")) {
-            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+                "SELECT * FROM " + bridgeTableName + " WHERE BRIDGE_PK IN (" +
+                        "SELECT BRIDGE_PK FROM " + bridgeTableName +
+                        " GROUP BY BRIDGE_PK" +
+                        " HAVING MIN(ST_X(" + quotedGeom + ")) <= ? AND MAX(ST_X(" + quotedGeom + ")) >= ?" +
+                        " AND MIN(ST_Y(" + quotedGeom + ")) <= ? AND MAX(ST_Y(" + quotedGeom + ")) >= ?" +
+                        ") ORDER BY BRIDGE_PK, PK")) {
+            st.setDouble(1, fetchEnvelope.getMaxX());
+            st.setDouble(2, fetchEnvelope.getMinX());
+            st.setDouble(3, fetchEnvelope.getMaxY());
+            st.setDouble(4, fetchEnvelope.getMinY());
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
                     Geometry geom = rs.getGeometry();
