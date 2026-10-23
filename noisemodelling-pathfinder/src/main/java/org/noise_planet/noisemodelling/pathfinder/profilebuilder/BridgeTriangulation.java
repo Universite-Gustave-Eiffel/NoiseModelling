@@ -11,6 +11,8 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.triangulate.DelaunayTriangulationBuilder;
 
 import java.util.ArrayList;
@@ -218,35 +220,50 @@ public class BridgeTriangulation {
     
     
     /**
-     * Triangulate the deck geometry for efficient interpolation.
-     * This method only accepts bridge point lists where LEFT and RIGHT positions are equal in count.
+     * Triangulate the deck geometry for efficient interpolation, without constraining it to a
+     * footprint polygon (every triangle covering the point cloud's convex hull is kept). Prefer
+     * {@link #triangulateGeometry(List, Polygon)} when a footprint is available: for a curved or
+     * concave deck the convex hull can extend beyond the real outline.
      * @param bridgeEdgePoints List of bridge points forming the deck polygon
      * @throws IllegalArgumentException if LEFT and RIGHT positions are not equal in count
      */
     public void triangulateGeometry(List<BridgePoint> bridgeEdgePoints) {
+        triangulateGeometry(bridgeEdgePoints, null);
+    }
+
+    /**
+     * Triangulate the deck geometry for efficient interpolation.
+     * This method only accepts bridge point lists where LEFT and RIGHT positions are equal in count.
+     * @param bridgeEdgePoints List of bridge points forming the deck polygon
+     * @param deckFootprint The deck's own footprint polygon; triangles whose centroid falls
+     *                      outside it are discarded, so a curved or concave deck doesn't get
+     *                      filled in by the point cloud's (possibly larger) convex hull
+     * @throws IllegalArgumentException if LEFT and RIGHT positions are not equal in count
+     */
+    public void triangulateGeometry(List<BridgePoint> bridgeEdgePoints, Polygon deckFootprint) {
         deckTriangles.clear();
-        
+
         if (bridgeEdgePoints.isEmpty()) return;
 
         int numVertices = bridgeEdgePoints.size();
 
         if (numVertices < 3) return; // Invalid polygon - need at least 3 points
-        
+
         // Validate that LEFT and RIGHT positions are equal in count
         validatePositionBalance(bridgeEdgePoints);
-        
+
         // Use Delaunay triangulation for better coverage
         List<Coordinate> coordinates = new ArrayList<>();
         for (BridgePoint point : bridgeEdgePoints) {
             coordinates.add(point.getCoordinate());
         }
-        
+
         DelaunayTriangulationBuilder builder = new DelaunayTriangulationBuilder();
         builder.setSites(coordinates);
-        
+
         // Get the triangulation
         org.locationtech.jts.geom.Geometry triangulation = builder.getTriangles(geometryFactory);
-        
+
         // Extract triangles
         for (int i = 0; i < triangulation.getNumGeometries(); i++) {
             org.locationtech.jts.geom.Polygon poly = (org.locationtech.jts.geom.Polygon) triangulation.getGeometryN(i);
@@ -257,10 +274,23 @@ public class BridgeTriangulation {
                 BridgePoint bp2 = findBridgePointByCoordinate(bridgeEdgePoints, coords[1]);
                 BridgePoint bp3 = findBridgePointByCoordinate(bridgeEdgePoints, coords[2]);
                 if (bp1 != null && bp2 != null && bp3 != null) {
-                    deckTriangles.add(new Triangle(bp1, bp2, bp3));
+                    Triangle triangle = new Triangle(bp1, bp2, bp3);
+                    // Delaunay triangulation covers the point cloud's convex hull, which can
+                    // extend beyond a curved or concave deck's real outline (e.g. the inside of a
+                    // bend). Reject any triangle whose centroid falls outside the actual deck
+                    // footprint rather than trusting the raw point-cloud triangulation.
+                    if (deckFootprint == null || deckFootprint.contains(triangleCentroid(triangle))) {
+                        deckTriangles.add(triangle);
+                    }
                 }
             }
         }
+    }
+
+    private Point triangleCentroid(Triangle triangle) {
+        return geometryFactory.createPoint(new Coordinate(
+                (triangle.p1.x + triangle.p2.x + triangle.p3.x) / 3.0,
+                (triangle.p1.y + triangle.p2.y + triangle.p3.y) / 3.0));
     }
     
     /**

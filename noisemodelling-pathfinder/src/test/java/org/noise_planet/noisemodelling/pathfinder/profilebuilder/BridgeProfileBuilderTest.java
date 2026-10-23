@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -176,6 +177,51 @@ public class BridgeProfileBuilderTest {
         assertEquals(BridgeRelationship.RelationType.IMAGINARY_SOURCE_UNDER_BRIDGE,
                 profile.getSource().getBridgeRelationship().getRelationType(),
                 "a source clearly below the deck underside must be classified as under the bridge, not on it");
+    }
+
+    @Test
+    public void bentDeckDoesNotReportAHeightInTheGapInsideTheBend() {
+        // An L-shaped (90-degree bend) deck. The point cloud of left/right edge points has a
+        // convex hull that cuts across the inside of the bend, covering area that is not actually
+        // part of the (concave, from the outside) deck outline.
+        List<Coordinate> pts = Arrays.asList(
+                new Coordinate(0, 0, 10),
+                new Coordinate(50, 0, 10),
+                new Coordinate(50, 50, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < pts.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 1L, pts.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge bridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(1L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .build();
+        ProfileBuilder pb = new ProfileBuilder();
+        for (int x = -20; x <= 80; x += 20) {
+            for (int y = -20; y <= 80; y += 20) {
+                pb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        pb.addBridge(bridge);
+        pb.finishFeeding();
+
+        // just inside the bend, well within the convex hull of all edge points, but outside the
+        // deck's own (narrow) footprint
+        Coordinate insideTheBendGap = new Coordinate(43, 20);
+        assertFalse(bridge.isPointWithinBridgeFootprint(insideTheBendGap),
+                "sanity check: this point should not be on the deck itself");
+        assertTrue(Double.isNaN(bridge.getDeckHeightAtPoint(insideTheBendGap)),
+                "a point outside the deck's own footprint must not get an interpolated deck height, "
+                        + "even if it falls inside the edge points' convex hull");
     }
 
     @Test

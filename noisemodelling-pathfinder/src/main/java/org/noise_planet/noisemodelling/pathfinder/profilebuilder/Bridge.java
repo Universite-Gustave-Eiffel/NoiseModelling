@@ -309,7 +309,7 @@ public class Bridge extends Obstruction {
             edgePointManager.addBridgePoints(geometryBuilder.createBridgeEdgePoints(pointManager, profileBuilder, BridgePoint.Position.LEFT, false));
 
             // // Create triangulation for interpolation
-            triangulation.triangulateGeometry(edgePointManager.getBridgePoints());
+            triangulation.triangulateGeometry(edgePointManager.getBridgePoints(), deckGeometry);
             
             // Create edge for acoustic calculations
             this.edge = geometryBuilder.createEdge(pointManager, profileBuilder);
