@@ -233,7 +233,7 @@ public class RoadCnossosTest {
         for (int freq : FREQUENCIES) {
             double[] lw = new double[3];
             for (int way = 1; way <= 3; way++) {
-                RoadCnossosParameters rsParameters = new RoadCnossosParameters(50, 50, 50, 50, 50, 900, 0, 100, 0, 0,
+                RoadCnossosParameters rsParameters = new RoadCnossosParameters(50, 50, 50, 50, 50, 900, 100, 100, 0, 0,
                         freq, 20, "DEF", 0, 0, 200, 1);
                 rsParameters.setSlopePercentage(6);
                 rsParameters.setWay(way);
