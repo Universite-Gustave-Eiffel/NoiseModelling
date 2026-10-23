@@ -25,7 +25,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.splitLineStringIntoPoints;
@@ -139,19 +141,25 @@ public class TestPathFinder {
      */
     @Test
     public void TestLineSourceSplitIndependentOfReceiverHeight() throws ParseException {
-        assertEquals(computeLineSourcePoints(4), computeLineSourcePoints(40));
+        String line = "LINESTRING (0 0 0.05, 200 0 0.05)";
+        assertEquals(computeLineSourcePoints(line, 100, 50, 4), computeLineSourcePoints(line, 100, 50, 40));
+        // the nearest segment changes with the receiver height if it is chosen with the 3D distance
+        line = "LINESTRING (-100 10 0, 100 10 0, 100 20 40, -100 20 40)";
+        assertEquals(computeLineSourcePoints(line, 0, 0, 4), computeLineSourcePoints(line, 0, 0, 40));
     }
 
-    private static List<Coordinate> computeLineSourcePoints(double receiverHeight) throws ParseException {
+    private static Set<Coordinate> computeLineSourcePoints(String line, double receiverX, double receiverY,
+                                                           double receiverHeight) throws ParseException {
         Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
-                .addSource(new WKTReader().read("LINESTRING (0 0 0.05, 200 0 0.05)"))
-                .addReceiver(100, 50, receiverHeight)
+                .addSource(new WKTReader().read(line))
+                .addReceiver(receiverX, receiverY, receiverHeight)
                 .build();
         DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
-        List<Coordinate> sourcePoints = new ArrayList<>();
+        // the points are compared regardless of their order, which follows their 3D distance to the receiver
+        Set<Coordinate> sourcePoints = new HashSet<>();
         for (CutProfile cutProfile : propDataOut.cutProfiles) {
             sourcePoints.add(cutProfile.getSource().getCoordinate());
         }
