@@ -20,17 +20,45 @@ import java.util.Properties;
  * Utility class to read version.properties
  */
 public class VersionUtils {
-    public static String getVersion() {
+    private static final String UNKNOWN = "Unknown";
+
+    private static String readProperty(String key) {
         try (InputStream input = VersionUtils.class.getResourceAsStream("version.properties")) {
             Properties prop = new Properties();
             if (input == null) {
-                return "Unknown";
+                return UNKNOWN;
             }
             prop.load(input);
-            return prop.getProperty("project.version");
+            String value = prop.getProperty(key);
+            // Unresolved maven placeholder (ex: build without git metadata)
+            if (value == null || value.isBlank() || value.startsWith("${")) {
+                return UNKNOWN;
+            }
+            return value;
         } catch (Exception ex) {
             LoggerFactory.getLogger(VersionUtils.class).error("Error while reading version.properties", ex);
-            return "Unknown";
+            return UNKNOWN;
         }
+    }
+
+    /**
+     * @return NoiseModelling maven project version
+     */
+    public static String getVersion() {
+        return readProperty("project.version");
+    }
+
+    /**
+     * @return Git commit identifier of the build
+     */
+    public static String getCommit() {
+        return readProperty("project.commit");
+    }
+
+    /**
+     * @return Human readable version and commit, ex: "NoiseModelling 6.0.2 (commit 1a2b3c4)"
+     */
+    public static String getVersionDescription() {
+        return "NoiseModelling " + getVersion() + " (commit " + getCommit() + ")";
     }
 }
