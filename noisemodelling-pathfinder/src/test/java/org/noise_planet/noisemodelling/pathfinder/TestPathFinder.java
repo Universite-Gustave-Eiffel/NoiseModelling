@@ -19,6 +19,7 @@ import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,6 +148,25 @@ public class TestPathFinder {
             CutPointSource source = cutProfile.getSource();
             // the first segment heads east (yaw 90), the second one heads north (yaw 0)
             assertEquals(source.getCoordinate().y == 0 ? 90 : 0, source.orientation.yaw, 1e-6);
+        }
+    }
+
+    /**
+     * The user PITCH and ROLL of a line source must be kept on its point sources
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceUserPitchAndRoll() throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addReceiver(50, 50, 4)
+                .build();
+        scene.addSource(1L, new WKTReader().read("LINESTRING (0 0 0.05, 0 100 0.05)"), new Orientation(0, 30, 10));
+        for (CutProfile cutProfile : computeCutProfiles(scene)) {
+            Orientation orientation = cutProfile.getSource().orientation;
+            assertEquals(0, orientation.yaw, 1e-6);
+            assertEquals(30, orientation.pitch, 1e-6);
+            assertEquals(10, orientation.roll, 1e-6);
         }
     }
 

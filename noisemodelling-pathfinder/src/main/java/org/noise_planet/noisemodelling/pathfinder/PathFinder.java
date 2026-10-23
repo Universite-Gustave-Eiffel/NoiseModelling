@@ -912,7 +912,7 @@ public class PathFinder {
                     // If the line source already provide an orientation then alter the line orientation
                     orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
                     orientation = Orientation.fromVector(
-                            Orientation.rotate(new Orientation(orientation.yaw, orientation.roll, 0),
+                            Orientation.rotate(new Orientation(orientation.yaw, orientation.pitch, 0),
                                     v.normalize()), orientation.roll);
                 } else {
                     orientation = Orientation.fromVector(Orientation.rotate(new Orientation(0,0,0), v.normalize()), 0);
