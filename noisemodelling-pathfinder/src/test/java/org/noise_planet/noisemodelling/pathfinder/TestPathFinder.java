@@ -132,6 +132,34 @@ public class TestPathFinder {
     }
 
     /**
+     * Test regression on https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues/890
+     * Each point source of a line source must be oriented along the line segment it lies on
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceOrientationFollowsSegment() throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addSource(new WKTReader().read("LINESTRING (0 0 0.05, 100 0 0.05, 100 100 0.05)"))
+                .addReceiver(50, 50, 4)
+                .build();
+        for (CutProfile cutProfile : computeCutProfiles(scene)) {
+            CutPointSource source = cutProfile.getSource();
+            // the first segment heads east (yaw 90), the second one heads north (yaw 0)
+            assertEquals(source.getCoordinate().y == 0 ? 90 : 0, source.orientation.yaw, 1e-6);
+        }
+    }
+
+    private static List<CutProfile> computeCutProfiles(Scene scene) {
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        assertFalse(propDataOut.cutProfiles.isEmpty());
+        return new ArrayList<>(propDataOut.cutProfiles);
+    }
+
+    /**
      * Test vertical edge diffraction ray computation
      *
      */

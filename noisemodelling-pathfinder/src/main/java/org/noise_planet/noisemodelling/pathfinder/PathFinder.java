@@ -18,6 +18,7 @@ import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory;
 import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.linearref.LocationIndexedLine;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -899,16 +900,13 @@ public class PathFinder {
             segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / this.data.lineSourceSpacingRatio);
         }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
+        LocationIndexedLine sourceLine = new LocationIndexedLine(source);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
             if (pt.distance(receiverCoord) < data.maxSrcDist) {
-                // use the orientation computed from the line source coordinates
-                Vector3D v;
-                if(ptIndex == 0) {
-                    v = new Vector3D(source.getCoordinates()[0], pts.get(ptIndex));
-                } else {
-                    v = new Vector3D(pts.get(ptIndex - 1), pts.get(ptIndex));
-                }
+                // use the orientation of the line source segment the point lies on
+                LineSegment segment = sourceLine.project(pt).getSegment(source);
+                Vector3D v = new Vector3D(segment.p0, segment.p1);
                 Orientation orientation;
                 if(data.sourcesPk.size() > srcIndex && data.sourceOrientation.containsKey(data.sourcesPk.get(srcIndex))) {
                     // If the line source already provide an orientation then alter the line orientation
