@@ -1344,7 +1344,16 @@ public class ProfileBuilder {
             if (!bridge.isPointWithinBridgeFootprint(c)) {
                 continue;
             }
-            if (bridge.isPointOnBridge(c)) {
+            // Check below-deck first: isPointOnBridge has a +/-2 m tolerance around the deck's
+            // own top surface (for structural coupling), measured from the top, not the
+            // underside. A point clearly below the deck's underside (isPointBelowBridge) can
+            // still fall within that tolerance band of the top and would otherwise be classified
+            // as on the deck instead of under it.
+            if (bridge.isPointBelowBridge(c)) {
+                sourcePoint.setBridgeRelationship(new org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship(
+                        org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship.RelationType.IMAGINARY_SOURCE_UNDER_BRIDGE,
+                        -1L, bridge.getPrimaryKey()));
+            } else if (bridge.isPointOnBridge(c)) {
                 sourcePoint.setBridgeRelationship(new org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship(
                         org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship.RelationType.ACTUAL_SOURCE_ON_BRIDGE,
                         bridge.getPrimaryKey(), -1L));
@@ -1352,10 +1361,6 @@ public class ProfileBuilder {
                 if (!Double.isNaN(deckHeight)) {
                     sourcePoint.setBridgeHeight(deckHeight);
                 }
-            } else if (bridge.isPointBelowBridge(c)) {
-                sourcePoint.setBridgeRelationship(new org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship(
-                        org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship.RelationType.IMAGINARY_SOURCE_UNDER_BRIDGE,
-                        -1L, bridge.getPrimaryKey()));
             }
             return;
         }

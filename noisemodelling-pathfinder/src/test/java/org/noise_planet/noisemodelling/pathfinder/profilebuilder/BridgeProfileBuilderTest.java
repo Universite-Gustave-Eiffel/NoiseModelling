@@ -166,6 +166,19 @@ public class BridgeProfileBuilderTest {
     }
 
     @Test
+    public void sourceBelowTheDeckUndersideIsClassifiedAsUnderBridgeNotOnIt() {
+        ProfileBuilder pb = builderWithDeck();
+        // deck top = 10 m, thickness = 0.5 m -> underside = 9.5 m. A source at 8.5 m is a full
+        // metre below the underside (clear air), yet still within the +/-2 m "on bridge" tolerance
+        // measured from the deck TOP (used for structural-coupling sources sitting on the deck
+        // surface), so it must not be classified as on the deck.
+        CutProfile profile = pb.getProfile(new Coordinate(50, 20, 8.5), new Coordinate(50, 60, 1.5));
+        assertEquals(BridgeRelationship.RelationType.IMAGINARY_SOURCE_UNDER_BRIDGE,
+                profile.getSource().getBridgeRelationship().getRelationType(),
+                "a source clearly below the deck underside must be classified as under the bridge, not on it");
+    }
+
+    @Test
     public void sourceAwayFromAnyBridgeStaysUnrelated() {
         ProfileBuilder pb = builderWithDeck();
         CutProfile profile = pb.getProfile(new Coordinate(10, 60, 2.0), new Coordinate(10, 90, 2.0));
