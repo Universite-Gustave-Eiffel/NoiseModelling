@@ -208,7 +208,7 @@ public class RoadCnossosTest {
         double slope = -15;
         double juncDist = 200;
         int juncType = 1;
-        double[] expectedValues = new double[]{88.421, 77.09, 75.54, 75.01, 72.79, 71.13, 68.07, 63.44};
+        double[] expectedValues = new double[]{88.421, 75.41, 73.88, 74.81, 72.98, 69.91, 66.45, 61.80};
         for (int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
             RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
                     vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
@@ -220,6 +220,27 @@ public class RoadCnossosTest {
             rsParameters.setFileVersion(1);
             double result = RoadCnossos.evaluate(rsParameters);
             assertEquals(expectedValues[idFreq], result, EPSILON_TEST1, String.format("%d Hz", FREQUENCIES[idFreq]));
+        }
+    }
+
+    /**
+     * Directive 2002/49/EC, Annex II, 2.2.4: the gradient correction applies to propulsion noise only, and a
+     * bi-directional flow is split in two halves, one corrected for uphill and one for downhill. A two-way road
+     * (WAY=3) must therefore give the energy mean of WAY=1 and WAY=2.
+     */
+    @Test
+    public void testTwoWaySlope() throws IOException {
+        for (int freq : FREQUENCIES) {
+            double[] lw = new double[3];
+            for (int way = 1; way <= 3; way++) {
+                RoadCnossosParameters rsParameters = new RoadCnossosParameters(50, 50, 50, 50, 50, 900, 0, 100, 0, 0,
+                        freq, 20, "DEF", 0, 0, 200, 1);
+                rsParameters.setSlopePercentage(6);
+                rsParameters.setWay(way);
+                lw[way - 1] = RoadCnossos.evaluate(rsParameters);
+            }
+            double expected = 10 * Math.log10((Math.pow(10, lw[0] / 10) + Math.pow(10, lw[1] / 10)) / 2);
+            assertEquals(expected, lw[2], EPSILON_TEST1, String.format("%d Hz", freq));
         }
     }
 
