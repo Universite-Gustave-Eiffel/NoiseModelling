@@ -14,6 +14,7 @@ import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
+import org.locationtech.jts.geom.util.GeometryFixer;
 import org.locationtech.jts.geom.util.LineStringExtracter;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.LineSource;
@@ -530,6 +531,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                         } catch (TopologyException ex) {
                             WKTWriter wktWriter = new WKTWriter(3);
                             LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(buildingGeom),wktWriter.write(envGeo)), ex);
+                            intersectedGeometry = GeometryFixer.fix(buildingGeom).intersection(envGeo);
                         }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
                             if(fetchAlpha) {
