@@ -549,7 +549,13 @@ public class BridgeService implements FrequencyInitializable, ElevationComputabl
         if (bridgePk < 0) {
             throw new IllegalStateException("Primary key of bridge must be set to calculate a profile with bridges");
         }
-        CutPointBridgeWall cutPointBridge = new CutPointBridgeWall(wallIndex, intersection, wall.getLineSegment(), wall.getAlphas(), bridgePk);
+        // Copy the segment: CutPointBridgeWall.modifyIntersectionHeight rewrites p0/p1 Z in place,
+        // and the processed bridge wall is a long-lived shared object. Mutating it would leak the
+        // Z of one profile's cut point (e.g. a DOWNWARD underside edge for an imaginary source)
+        // into every later profile that reuses the same wall (e.g. the UPWARD parapet edge for an
+        // actual on-deck source), silently disabling the parapet's shielding.
+        CutPointBridgeWall cutPointBridge = new CutPointBridgeWall(wallIndex, intersection,
+                new LineSegment(wall.getLineSegment()), wall.getAlphas(), bridgePk);
         
         WallDirection wallDirection = WallDirection.UPWARD;
         RelationType relationType = cutPointSource.getBridgeRelationship().getRelationType();
