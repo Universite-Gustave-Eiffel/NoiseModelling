@@ -37,6 +37,7 @@ import org.noise_planet.noisemodelling.jdbc.railway.RailwayPlatform;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -509,6 +511,44 @@ public class TableLoaderTest {
 
         // Check if all receivers are found
         assertEquals(nbReceivers, populatedCells.values().stream().reduce(Integer::sum).orElse(0));
+    }
+
+    /**
+     * An invalid building geometry must not be silently dropped when JTS cannot intersect it with the cell
+     * (issue #877, geometry copied from the issue).
+     */
+    @Test
+    public void testInvalidBuildingGeometry() throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(MULTIPOLYGON, 2154), HEIGHT DOUBLE)");
+            st.execute("INSERT INTO BUILDINGS VALUES (1, ST_SetSRID('MULTIPOLYGON (((665724.4291224794 6861223.912416265, " +
+                    "665739.4971258526 6861228.015405046, 665737.1624597721 6861236.524608524, 665736.4348005082 6861236.328757921, " +
+                    "665734.472295388 6861235.795501046, 665732.9422819134 6861241.3866046555, 665734.90478529 6861241.919861038, " +
+                    "665744.7467149555 6861244.597098678, 665746.3270418961 6861245.032541605, 665747.8499920396 6861239.485961716, " +
+                    "665750.1342913883 6861231.143854611, 665759.27058772 6861233.625134331, 665756.5050039757 6861243.7269841675, " +
+                    "665762.1646935282 6861245.272527214, 665756.7772109965 6861264.952756253, 665751.6540751723 6861263.548602169, " +
+                    "665751.7833350239 6861263.0696938755, 665716.3479748324 6861253.416131496, 665721.4553272028 6861234.782768622, " +
+                    "665723.0503348798 6861235.218118342, 665723.682344221 6861232.89037655, 665722.094674098 6861232.454983254, " +
+                    "665724.4291224794 6861223.912416265), (665721.4553272028 6861234.782768622, 665723.0503348798 6861235.218118342, " +
+                    "665723.682344221 6861232.89037655, 665722.094674098 6861232.454983254, 665721.4553272028 6861234.782768622), " +
+                    "(665734.472295388 6861235.795501046, 665732.9422819134 6861241.3866046555, 665734.90478529 6861241.919861038, " +
+                    "665736.4348005082 6861236.328757921, 665734.472295388 6861235.795501046)), ((665744.7467149555 6861244.597098678, " +
+                    "665746.3270418961 6861245.032541605, 665747.8499920396 6861239.485961716, 665746.2696637083 6861239.050518393, " +
+                    "665744.7467149555 6861244.597098678)))'::GEOMETRY, 2154), 10)");
+        }
+        DefaultTableLoader.BuildingTableParameters parameters = new DefaultTableLoader.BuildingTableParameters();
+        parameters.buildingsTableName = "BUILDINGS";
+        List<Building> buildings = new ArrayList<>();
+        List<Wall> walls = new ArrayList<>();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        DefaultTableLoader.fetchCellBuildings(connection, parameters,
+                new Envelope(665342.5259714649, 666014.0103464649, 6861015.12383534, 6861589.34258534),
+                buildings, walls, profileBuilder, new GeometryFactory());
+
+        assertFalse(buildings.isEmpty());
+        for (Building building : buildings) {
+            assertEquals(1, building.getPrimaryKey());
+        }
     }
 
     /**
