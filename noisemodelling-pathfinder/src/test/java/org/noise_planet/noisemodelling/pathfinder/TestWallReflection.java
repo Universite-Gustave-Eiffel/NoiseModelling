@@ -332,6 +332,7 @@ public class TestWallReflection {
         DefaultCutPlaneVisitor defaultCutPlaneVisitor = new DefaultCutPlaneVisitor(true, inputData);
         computeRays.run(defaultCutPlaneVisitor);
 
+        int singleReflections = 0;
         for (CutProfile profile : defaultCutPlaneVisitor.cutProfiles) {
             List<CutPoint> reflections = new ArrayList<>();
             for (CutPoint cutPoint : profile.cutPoints) {
@@ -342,7 +343,9 @@ public class TestWallReflection {
             // A single reflection between the two facades is specular only at mid-distance (x = 20)
             if (reflections.size() == 1) {
                 assertEquals(20, reflections.get(0).coordinate.x, 0.01);
+                singleReflections++;
             }
         }
+        assertTrue(singleReflections > 0);
     }
 }
