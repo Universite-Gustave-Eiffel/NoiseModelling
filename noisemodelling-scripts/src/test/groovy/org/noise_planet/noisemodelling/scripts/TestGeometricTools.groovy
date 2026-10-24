@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Correct_building_altitude
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
@@ -32,6 +33,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
@@ -110,6 +112,118 @@ class TestGeometricTools extends JdbcTestCase {
                  "tableName": "roads"])
         assertEquals(0.05, sql.firstRow("SELECT ST_Z(THE_GEOM) FROM ROADS")[0])
         assertEquals(srid, GeometryTableUtilities.getSRID(connection, TableLocation.parse("ROADS")))
+    }
+
+    @Test
+    void testCorrectBuildingAltitudePolygon() {
+        def sql = new Sql(connection)
+        sql.execute("""
+            CREATE TABLE BUILDINGS(
+                PK INTEGER PRIMARY KEY,
+                THE_GEOM GEOMETRY,
+                HEIGHT DOUBLE
+            )
+        """)
+        sql.execute("""
+            INSERT INTO BUILDINGS VALUES
+            (1, ST_SetSRID(ST_GeomFromText('POLYGON Z((0 0 100, 10 0 100, 10 10 100, 0 0 100))'), 2154), 12)
+        """)
+
+        String res = new Correct_building_altitude().exec(connection, ["tableName": "buildings"])
+
+        assertEquals("Process done. Building altitude has been corrected in table BUILDINGS using HEIGHT.", res)
+        assertEquals(112d, (sql.firstRow("SELECT ST_ZMIN(THE_GEOM) AS Z FROM BUILDINGS").Z as Number).doubleValue(), 1e-6d)
+        assertEquals(112d, (sql.firstRow("SELECT ST_ZMAX(THE_GEOM) AS Z FROM BUILDINGS").Z as Number).doubleValue(), 1e-6d)
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
+    }
+
+    @Test
+    void testCorrectBuildingAltitudeLineString() {
+        def sql = new Sql(connection)
+        sql.execute("""
+            CREATE TABLE BUILDING_WALLS(
+                PK INTEGER PRIMARY KEY,
+                THE_GEOM GEOMETRY,
+                HEIGHT DOUBLE
+            )
+        """)
+        sql.execute("""
+            INSERT INTO BUILDING_WALLS VALUES
+            (1, ST_GeomFromText('LINESTRING Z(0 0 50, 10 0 51, 20 0 52)'), 4)
+        """)
+
+        new Correct_building_altitude().exec(connection, ["tableName": "building_walls"])
+
+        assertEquals(54d, (sql.firstRow("SELECT ST_ZMIN(THE_GEOM) AS Z FROM BUILDING_WALLS").Z as Number).doubleValue(), 1e-6d)
+        assertEquals(56d, (sql.firstRow("SELECT ST_ZMAX(THE_GEOM) AS Z FROM BUILDING_WALLS").Z as Number).doubleValue(), 1e-6d)
+    }
+
+    @Test
+    void testCorrectBuildingAltitudeZeroHeight() {
+        def sql = new Sql(connection)
+        sql.execute("""
+            CREATE TABLE BUILDINGS(
+                PK INTEGER PRIMARY KEY,
+                THE_GEOM GEOMETRY,
+                HEIGHT DOUBLE
+            )
+        """)
+        sql.execute("""
+            INSERT INTO BUILDINGS VALUES
+            (1, ST_GeomFromText('POLYGON Z((0 0 33, 10 0 33, 10 10 33, 0 0 33))'), 0)
+        """)
+
+        new Correct_building_altitude().exec(connection, ["tableName": "buildings"])
+
+        assertEquals(33d, (sql.firstRow("SELECT ST_ZMIN(THE_GEOM) AS Z FROM BUILDINGS").Z as Number).doubleValue(), 1e-6d)
+    }
+
+    @Test
+    void testCorrectBuildingAltitudeCustomHeightColumn() {
+        def sql = new Sql(connection)
+        sql.execute("""
+            CREATE TABLE BUILDINGS(
+                PK INTEGER PRIMARY KEY,
+                THE_GEOM GEOMETRY,
+                ROOF_HEIGHT DOUBLE
+            )
+        """)
+        sql.execute("""
+            INSERT INTO BUILDINGS VALUES
+            (1, ST_GeomFromText('POLYGON Z((0 0 80, 10 0 80, 10 10 80, 0 0 80))'), 6.5)
+        """)
+
+        new Correct_building_altitude().exec(connection, ["tableName": "buildings", "heightColumn": "roof_height"])
+
+        assertEquals(86.5d, (sql.firstRow("SELECT ST_ZMIN(THE_GEOM) AS Z FROM BUILDINGS").Z as Number).doubleValue(), 1e-6d)
+    }
+
+    @Test
+    void testCorrectBuildingAltitudeValidation() {
+        def sql = new Sql(connection)
+
+        sql.execute("CREATE TABLE MISSING_HEIGHT(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)")
+        assertThrows(IllegalArgumentException.class, {
+            new Correct_building_altitude().exec(connection, ["tableName": "missing_height"])
+        })
+
+        sql.execute("CREATE TABLE NULL_HEIGHT(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE)")
+        sql.execute("INSERT INTO NULL_HEIGHT VALUES (1, ST_GeomFromText('POINT Z(0 0 10)'), NULL)")
+        assertThrows(IllegalArgumentException.class, {
+            new Correct_building_altitude().exec(connection, ["tableName": "null_height"])
+        })
+
+        sql.execute("CREATE TABLE NEGATIVE_HEIGHT(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE)")
+        sql.execute("INSERT INTO NEGATIVE_HEIGHT VALUES (1, ST_GeomFromText('POINT Z(0 0 10)'), -1)")
+        assertThrows(IllegalArgumentException.class, {
+            new Correct_building_altitude().exec(connection, ["tableName": "negative_height"])
+        })
+
+        sql.execute("CREATE TABLE TWO_D(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE)")
+        sql.execute("INSERT INTO TWO_D VALUES (1, ST_GeomFromText('POINT(0 0)'), 5)")
+        assertThrows(IllegalArgumentException.class, {
+            new Correct_building_altitude().exec(connection, ["tableName": "two_d"])
+        })
     }
 
     @Test
