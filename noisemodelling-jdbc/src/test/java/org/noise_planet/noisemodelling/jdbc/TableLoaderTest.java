@@ -257,6 +257,30 @@ public class TableLoaderTest {
         assertEquals(expectedNumberOfRows, numberOfRows);
     }
 
+    /**
+     * A NULL COMSPD must not limit the speed: same emission as COMSPD = TRACKSPD = TRAINSPD = 300 km/h
+     */
+    @Test
+    public void testNoiseEmissionRailWayNullCommercialSpeed() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        try(Statement st = connection.createStatement()) {
+            st.execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
+            st.execute("DELETE FROM RAILTRAIN WHERE PK NOT IN (SELECT R1.PK FROM RAILTRAIN R1, RAILTRACK R2 WHERE r1.IDSECTION = R2.IDSECTION LIMIT 1)");
+            st.execute("ALTER TABLE RAILTRACK ADD COLUMN TRACKSPD DOUBLE DEFAULT 300");
+            st.execute("ALTER TABLE RAILTRACK ADD COLUMN COMSPD DOUBLE");
+            st.execute("UPDATE RAILTRACK SET ISTUNNEL = FALSE");
+            st.execute("ALTER TABLE RAILTRAIN ADD COLUMN TRAINSPD DOUBLE DEFAULT 300");
+            st.execute("UPDATE RAILTRAIN SET TYPETRAIN = 'SNCF2', TDAY = 1");
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
+        double[] lwNullComSpd = railWayLWIterator.next().getRailWayLWDay().getRailwaySourceList().get("ROLLING").getlW();
+        connection.createStatement().execute("UPDATE RAILTRACK SET COMSPD = 300");
+        railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
+        double[] lwComSpd = railWayLWIterator.next().getRailWayLWDay().getRailwaySourceList().get("ROLLING").getlW();
+        assertArrayEquals(lwComSpd, lwNullComSpd, 1e-6);
+    }
+
     @Test
     public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
