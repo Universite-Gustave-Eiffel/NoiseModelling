@@ -161,4 +161,66 @@ public class DefaultTableLoaderBridgeTest {
             assertEquals(nPoints, bridge.getBridgePointCount());
         }
     }
+
+    @Test
+    public void initializeClearsTheBridgeExtentsCacheSoAMovedBridgeIsFoundAtItsNewLocation() throws Exception {
+        try (Connection connection = JDBCUtilities.wrapConnection(
+                H2GISDBFactory.createSpatialDataBase(DefaultTableLoaderBridgeTest.class.getSimpleName(), true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE BUILDINGS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON), HEIGHT DOUBLE)");
+                st.execute("CREATE TABLE LW_ROADS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRING))");
+                st.execute("INSERT INTO LW_ROADS(THE_GEOM) VALUES ('LINESTRING(0 20, 450 20)')");
+                st.execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POINT))");
+                st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(225 60)')");
+                st.execute("CREATE TABLE BRIDGE_POINTS(PK INT, BRIDGE_PK INT, THE_GEOM GEOMETRY(POINT), " +
+                        "ABSOLUTE_DECK_HEIGHT DOUBLE, RELATIVE_DECK_HEIGHT DOUBLE, DECK_THICKNESS DOUBLE, " +
+                        "RIGHT_WIDTH DOUBLE, LEFT_WIDTH DOUBLE, RIGHT_BARRIER_HEIGHT DOUBLE, LEFT_BARRIER_HEIGHT DOUBLE, " +
+                        "POSITION VARCHAR, GIRDER_TYPE VARCHAR, SLAB_TYPE VARCHAR)");
+                // bridge 1, originally at x in [0, 90]
+                for (int i = 0; i < 2; i++) {
+                    st.execute("INSERT INTO BRIDGE_POINTS VALUES(" + i + ", 1, 'POINT(" + (i * 90) + " 20)', " +
+                            "10.0, NULL, 0.5, 5.0, 5.0, 1.0, 1.0, 'CENTER', 'STEEL_BOX', 'STEEL')");
+                }
+            }
+
+            NoiseMapByReceiverMaker maker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            maker.setBridgePointsTableName("BRIDGE_POINTS");
+            maker.initialize(connection);
+
+            // the loader under test here is a separate instance from maker's own internal
+            // tableLoader, so its initialize() must be called directly - this is still the same
+            // real lifecycle as NoiseMapByReceiverMaker.run(), which calls initialize() on the one
+            // loader instance it holds before every run
+            DefaultTableLoader loader = new DefaultTableLoader();
+            loader.initialize(connection, maker);
+
+            // first "run": warm the cache with the bridge at its original location
+            ProfileBuilder firstBuilder = new ProfileBuilder();
+            loader.fetchCellBridges(connection, new Envelope(0, 90, 0, 40), firstBuilder);
+            firstBuilder.finishFeeding();
+            assertNotNull(firstBuilder.getBridgeByPk(1), "sanity check: the bridge is found at its original location");
+
+            // the bridge's points move far away, as if a second, separate run started after an
+            // edit to the BRIDGE_POINTS table
+            try (Statement st = connection.createStatement()) {
+                st.execute("UPDATE BRIDGE_POINTS SET THE_GEOM = 'POINT(' || (1000 + (PK * 90)) || ' 20)' WHERE BRIDGE_PK = 1");
+            }
+
+            // NoiseMapByReceiverMaker.run() calls initialize() again on the very same loader
+            // instance for every run; this must pick up the moved bridge, not the cached old extent
+            loader.initialize(connection, maker);
+
+            ProfileBuilder oldLocationBuilder = new ProfileBuilder();
+            loader.fetchCellBridges(connection, new Envelope(0, 90, 0, 40), oldLocationBuilder);
+            oldLocationBuilder.finishFeeding();
+            assertNull(oldLocationBuilder.getBridgeByPk(1), "the bridge moved away, so its old location should be empty now");
+
+            ProfileBuilder newLocationBuilder = new ProfileBuilder();
+            loader.fetchCellBridges(connection, new Envelope(1000, 1090, 0, 40), newLocationBuilder);
+            newLocationBuilder.finishFeeding();
+            assertNotNull(newLocationBuilder.getBridgeByPk(1),
+                    "the bridge should be found at its new location after initialize() re-reads the table, "
+                            + "not stuck with the extent cached from before it moved");
+        }
+    }
 }

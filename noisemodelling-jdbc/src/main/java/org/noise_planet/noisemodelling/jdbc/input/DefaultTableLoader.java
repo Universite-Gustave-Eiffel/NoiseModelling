@@ -99,6 +99,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
+        // NoiseMapByReceiverMaker.run() reuses the same loader and calls initialize() again on
+        // every run; without clearing it here, bridgeExtentsCache would keep the first run's
+        // bounds even after the bridge table's content (or the configured table itself) changes.
+        bridgeExtentsCache = null;
         DBTypes dbType = DBUtils.getDBType(connection);
         SceneDatabaseInputSettings inputSettings = noiseMapByReceiverMaker.getSceneInputSettings();
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
