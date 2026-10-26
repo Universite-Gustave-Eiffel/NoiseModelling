@@ -8417,7 +8417,7 @@
       "EU4": {
         "Default": "true",
         "Reference": "CNOSSOS",
-        "Description": "Predominantly steel bridges with ballasted track  ",
+        "Description": "Predominantly steel bridges with ballasted track",
         "Values": [
           90.1,
           92.1,
@@ -8444,16 +8444,6 @@
           79.0,
           74.7
         ]
-      },
-      "SNCF1": {
-        "Description": "Tout-type-de-pont-hors-ponts-metalliques-avec-voies-non-ballastees",
-        "Reference": "SNCF Juin 2021",
-        "Values": 0
-      },
-      "SNCF2": {
-        "Description": "Ponts-metalliques-avec-voies-non-ballastees",
-        "Reference": "SNCF Juin 2021",
-        "Values": 5
       },
       "NL_SN1": {
         "Default": "true",
