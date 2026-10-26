@@ -21,6 +21,7 @@ import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * A bridge spanning several cells must not be truncated at a cell's fetch envelope: all of its
@@ -110,6 +111,54 @@ public class DefaultTableLoaderBridgeTest {
             Bridge bridge = builder.getBridgeByPk(1);
             assertNotNull(bridge, "the bridge spans this cell even though none of its own points fall inside it");
             assertEquals(nPoints, bridge.getBridgePointCount(), "every point of the bridge should load");
+        }
+    }
+
+    @Test
+    public void fetchCellBridgesCachesExtentsCorrectlyAcrossMultipleCellsOnTheSameLoader() throws Exception {
+        try (Connection connection = JDBCUtilities.wrapConnection(
+                H2GISDBFactory.createSpatialDataBase(DefaultTableLoaderBridgeTest.class.getSimpleName(), true, ""))) {
+            int nPoints = 10;
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE BUILDINGS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON), HEIGHT DOUBLE)");
+                st.execute("CREATE TABLE LW_ROADS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRING))");
+                st.execute("INSERT INTO LW_ROADS(THE_GEOM) VALUES ('LINESTRING(0 20, 450 20)')");
+                st.execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POINT))");
+                st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(225 60)')");
+                st.execute("CREATE TABLE BRIDGE_POINTS(PK INT, BRIDGE_PK INT, THE_GEOM GEOMETRY(POINT), " +
+                        "ABSOLUTE_DECK_HEIGHT DOUBLE, RELATIVE_DECK_HEIGHT DOUBLE, DECK_THICKNESS DOUBLE, " +
+                        "RIGHT_WIDTH DOUBLE, LEFT_WIDTH DOUBLE, RIGHT_BARRIER_HEIGHT DOUBLE, LEFT_BARRIER_HEIGHT DOUBLE, " +
+                        "POSITION VARCHAR, GIRDER_TYPE VARCHAR, SLAB_TYPE VARCHAR)");
+                // a 450 m long, straight deck: points every 50 m along x, from x=0 to x=450
+                for (int i = 0; i < nPoints; i++) {
+                    st.execute("INSERT INTO BRIDGE_POINTS VALUES(" + i + ", 1, 'POINT(" + (i * 50) + " 20)', " +
+                            "10.0, NULL, 0.5, 5.0, 5.0, 1.0, 1.0, 'CENTER', 'STEEL_BOX', 'STEEL')");
+                }
+            }
+
+            NoiseMapByReceiverMaker maker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            maker.setBridgePointsTableName("BRIDGE_POINTS");
+            maker.initialize(connection);
+
+            // one loader instance reused across two different cells, as happens for real during a
+            // noise map run - the bridge-extents cache must stay correct for both
+            DefaultTableLoader loader = new DefaultTableLoader();
+            loader.noiseMapByReceiverMaker = maker;
+
+            ProfileBuilder farBuilder = new ProfileBuilder();
+            Envelope farEnvelope = new Envelope(1000, 1040, 0, 40);
+            loader.fetchCellBridges(connection, farEnvelope, farBuilder);
+            farBuilder.finishFeeding();
+            assertNull(farBuilder.getBridgeByPk(1), "a cell far from the bridge should not load it");
+
+            ProfileBuilder nearBuilder = new ProfileBuilder();
+            Envelope nearEnvelope = new Envelope(150, 300, 0, 40);
+            loader.fetchCellBridges(connection, nearEnvelope, nearBuilder);
+            nearBuilder.finishFeeding();
+            Bridge bridge = nearBuilder.getBridgeByPk(1);
+            assertNotNull(bridge, "a later cell that does overlap the bridge should still load it correctly "
+                    + "after the cached extents were computed for an earlier, unrelated cell");
+            assertEquals(nPoints, bridge.getBridgePointCount());
         }
     }
 }

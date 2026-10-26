@@ -65,6 +65,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
     public static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
 
+    // Each bridge's bounding box (BRIDGE_PK -> extent), computed once per run on first use and
+    // reused for every cell - this instance is created once per NoiseMapByReceiverMaker run (see
+    // NoiseMapByReceiverMaker.tableLoader), so caching here is scoped to a single run. Avoids
+    // re-scanning and re-aggregating the whole BRIDGE_POINTS table (a GROUP BY that cannot use a
+    // spatial index) once per cell.
+    private Map<Long, Envelope> bridgeExtentsCache;
+
     /**
      * Attenuation and other attributes relative to direction on sphere
      */
@@ -782,6 +789,32 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
     }
 
     /**
+     * Each bridge's bounding box, keyed by {@code BRIDGE_PK}. Computed once (on first call) by
+     * aggregating the whole table, then cached for the rest of this loader's lifetime - see
+     * {@link #bridgeExtentsCache}.
+     */
+    private Map<Long, Envelope> getBridgeExtents(Connection connection, String bridgeTableName, String quotedGeom)
+            throws SQLException {
+        if (bridgeExtentsCache != null) {
+            return bridgeExtentsCache;
+        }
+        Map<Long, Envelope> extents = new HashMap<>();
+        try (Statement st = connection.createStatement();
+             ResultSet rs = st.executeQuery(
+                     "SELECT BRIDGE_PK, MIN(ST_X(" + quotedGeom + ")) MIN_X, MAX(ST_X(" + quotedGeom + ")) MAX_X," +
+                             " MIN(ST_Y(" + quotedGeom + ")) MIN_Y, MAX(ST_Y(" + quotedGeom + ")) MAX_Y" +
+                             " FROM " + bridgeTableName + " GROUP BY BRIDGE_PK")) {
+            while (rs.next()) {
+                extents.put(rs.getLong("BRIDGE_PK"), new Envelope(
+                        rs.getDouble("MIN_X"), rs.getDouble("MAX_X"),
+                        rs.getDouble("MIN_Y"), rs.getDouble("MAX_Y")));
+            }
+        }
+        bridgeExtentsCache = extents;
+        return bridgeExtentsCache;
+    }
+
+    /**
      * Fetch bridge deck points from {@link NoiseMapByReceiverMaker#getBridgePointsTableName()}, group them
      * by {@code BRIDGE_PK}, and add one {@link Bridge} per group to the profile builder. No-op if the table
      * name is empty. Expected columns: PK, BRIDGE_PK, THE_GEOM (POINT), ABSOLUTE_DECK_HEIGHT,
@@ -801,6 +834,21 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         }
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         String geomName = getGeometryColumnNames(connection, TableLocation.parse(bridgeTableName, dbType)).get(0);
+        String quotedGeom = TableLocation.quoteIdentifier(geomName, dbType);
+
+        // Each bridge's own extent (a per-BRIDGE_PK aggregate, not individual THE_GEOM points) is
+        // what decides whether it touches this cell - see the class-level note on
+        // bridgeExtentsCache. Computed once for the whole run, then just an in-memory lookup here.
+        Map<Long, Envelope> bridgeExtents = getBridgeExtents(connection, bridgeTableName, quotedGeom);
+        List<Long> matchingBridgePks = new ArrayList<>();
+        for (Map.Entry<Long, Envelope> entry : bridgeExtents.entrySet()) {
+            if (entry.getValue().intersects(fetchEnvelope)) {
+                matchingBridgePks.add(entry.getKey());
+            }
+        }
+        if (matchingBridgePks.isEmpty()) {
+            return;
+        }
 
         // group bridge points by BRIDGE_PK, preserving insertion order (= PK order from the query)
         Map<Long, List<BridgePoint>> pointsByBridge = new LinkedHashMap<>();
@@ -811,20 +859,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         // height source carrying its BRIDGE_PK would fail to resolve. Loading only the points
         // inside the envelope would separately truncate a bridge that does have a point in it (a
         // spurious end edge appears mid-span, and road points beyond the cut fall back to terrain
-        // level); comparing each bridge's own bounding box against the envelope - a per-BRIDGE_PK
-        // aggregate, not the individual THE_GEOM points - avoids both at once.
-        String quotedGeom = TableLocation.quoteIdentifier(geomName, dbType);
+        // level); comparing each bridge's own bounding box against the envelope avoids both at once.
+        String placeholders = matchingBridgePks.stream().map(pk -> "?").collect(Collectors.joining(","));
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT * FROM " + bridgeTableName + " WHERE BRIDGE_PK IN (" +
-                        "SELECT BRIDGE_PK FROM " + bridgeTableName +
-                        " GROUP BY BRIDGE_PK" +
-                        " HAVING MIN(ST_X(" + quotedGeom + ")) <= ? AND MAX(ST_X(" + quotedGeom + ")) >= ?" +
-                        " AND MIN(ST_Y(" + quotedGeom + ")) <= ? AND MAX(ST_Y(" + quotedGeom + ")) >= ?" +
-                        ") ORDER BY BRIDGE_PK, PK")) {
-            st.setDouble(1, fetchEnvelope.getMaxX());
-            st.setDouble(2, fetchEnvelope.getMinX());
-            st.setDouble(3, fetchEnvelope.getMaxY());
-            st.setDouble(4, fetchEnvelope.getMinY());
+                "SELECT * FROM " + bridgeTableName + " WHERE BRIDGE_PK IN (" + placeholders + ") ORDER BY BRIDGE_PK, PK")) {
+            for (int i = 0; i < matchingBridgePks.size(); i++) {
+                st.setLong(i + 1, matchingBridgePks.get(i));
+            }
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
                     Geometry geom = rs.getGeometry();
