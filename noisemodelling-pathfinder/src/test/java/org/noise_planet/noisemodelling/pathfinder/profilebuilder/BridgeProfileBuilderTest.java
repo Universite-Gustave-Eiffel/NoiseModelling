@@ -225,6 +225,144 @@ public class BridgeProfileBuilderTest {
     }
 
     @Test
+    public void mergeFactorEscalatesWhenTheInitialFactorIsNotEnoughToCloseTheGap() {
+        // width=5 -> initial threshold (factor 0.1) = 0.5m. This near-duplicate spacing (~0.67m)
+        // is deliberately above that (so attempt 1 must NOT merge, leaving a gap) but below factor
+        // 0.2's threshold (1.0m), so escalation must kick in and fix it on attempt 2.
+        List<Coordinate> centreline = Arrays.asList(
+                new Coordinate(0, 0, 10),
+                new Coordinate(50, 0, 10),
+                new Coordinate(50.6, 0.3, 10),
+                new Coordinate(50.3, 25, 10),
+                new Coordinate(50, 50, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < centreline.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 1L, centreline.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge bridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(1L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .build();
+        ProfileBuilder pb = new ProfileBuilder();
+        for (int x = -50; x <= 100; x += 25) {
+            for (int y = -50; y <= 100; y += 25) {
+                pb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        pb.addBridge(bridge);
+        pb.finishFeeding();
+
+        int gaps = 0, samples = 0;
+        for (double x = -10; x <= 60; x += 0.5) {
+            for (double y = -10; y <= 60; y += 0.5) {
+                Coordinate c = new Coordinate(x, y);
+                if (bridge.isPointWithinBridgeFootprint(c)) {
+                    samples++;
+                    if (Double.isNaN(bridge.getDeckHeightAtPoint(c))) {
+                        gaps++;
+                    }
+                }
+            }
+        }
+        assertTrue(gaps == 0, "found " + gaps + "/" + samples + " gaps - escalation should have fixed this");
+    }
+
+    @Test
+    public void nearDuplicateCrossSectionAtASharpBendDoesNotLeaveAHeightGap() {
+        // A deck whose cross-sections turn sharply (east, then north) via a near-duplicate pair
+        // of points (50,0) / (50.2,0.1) just 0.22 m apart, and again at (50,80) / (50.05,80.02).
+        // This is a common real-world digitising artifact. Naively, the direction used to offset
+        // each cross-section to its left/right edge is estimated from its neighbours on both
+        // sides; right at a near-duplicate pair that straddles a sharp turn, the two points get
+        // edge offsets in wildly different directions (one still "facing" the incoming leg, the
+        // other the outgoing leg), leaving the triangulation unable to cover the sliver of deck
+        // between them.
+        List<Coordinate> centreline = Arrays.asList(
+                new Coordinate(0, 0, 10),
+                new Coordinate(50, 0, 10),
+                new Coordinate(50.2, 0.1, 10),
+                new Coordinate(50.3, 25, 10),
+                new Coordinate(50, 50, 10),
+                new Coordinate(50, 80, 10),
+                new Coordinate(50.05, 80.02, 10),
+                new Coordinate(50, 120, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < centreline.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 1L, centreline.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge bridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(1L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .build();
+        ProfileBuilder pb = new ProfileBuilder();
+        for (int x = -50; x <= 100; x += 25) {
+            for (int y = -50; y <= 150; y += 25) {
+                pb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        pb.addBridge(bridge);
+        pb.finishFeeding();
+
+        // Sample densely along the deck's own edge polygon (what calculateFirstBridgeCutpoint
+        // walks when looking for a diffraction point) and check every point that is within the
+        // bridge footprint (per the inclusive covers()-based check) for a NaN height - a
+        // coverage gap left by an unstable direction estimate near the sharp bend.
+        Coordinate[] edgeCoords = bridge.getEdge().getCoordinates();
+        int gapCount = 0;
+        int sampleCount = 0;
+        for (int i = 0; i < edgeCoords.length - 1; i++) {
+            Coordinate a = edgeCoords[i];
+            Coordinate b = edgeCoords[i + 1];
+            int steps = 20;
+            for (int s = 0; s <= steps; s++) {
+                double t = s / (double) steps;
+                Coordinate p = new Coordinate(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+                sampleCount++;
+                if (bridge.isPointWithinBridgeFootprint(p) && Double.isNaN(bridge.getDeckHeightAtPoint(p))) {
+                    gapCount++;
+                }
+            }
+        }
+        assertTrue(gapCount == 0, "found " + gapCount + "/" + sampleCount
+                + " points on the deck's own edge that are within the footprint but get NaN height");
+
+        // Also probe a dense grid over the whole footprint envelope, not just the edge polyline.
+        int interiorGap = 0;
+        int interiorSample = 0;
+        for (double x = -10; x <= 60; x += 0.5) {
+            for (double y = -10; y <= 130; y += 0.5) {
+                Coordinate p = new Coordinate(x, y);
+                if (bridge.isPointWithinBridgeFootprint(p)) {
+                    interiorSample++;
+                    if (Double.isNaN(bridge.getDeckHeightAtPoint(p))) {
+                        interiorGap++;
+                    }
+                }
+            }
+        }
+        assertTrue(interiorGap == 0, "found " + interiorGap + "/" + interiorSample
+                + " points within the footprint (dense grid) that get NaN height");
+    }
+
+    @Test
     public void sourceAwayFromAnyBridgeStaysUnrelated() {
         ProfileBuilder pb = builderWithDeck();
         CutProfile profile = pb.getProfile(new Coordinate(10, 60, 2.0), new Coordinate(10, 90, 2.0));

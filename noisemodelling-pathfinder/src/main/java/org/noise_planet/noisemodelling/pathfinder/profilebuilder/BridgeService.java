@@ -317,7 +317,7 @@ public class BridgeService implements FrequencyInitializable, ElevationComputabl
         bridgeCutPoint.modifyIntersectionHeight(bridge);
         long bridgePkOn = src.getBridgeRelationship().getBridgePkOn();
         if (bridgePkOn >= 0) {
-            bridgeCutPoint.setBridgeHeight(bridge.getDeckHeightAtPoint(intersection3D));
+            bridgeCutPoint.setBridgeHeight(bridge.getDeckHeightAtPointOrNearest(intersection3D));
         }
 
         return bridgeCutPoint;
@@ -422,7 +422,7 @@ public class BridgeService implements FrequencyInitializable, ElevationComputabl
         }
         
         public Coordinate getDiffractionPoint3D(Bridge bridge) {
-            double z = bridge.getDeckHeightAtPoint(diffractionPoint2D) - bridge.getDeckThicknessAtPoint(diffractionPoint2D);
+            double z = bridge.getDeckHeightAtPointOrNearest(diffractionPoint2D) - bridge.getDeckThicknessAtPointOrNearest(diffractionPoint2D);
             return new Coordinate(diffractionPoint2D.x, diffractionPoint2D.y, z);
         }
     }

@@ -127,11 +127,11 @@ public class CutPointBridgeWall  extends CutPointWall {
     public void modifyIntersectionHeight(Bridge bridge){
         double newZ = 0.0;
         if (this.wallDirection == WallDirection.UPWARD) {
-            newZ = bridge.getDeckHeightAtPoint(coordinate) + bridge.getBarrierHeightAtPoint(coordinate);
+            newZ = bridge.getDeckHeightAtPointOrNearest(coordinate) + bridge.getBarrierHeightAtPoint(coordinate);
         } else {
-            newZ = bridge.getDeckHeightAtPoint(coordinate) - bridge.getDeckThicknessAtPoint(coordinate);
+            newZ = bridge.getDeckHeightAtPointOrNearest(coordinate) - bridge.getDeckThicknessAtPointOrNearest(coordinate);
         }
-        setBridgeHeight(bridge.getDeckHeightAtPoint(coordinate));
+        setBridgeHeight(bridge.getDeckHeightAtPointOrNearest(coordinate));
         modifyIntersectionHeight(newZ);
     }
 

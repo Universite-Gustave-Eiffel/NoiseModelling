@@ -252,9 +252,27 @@ public class BridgeTriangulation {
         // Validate that LEFT and RIGHT positions are equal in count
         validatePositionBalance(bridgeEdgePoints);
 
+        // Closely-spaced or near-duplicate consecutive cross-sections are a common real-world
+        // digitising artifact. Left as-is, they make the Delaunay triangulation below produce
+        // degenerate slivers, which the deck-footprint filter then discards - leaving coverage
+        // gaps (NaN height) even for points genuinely on the deck, not just in a concave gap.
+        // Merge same-side points that are closer than DUPLICATE_POINT_FACTOR times their own
+        // lateral width before triangulating, keeping the first of each cluster: the dropped
+        // points are close enough that losing them as distinct triangle vertices has no material
+        // effect on the interpolated height. The threshold scales with width rather than being a
+        // fixed distance, since the same absolute gap matters far more on a narrow deck than a
+        // wide one (this is Bridge.createDeckGeometry's primary, escalating defence against the
+        // same problem; this is a secondary safety net for callers that build a triangulation
+        // directly). Skip this if it would leave fewer than 3 points (e.g. a deliberately
+        // tiny/dense point cloud), falling back to the original points.
+        List<BridgePoint> triangulationPoints = deduplicateBySamePosition(bridgeEdgePoints, DUPLICATE_POINT_FACTOR);
+        if (triangulationPoints.size() < 3) {
+            triangulationPoints = bridgeEdgePoints;
+        }
+
         // Use Delaunay triangulation for better coverage
         List<Coordinate> coordinates = new ArrayList<>();
-        for (BridgePoint point : bridgeEdgePoints) {
+        for (BridgePoint point : triangulationPoints) {
             coordinates.add(point.getCoordinate());
         }
 
@@ -270,9 +288,9 @@ public class BridgeTriangulation {
             Coordinate[] coords = poly.getCoordinates();
             if (coords.length >= 4) { // Triangle has 4 coords (closed)
                 // Find corresponding BridgePoints
-                BridgePoint bp1 = findBridgePointByCoordinate(bridgeEdgePoints, coords[0]);
-                BridgePoint bp2 = findBridgePointByCoordinate(bridgeEdgePoints, coords[1]);
-                BridgePoint bp3 = findBridgePointByCoordinate(bridgeEdgePoints, coords[2]);
+                BridgePoint bp1 = findBridgePointByCoordinate(triangulationPoints, coords[0]);
+                BridgePoint bp2 = findBridgePointByCoordinate(triangulationPoints, coords[1]);
+                BridgePoint bp3 = findBridgePointByCoordinate(triangulationPoints, coords[2]);
                 if (bp1 != null && bp2 != null && bp3 != null) {
                     Triangle triangle = new Triangle(bp1, bp2, bp3);
                     // Delaunay triangulation covers the point cloud's convex hull, which can
@@ -292,7 +310,51 @@ public class BridgeTriangulation {
                 (triangle.p1.x + triangle.p2.x + triangle.p3.x) / 3.0,
                 (triangle.p1.y + triangle.p2.y + triangle.p3.y) / 3.0));
     }
-    
+
+    /**
+     * Fraction of a point's own lateral width below which two same-side bridge points are treated
+     * as a single digitising artifact rather than two distinct cross-sections, when building the
+     * Delaunay triangulation. Matches {@code Bridge.INITIAL_MERGE_FACTOR}: the risk a near-
+     * duplicate pair poses (via an unstable edge-offset direction estimate) scales with how far
+     * that offset actually reaches, not with a fixed distance.
+     */
+    private static final double DUPLICATE_POINT_FACTOR = 0.1;
+
+    /**
+     * Merge points on the same side (LEFT/RIGHT/CENTER) that are closer than {@code factor} times
+     * the larger of their own lateral widths, keeping only the first occurrence of each cluster
+     * (in input order). Points on different sides are never merged, regardless of distance, since
+     * LEFT and RIGHT edge points are expected to be metres apart (the deck width) and a near-zero
+     * gap between them would indicate a genuine data problem rather than digitising noise.
+     */
+    private List<BridgePoint> deduplicateBySamePosition(List<BridgePoint> points, double factor) {
+        List<BridgePoint> kept = new ArrayList<>();
+        for (BridgePoint point : points) {
+            boolean duplicate = false;
+            for (BridgePoint existing : kept) {
+                double threshold = factor * Math.max(maxLateralWidth(existing), maxLateralWidth(point));
+                if (existing.getPosition() == point.getPosition()
+                        && existing.getCoordinate().distance(point.getCoordinate()) < threshold) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) {
+                kept.add(point);
+            }
+        }
+        return kept;
+    }
+
+    /** Matches {@code Bridge.maxLateralWidth}: the larger of a point's own left/right lateral
+     * width, independent of its classified LEFT/RIGHT/CENTER position, treating an unset (NaN)
+     * side as 0 so it never forces a merge. */
+    private static double maxLateralWidth(BridgePoint point) {
+        double left = point.getWidth(BridgePoint.Position.LEFT);
+        double right = point.getWidth(BridgePoint.Position.RIGHT);
+        return Math.max(Double.isNaN(left) ? 0.0 : left, Double.isNaN(right) ? 0.0 : right);
+    }
+
     /**
      * Find BridgePoint by coordinate from the list.
      * @param bridgeEdgePoints List of bridge points

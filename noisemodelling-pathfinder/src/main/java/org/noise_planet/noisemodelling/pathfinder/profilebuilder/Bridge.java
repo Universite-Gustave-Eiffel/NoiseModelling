@@ -10,6 +10,8 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.Double.NaN;
 
@@ -116,6 +118,8 @@ public class Bridge extends Obstruction {
 
     /** Geometry factory for creating JTS geometries */
     private static final GeometryFactory geometryFactory = GeometryFactoryProvider.SHARED;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Bridge.class);
 
     private static final double OFFSET = 0.001;
 
@@ -279,6 +283,65 @@ public class Bridge extends Obstruction {
     }
 
     /**
+     * Like {@link #getDeckHeightAtPoint(Coordinate)}, but falls back to the absolute deck height
+     * of the nearest bridge cross-section (rather than NaN) if the point falls in a triangulation
+     * coverage gap, logging a warning so the gap stays visible. Intended for callers that need a
+     * height for a point known to belong to this bridge's own edge/structure (e.g. a diffraction
+     * or wall-intersection point), where silently propagating NaN would otherwise corrupt the
+     * propagation path's geometry.
+     * @param point Point to get deck elevation for
+     * @return Absolute deck elevation at the specified point, or the nearest cross-section's
+     * height if the triangulation has a gap there
+     */
+    public double getDeckHeightAtPointOrNearest(Coordinate point) {
+        double height = triangulation.getDeckHeightAtPoint(point);
+        if (!Double.isNaN(height)) {
+            return height;
+        }
+        double nearest = nearestCrossSectionValue(point, BridgePoint::getAbsoluteDeckHeight);
+        LOGGER.warn("Bridge {} has no triangulated deck height at ({}, {}); falling back to the nearest cross-section's height ({})",
+                primaryKey, point.x, point.y, nearest);
+        return nearest;
+    }
+
+    /**
+     * Like {@link #getDeckThicknessAtPoint(Coordinate)}, but falls back to the deck thickness of
+     * the nearest bridge cross-section (rather than NaN) if the point falls in a triangulation
+     * coverage gap, logging a warning so the gap stays visible. See
+     * {@link #getDeckHeightAtPointOrNearest(Coordinate)}.
+     * @param point Point to get deck thickness for
+     * @return Deck thickness at the specified point, or the nearest cross-section's thickness if
+     * the triangulation has a gap there
+     */
+    public double getDeckThicknessAtPointOrNearest(Coordinate point) {
+        double thickness = triangulation.getDeckThicknessAtPoint(point);
+        if (!Double.isNaN(thickness)) {
+            return thickness;
+        }
+        double nearest = nearestCrossSectionValue(point, BridgePoint::getDeckThickness);
+        LOGGER.warn("Bridge {} has no triangulated deck thickness at ({}, {}); falling back to the nearest cross-section's thickness ({})",
+                primaryKey, point.x, point.y, nearest);
+        return nearest;
+    }
+
+    private double nearestCrossSectionValue(Coordinate point, java.util.function.ToDoubleFunction<BridgePoint> valueOf) {
+        double bestValue = Double.NaN;
+        double bestDistance = Double.POSITIVE_INFINITY;
+        for (BridgePoint crossSection : pointManager.getBridgePoints()) {
+            double value = valueOf.applyAsDouble(crossSection);
+            if (Double.isNaN(value)) {
+                continue;
+            }
+            double distance = crossSection.getCoordinate().distance(point);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestValue = value;
+            }
+        }
+        return bestValue;
+    }
+
+    /**
      * Get the barrier height at a specific point.
      * @param point Point to get barrier height for
      * @return Barrier height at the specified point
@@ -286,6 +349,19 @@ public class Bridge extends Obstruction {
     public double getBarrierHeightAtPoint(Coordinate point) {
         return triangulation.getBarrierHeightAtPoint(point);
     }
+
+    /** Starting fraction of a point's own lateral width used to merge it with a same-side
+     * neighbour that sits closer than that, when building deck geometry (see
+     * {@link #buildGeometryPointManager(double)}). */
+    private static final double INITIAL_MERGE_FACTOR = 0.1;
+
+    /** Factor the merge fraction is multiplied by each time the resulting triangulation still
+     * leaves a coverage gap at one of the deck's own boundary points. */
+    private static final double MERGE_FACTOR_ESCALATION = 2.0;
+
+    /** Number of escalating retries before giving up and keeping the last (most aggressive)
+     * attempt, relying on the per-point NaN fallback elsewhere to cover any residual gap. */
+    private static final int MAX_MERGE_ATTEMPTS = 5;
 
     /**
      * Create bridge deck geometry from bridge points.
@@ -295,27 +371,141 @@ public class Bridge extends Obstruction {
      * 3. Initializes triangulation for height interpolation
      * 4. Creates edge geometry for acoustic calculations
      * 5. Updates query helper with the new geometry
-     * 
+     *
+     * Consecutive, same-side cross-sections that are very close to each other relative to the
+     * deck's own width are a common real-world digitising artifact (e.g. a near-duplicate point
+     * sitting right where a bridge turns sharply). Left alone, the direction estimate used to
+     * offset each cross-section to its left/right edge point becomes unstable right there, and
+     * the two near-duplicate cross-sections end up with edge points far enough apart to leave a
+     * triangulation coverage gap (NaN height) even for points genuinely on the deck. Bridge
+     * points are merged into their predecessor before offsetting when closer than a fraction of
+     * the deck's own width; if the resulting triangulation still leaves a gap at one of its own
+     * boundary points, that fraction is escalated and the geometry is rebuilt, with a warning
+     * logged each time.
+     *
      * @param profileBuilder Profile builder for ground height calculation
      */
     public void createDeckGeometry(ProfileBuilder profileBuilder) {
-        // Create deck geometry using the builder
-        this.deckGeometry = geometryBuilder.createDeckGeometry(pointManager, profileBuilder);
-        
-        if (deckGeometry != null) {
+        List<BridgePoint> original = pointManager.getBridgePoints();
+        double mergeFactor = INITIAL_MERGE_FACTOR;
+        BridgePointManager geometryPointManager = null;
+        for (int attempt = 0; attempt < MAX_MERGE_ATTEMPTS; attempt++) {
+            List<BridgePoint> merged = mergeBySamePositionProximity(original, mergeFactor);
+            // Too few points left to represent a deck at all: nothing more to merge, so a larger
+            // factor can never change this outcome - fall back to the unmerged points and stop.
+            boolean hitMergeFloor = merged.size() < 2;
+            geometryPointManager = new BridgePointManager(hitMergeFloor ? original : merged);
+
+            // Create deck geometry using the builder
+            this.deckGeometry = geometryBuilder.createDeckGeometry(geometryPointManager, profileBuilder);
+            if (deckGeometry == null) {
+                return;
+            }
+
             // Create edge points for triangulation from the point manager
             BridgePointManager edgePointManager = new BridgePointManager(BridgePointManager.SortOrder.SIDE_TO_SIDE);
-            edgePointManager.addBridgePoints(geometryBuilder.createBridgeEdgePoints(pointManager, profileBuilder, BridgePoint.Position.RIGHT, false));
-            edgePointManager.addBridgePoints(geometryBuilder.createBridgeEdgePoints(pointManager, profileBuilder, BridgePoint.Position.LEFT, false));
+            edgePointManager.addBridgePoints(geometryBuilder.createBridgeEdgePoints(geometryPointManager, profileBuilder, BridgePoint.Position.RIGHT, false));
+            edgePointManager.addBridgePoints(geometryBuilder.createBridgeEdgePoints(geometryPointManager, profileBuilder, BridgePoint.Position.LEFT, false));
 
-            // // Create triangulation for interpolation
+            // Create triangulation for interpolation
             triangulation.triangulateGeometry(edgePointManager.getBridgePoints(), deckGeometry);
-            
-            // Create edge for acoustic calculations
-            this.edge = geometryBuilder.createEdge(pointManager, profileBuilder);
-            
-            // Update query helper with new geometry; BridgeQueryHelper will generate 2D footprint
-            queryHelper.updateGeometry(deckGeometry, null, triangulation);
+
+            if (triangulationCoversFootprint(deckGeometry)) {
+                break;
+            }
+            if (hitMergeFloor) {
+                LOGGER.warn("Bridge {} deck triangulation left a coverage gap with merge factor {}, but has too few points left to merge further; giving up",
+                        primaryKey, mergeFactor);
+                break;
+            }
+            if (attempt + 1 < MAX_MERGE_ATTEMPTS) {
+                LOGGER.warn("Bridge {} deck triangulation left a coverage gap with merge factor {} (attempt {}/{}); retrying with a larger factor",
+                        primaryKey, mergeFactor, attempt + 1, MAX_MERGE_ATTEMPTS);
+            } else {
+                LOGGER.warn("Bridge {} deck triangulation still left a coverage gap after {} attempts (final merge factor {}); giving up",
+                        primaryKey, MAX_MERGE_ATTEMPTS, mergeFactor);
+            }
+            mergeFactor *= MERGE_FACTOR_ESCALATION;
+        }
+
+        // Create edge for acoustic calculations
+        this.edge = geometryBuilder.createEdge(geometryPointManager, profileBuilder);
+
+        // Update query helper with new geometry; BridgeQueryHelper will generate 2D footprint
+        queryHelper.updateGeometry(deckGeometry, null, triangulation);
+    }
+
+    /**
+     * Merge a point into its predecessor (dropping it) when the two are on the same side and
+     * closer than {@code mergeFactor} times the larger of their own lateral widths. May return a
+     * list of fewer than 2 points if the whole bridge collapses this way; callers must fall back
+     * to the unmerged points in that case rather than build geometry from it. The original,
+     * unmerged {@link #pointManager} is never modified by this.
+     */
+    private static List<BridgePoint> mergeBySamePositionProximity(List<BridgePoint> original, double mergeFactor) {
+        List<BridgePoint> merged = new ArrayList<>();
+        for (BridgePoint point : original) {
+            if (!merged.isEmpty()) {
+                BridgePoint previous = merged.get(merged.size() - 1);
+                double threshold = mergeFactor * Math.max(maxLateralWidth(previous), maxLateralWidth(point));
+                if (previous.getCoordinate().distance(point.getCoordinate()) < threshold) {
+                    continue;
+                }
+            }
+            merged.add(point);
+        }
+        return merged;
+    }
+
+    private static double maxLateralWidth(BridgePoint point) {
+        double left = point.getWidth(BridgePoint.Position.LEFT);
+        double right = point.getWidth(BridgePoint.Position.RIGHT);
+        return Math.max(Double.isNaN(left) ? 0.0 : left, Double.isNaN(right) ? 0.0 : right);
+    }
+
+    /** Fraction of the deck footprint's own area allowed to be left uncovered by the
+     * triangulation before {@link #triangulationCoversFootprint(Polygon)} reports a gap; accounts
+     * for floating-point noise in the polygon union/difference, not real missing coverage. */
+    private static final double UNCOVERED_AREA_TOLERANCE_FRACTION = 1e-6;
+
+    /**
+     * Check, geometrically rather than by sampling, whether the current triangulation's triangles
+     * fully cover the deck footprint. A vertex-only (or otherwise sampled) check can miss a gap
+     * that falls between the points it happens to probe - e.g. an interior sliver near a sharp
+     * bend - and would wrongly let {@link #createDeckGeometry(ProfileBuilder)} stop merging before
+     * the gap is actually gone.
+     * @return true if the union of all triangles leaves (within floating-point tolerance) none of
+     * the footprint's own area uncovered. Also returns false (treat as a gap) if the union/
+     * difference itself hits a JTS robustness issue on the raw Delaunay triangles - heavier
+     * merging on the next attempt produces fewer, better-conditioned triangles and tends to avoid
+     * the same failure, so this still converges rather than needing its own separate handling.
+     */
+    private boolean triangulationCoversFootprint(Polygon footprint) {
+        List<BridgeTriangulation.Triangle> triangles = triangulation.getTriangles();
+        if (triangles.isEmpty()) {
+            return false;
+        }
+        List<Polygon> triangleGeometries = new ArrayList<>(triangles.size());
+        for (BridgeTriangulation.Triangle triangle : triangles) {
+            try {
+                triangleGeometries.add(geometryFactory.createPolygon(
+                        new Coordinate[]{triangle.p1, triangle.p2, triangle.p3, triangle.p1}));
+            } catch (IllegalArgumentException degenerateTriangle) {
+                // zero-area triangle (collinear points); contributes no coverage, skip it
+            }
+        }
+        if (triangleGeometries.isEmpty()) {
+            return false;
+        }
+        try {
+            Geometry coveredArea = org.locationtech.jts.operation.union.CascadedPolygonUnion.union(triangleGeometries);
+            double footprintArea = footprint.getArea();
+            double uncoveredArea = footprint.difference(coveredArea).getArea();
+            return uncoveredArea <= footprintArea * UNCOVERED_AREA_TOLERANCE_FRACTION;
+        } catch (org.locationtech.jts.geom.TopologyException noding) {
+            LOGGER.warn("Bridge {} coverage check itself hit a topology exception on {} triangles; treating as uncovered",
+                    primaryKey, triangleGeometries.size(), noding);
+            return false;
         }
     }
 
