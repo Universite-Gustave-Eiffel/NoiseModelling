@@ -16,7 +16,10 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
@@ -41,13 +44,21 @@ public class CnossosPathBuilder {
         Coordinate rcv = pts2D.getLast();
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
+        // Several cut points can map to the same ground point: a wall top is followed by
+        // a ground effect and by the topography points that are hidden by the building.
+        // They all describe the same obstacle, so keep only the first cut point for each
+        // ground point. The LinkedHashMap keeps the candidates in cut-point order.
+        Map<Integer, Integer> candidateByGroundPoint = new LinkedHashMap<>();
         for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
-            // Skip reflection points — they are not terrain obstacles and should not
-            // create Rayleigh diffraction points
-            if(cuts.get(i0Cut) instanceof CutPointReflection) {
-                continue;
+            // Reflection points are not terrain obstacles and must not create Rayleigh
+            // diffraction points.
+            if(!(cuts.get(i0Cut) instanceof CutPointReflection)) {
+                candidateByGroundPoint.putIfAbsent(cut2DGroundIndex.get(i0Cut), i0Cut);
             }
-            int iO = cut2DGroundIndex.get(i0Cut);
+        }
+        for (Map.Entry<Integer, Integer> candidate : candidateByGroundPoint.entrySet()) {
+            int iO = candidate.getKey();
+            int i0Cut = candidate.getValue();
             Coordinate o = pts2DGround[iO];
 
             double dSO = src.distance(o);
@@ -493,7 +504,12 @@ public class CnossosPathBuilder {
                 cnossosPath.delta = segments.getFirst().d + cnossosPath.e + segments.getLast().d - distance;
             } else {
                 segments.addAll(rayleighSegments);
-                points.addAll(1, rayleighPoints);
+                // Rayleigh points are produced from the cut points and are not ordered
+                // with the reflection points already in the list. Sort once by profile
+                // distance and remove adjacent duplicates instead of inserting each
+                // point at a computed index.
+                points.addAll(rayleighPoints);
+                sortAndDedupePoints(points);
             }
             return cnossosPath;
         }
@@ -577,6 +593,31 @@ public class CnossosPathBuilder {
         return cnossosPath;
     }
 
+
+    /**
+     * Sort a point list by distance along the profile and remove adjacent duplicates.
+     * <p>
+     * Two points are duplicates only when they have the same type and the same profile
+     * position. Points of different types are kept even when they share a position.
+     * </p>
+     * @param points Point list to sort and deduplicate in place
+     */
+    static void sortAndDedupePoints(List<PointPath> points) {
+        points.sort(Comparator.comparingDouble(point -> point.coordinate.x));
+        int writeIndex = 0;
+        for (PointPath point : points) {
+            if (writeIndex == 0 || !isSamePoint(points.get(writeIndex - 1), point)) {
+                points.set(writeIndex++, point);
+            }
+        }
+        if (writeIndex < points.size()) {
+            points.subList(writeIndex, points.size()).clear();
+        }
+    }
+
+    private static boolean isSamePoint(PointPath first, PointPath second) {
+        return first.type == second.type && first.coordinate.equals2D(second.coordinate);
+    }
 
     /**
      * Compute the orientation from a source orientation and two coordinates
