@@ -894,10 +894,7 @@ public class PathFinder {
     private void addLineSource(LineString source, Coordinate receiverCoord, int srcIndex, List<SourcePointInfo> sourceList) {
         ArrayList<Coordinate> pts = new ArrayList<>();
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
-        double segmentSizeConstraint = max(1, receiverCoord.distance3D(nearestPoint) / this.data.lineSourceSpacingRatio);
-        if (isNaN(segmentSizeConstraint)) {
-            segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / this.data.lineSourceSpacingRatio);
-        }
+        double segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / this.data.lineSourceSpacingRatio);
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
