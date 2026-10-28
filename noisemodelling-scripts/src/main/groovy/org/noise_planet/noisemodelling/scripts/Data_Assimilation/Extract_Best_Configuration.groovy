@@ -175,7 +175,7 @@ static def exec(Connection connection, input){
             f1.EPOCH, 
             f2.PERIOD, 
             ROUND(MEDIAN(ABS(f1.LAEQ - f2.LAEQ)), 4) AS median_abs_diff
-        FROM filtered_obs f1, filtered_noise f2 
+        FROM filtered_obs f1 JOIN filtered_noise f2 ON f1.IDRECEIVER = f2.IDRECEIVER
         WHERE f1.EPOCH= """+t+"""
         GROUP BY f1.EPOCH, f2.PERIOD
         """)
