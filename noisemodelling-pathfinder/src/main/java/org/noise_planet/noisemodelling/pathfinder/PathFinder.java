@@ -686,6 +686,9 @@ public class PathFinder {
 
         for (MirrorReceiver receiverReflection : mirrorResults) {
             Wall seg = receiverReflection.getWall();
+            if (!isWallEligibleForReflection(seg, src.position)) {
+                continue;
+            }
             List<MirrorReceiver> rayPath = new ArrayList<>();
             MirrorReceiver receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
@@ -695,6 +698,7 @@ public class PathFinder {
             linters.computeIntersection(seg.line.p0, seg.line.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
+            boolean reflectionChainValid = true;
             while (linters.hasIntersection()) {
                 // There are a probable reflection point on the segment
                 Coordinate reflectionPt = new Coordinate(
@@ -734,12 +738,19 @@ public class PathFinder {
                     receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
                     // Update intersection data
                     seg = receiverReflectionCursor.getWall();
+                    if (!isWallEligibleForReflection(seg, src.position)) {
+                        reflectionChainValid = false;
+                        break;
+                    }
                     linters.computeIntersection(seg.line.p0, seg.line.p1,
                             receiverReflectionCursor
                                     .getReceiverPos(),
                             destinationPt
                     );
                 }
+            }
+            if (!reflectionChainValid) {
+                continue;
             }
             // Compute direct path between source and first reflection point, add profile to the data
             CutProfile segmentCutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
@@ -797,6 +808,23 @@ public class PathFinder {
             }
         }
         return strategy;
+    }
+
+    /**
+     * A bridge's own side parapet ({@link ProfileBuilder.IntersectionType#BRIDGE}) only has a
+     * well-defined 3D relationship to a source that is itself sitting on that same bridge deck -
+     * a source elsewhere (on the ground, under the bridge, or on a different bridge) has no
+     * supported reflection geometry against it. Every other wall type is always eligible.
+     * @param wall Candidate reflecting wall
+     * @param sourcePosition Position of the actual acoustic source for this computation
+     * @return true if this wall may be used as a reflector for this source
+     */
+    private boolean isWallEligibleForReflection(Wall wall, Coordinate sourcePosition) {
+        if (wall.type != ProfileBuilder.IntersectionType.BRIDGE) {
+            return true;
+        }
+        Bridge bridge = data.profileBuilder.getBridgeByPk(wall.getPrimaryKey());
+        return bridge != null && bridge.isPointOnBridge(sourcePosition);
     }
 
     /**

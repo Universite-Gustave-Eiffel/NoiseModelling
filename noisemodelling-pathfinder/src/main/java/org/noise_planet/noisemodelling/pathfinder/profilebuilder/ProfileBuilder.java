@@ -954,19 +954,108 @@ public class ProfileBuilder {
                 }
             }
         }
+        // Process bridge decks: compute deck elevation from the DEM, and register each bridge's own
+        // reflective side parapets (if any) into the main obstruction tree below - both must happen
+        // before rtree.build(), since an STRtree rejects further inserts once built.
+        if (bridgeService.getBridgeCount() > 0) {
+            bridgeService.computeElevations(this);
+            validateBridgeFootprintsDoNotOverlapBuildingsOrWalls();
+            registerReflectiveBridgeParapets();
+        }
         rtree.build();
         groundEffectsRtree.build();
         // initialize with default frequencies
         setFrequencyArray(frequencyArray);
-        // Process bridge decks: compute deck elevation from the DEM, export the deck
-        // facets as processed walls with their own spatial index.
+        // Export the deck facets as processed walls with their own spatial index (used for the
+        // direct-ray bridge-crossing check, not for reflection).
         if (bridgeService.getBridgeCount() > 0) {
-            bridgeService.computeElevations(this);
             bridgeService.exportFacetsToProcessedWalls(bridgeProcessedWalls);
             bridgeProcessedWalls.buildProcessedWallRtree();
             bridgeService.initializeFrequencyDependentData(exactFrequencyArray);
         }
         return this;
+    }
+
+    /**
+     * Register each bridge's own side parapets (left/right only - the two end-cap edges closing
+     * the deck polygon at its first/last cross-section are never a real barrier and are excluded
+     * by construction, since this never connects a right-edge point to a left-edge one) as
+     * reflective walls, wherever the barrier height on that side reaches
+     * {@link BridgeService#MIN_REFLECTIVE_BARRIER_HEIGHT}. These are ordinary
+     * {@link IntersectionType#BRIDGE} walls added to the same main obstruction index used by
+     * buildings/walls, so they participate in reflection like any other wall; {@code PathFinder}
+     * additionally restricts a reflection off one of these walls to a source that is itself
+     * classified {@code ACTUAL_SOURCE_ON_BRIDGE} on that same bridge, since a source elsewhere has
+     * no well-defined 3D relationship to a deck-top parapet.
+     */
+    private void registerReflectiveBridgeParapets() {
+        BridgeGeometryBuilder geometryBuilder = new BridgeGeometryBuilder();
+        List<Bridge> bridges = bridgeService.getBridges();
+        for (int bridgeIndex = 0; bridgeIndex < bridges.size(); bridgeIndex++) {
+            Bridge bridge = bridges.get(bridgeIndex);
+            BridgePointManager pointManager = bridge.getPointManager();
+            List<BridgePoint> rightEdge = geometryBuilder.createBridgeEdgePoints(
+                    pointManager, this, BridgePoint.Position.RIGHT, true);
+            List<BridgePoint> leftEdge = geometryBuilder.createBridgeEdgePoints(
+                    pointManager, this, BridgePoint.Position.LEFT, true);
+            addReflectiveParapetSegments(bridge, bridgeIndex, rightEdge, BridgePoint.Position.RIGHT);
+            addReflectiveParapetSegments(bridge, bridgeIndex, leftEdge, BridgePoint.Position.LEFT);
+        }
+    }
+
+    private void addReflectiveParapetSegments(Bridge bridge, int bridgeIndex, List<BridgePoint> edgePoints,
+                                               BridgePoint.Position side) {
+        if (edgePoints == null) {
+            return;
+        }
+        for (int i = 0; i < edgePoints.size() - 1; i++) {
+            BridgePoint p0 = edgePoints.get(i);
+            BridgePoint p1 = edgePoints.get(i + 1);
+            if (p0.getBarrierHeight(side) >= BridgeService.MIN_REFLECTIVE_BARRIER_HEIGHT
+                    && p1.getBarrierHeight(side) >= BridgeService.MIN_REFLECTIVE_BARRIER_HEIGHT) {
+                LineSegment lineSegment = new LineSegment(p0.getCoordinate(), p1.getCoordinate());
+                Wall w = (Wall) new Wall(lineSegment, bridgeIndex, IntersectionType.BRIDGE)
+                        .setProcessedObstructionIndex(processedObstructions.size());
+                w.setPrimaryKey(bridge.getPrimaryKey());
+                processedObstructions.add(w);
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size() - 1);
+            }
+        }
+    }
+
+    /**
+     * Buildings and walls are vertical obstacles; a bridge's footprint is the 2D plan-view area of
+     * its deck. The two cannot legitimately overlap in 2D (unlike "under the bridge" sources, which
+     * are a single point, a building or wall spanning the footprint has no supported 3D treatment
+     * here). Without this check such an overlap would instead surface later and indirectly: any
+     * point that happens to land inside a bridge footprint - including a building/wall reflection
+     * point, which has nothing to do with the bridge - gets labelled with a BridgeRelationship by
+     * {@link #classifySourceAgainstBridges}, since that method decides purely from 2D containment.
+     * @throws IllegalArgumentException if any building or wall intersects a bridge footprint in 2D
+     */
+    private void validateBridgeFootprintsDoNotOverlapBuildingsOrWalls() {
+        for (Bridge bridge : bridgeService.getBridges()) {
+            Geometry footprint = bridge.getFootprintGeometry();
+            if (footprint == null) {
+                continue;
+            }
+            for (Building building : buildings) {
+                if (footprint.intersects(building.poly)) {
+                    throw new IllegalArgumentException(String.format(Locale.ROOT,
+                            "Building with PK : %s intersects the 2D footprint of bridge with PK : %s. " +
+                                    "Buildings are vertical obstacles and must not overlap a bridge deck's footprint.",
+                            building.primaryKey, bridge.getPrimaryKey()));
+                }
+            }
+            for (Wall wall : walls) {
+                if (footprint.intersects(wall.line.toGeometry(FACTORY))) {
+                    throw new IllegalArgumentException(String.format(Locale.ROOT,
+                            "Wall with PK : %s intersects the 2D footprint of bridge with PK : %s. " +
+                                    "Walls are vertical obstacles and must not overlap a bridge deck's footprint.",
+                            wall.primaryKey, bridge.getPrimaryKey()));
+                }
+            }
+        }
     }
 
     /**
@@ -1390,6 +1479,28 @@ public class ProfileBuilder {
         if (propagationType == BridgeService.PropagationType.ACTUAL_SOURCE_TO_LOWER_RECEIVER
                 || propagationType == BridgeService.PropagationType.IMAGINARY_SOURCE_TO_UPPER_RECEIVER) {
             CutPointBridgeWall firstCut = bridgeService.calculateFirstBridgeCutpoint(profile, propagationType);
+            // Between the source and this pivot the acoustic ray runs along the bridge itself (on
+            // the deck, or under it in the imaginary-source case) - there is no room for a terrain
+            // intersection there, so any CutPointTopography that addTopoCutPts already found for
+            // that stretch (by walking the straight source-receiver line, before this bent, two-leg
+            // path via the pivot was known) does not describe anything on the real path. Left in
+            // place it stays ordered by its distance from the source along that straight line, which
+            // no longer matches this profile's real point order once the pivot is inserted right
+            // after the source (see CutProfile#insertCutPoint's unsorted branch below) - a nearby
+            // topography point ends up listed after a far-side one, and CutProfile#computePts2D's
+            // cumulative-distance unfolding (which just walks the list in order) turns that into a
+            // large spurious back-and-forth detour, inflating the unfolded profile length (and the
+            // diffraction delta derived from it) far past anything physically meaningful.
+            org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship sourceBridgeRelationship =
+                    profile.getSource().getBridgeRelationship();
+            long pivotBridgePk = propagationType == BridgeService.PropagationType.ACTUAL_SOURCE_TO_LOWER_RECEIVER
+                    ? sourceBridgeRelationship.getBridgePkOn()
+                    : sourceBridgeRelationship.getBridgePkAbove();
+            Bridge pivotBridge = bridgeService.getBridgeByPk(pivotBridgePk);
+            if (pivotBridge != null) {
+                profile.cutPoints.removeIf(cp -> cp instanceof CutPointTopography
+                        && pivotBridge.isPointWithinBridgeFootprint(cp.getCoordinate()));
+            }
             newCutPoints.add(firstCut);
             profile.hasBridgeIntersection = true;
             sortCutPoints = false;

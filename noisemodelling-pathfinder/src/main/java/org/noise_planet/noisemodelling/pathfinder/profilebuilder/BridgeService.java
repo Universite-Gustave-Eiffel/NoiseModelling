@@ -48,6 +48,14 @@ import org.slf4j.LoggerFactory;
  */
 public class BridgeService implements FrequencyInitializable, ElevationComputable, ClearableService, ProcessedFacetsExportable {
     private static final Logger LOGGER = LoggerFactory.getLogger(BridgeService.class);
+
+    /**
+     * Minimum barrier/parapet height, in meters, for a bridge deck's own side edge to be treated
+     * as a reflective surface (see {@link ProfileBuilder#registerReflectiveBridgeParapets()}). A
+     * parapet shorter than this is assumed too low to meaningfully reflect sound.
+     */
+    public static final double MIN_REFLECTIVE_BARRIER_HEIGHT = 0.5;
+
     private int nodeCapacity = 5;
 
     private final List<Bridge> bridges = new ArrayList<>();
@@ -313,6 +321,11 @@ public class BridgeService implements FrequencyInitializable, ElevationComputabl
         if (propagationType == PropagationType.ACTUAL_SOURCE_TO_LOWER_RECEIVER
                 || propagationType == PropagationType.IMAGINARY_SOURCE_TO_UPPER_RECEIVER) {
             bridgeCutPoint.setMirrorRelax(true);
+            // Both scenarios have the source leaving the bridge it sits on (on the deck, or in the
+            // imaginary position under it) on its way to the receiver, so CutProfile#computePtsGround
+            // must treat this cut point as the exit from that deck - otherwise it keeps the ground
+            // reference pinned at the deck's own level all the way to the receiver (no diffraction).
+            bridgeCutPoint.setIntersectionType(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT);
         }
         bridgeCutPoint.modifyIntersectionHeight(bridge);
         long bridgePkOn = src.getBridgeRelationship().getBridgePkOn();
