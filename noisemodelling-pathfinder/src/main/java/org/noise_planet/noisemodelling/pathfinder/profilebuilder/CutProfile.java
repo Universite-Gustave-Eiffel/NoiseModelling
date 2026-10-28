@@ -532,10 +532,14 @@ public class CutProfile {
                     overArea = false;
                 }
             } else if (cut instanceof CutPointReflection) {
-                // Z ground profile is duplicated for reflection point before and after
-                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
-                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
-                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                // Z ground profile is duplicated for reflection point before and after. The
+                // reflection point's own zGround is always the terrain far below; while the ray
+                // is still walking a bridge deck (lastGroundZ set, e.g. a reflection off the
+                // deck's own parapet) the deck surface is the real ground reference here instead.
+                double groundZ = !Double.isNaN(lastGroundZ) ? lastGroundZ : cut.getzGround();
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, groundZ));
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, groundZ));
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, groundZ));
             } else if (cut instanceof CutPointSource && !Double.isNaN(((CutPointSource) cut).getBridgeHeight())) {
                 // Source sitting on a bridge deck: its ground reference is the deck surface.
                 CutPointSource src = (CutPointSource) cut;

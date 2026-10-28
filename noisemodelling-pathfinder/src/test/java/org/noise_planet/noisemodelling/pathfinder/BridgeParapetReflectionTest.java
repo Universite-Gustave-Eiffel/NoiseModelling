@@ -132,6 +132,86 @@ public class BridgeParapetReflectionTest {
     }
 
     @Test
+    public void sourceJustBelowDeckUndersideDoesNotReflectOffParapet() {
+        ProfileBuilder pb = bridgeWithBarrierHeight(1.0); // above the threshold
+        // Deck top is at z=10, thickness 0.5 -> underside at z=9.5. z=8.5 is clearly below the
+        // underside, but isPointOnBridge's +/-2m structural-coupling tolerance (measured from the
+        // top) would otherwise still accept it as "on" the deck.
+        Coordinate source = new Coordinate(30, 20, 8.5);
+        Coordinate receiver = new Coordinate(70, 20, 8.5);
+        List<CutProfile> profiles = computeReflectionProfiles(pb, source, receiver);
+        assertTrue(profiles.isEmpty(),
+                "a source below the deck's own underside must not reflect off its parapet, " +
+                        "even within isPointOnBridge's structural-coupling tolerance band");
+    }
+
+    @Test
+    public void onDeckReflectionKeepsDeckGroundReference() {
+        ProfileBuilder pb = bridgeWithBarrierHeight(1.0);
+        // Terrain below is flat at z=0; the deck sits at z=10. A reflection off the deck's own
+        // parapet must keep the deck surface as its ground reference, not drop to the terrain far
+        // below.
+        Coordinate source = new Coordinate(30, 20, 10.6);
+        Coordinate receiver = new Coordinate(70, 20, 10.6);
+        List<CutProfile> profiles = computeReflectionProfiles(pb, source, receiver);
+        assertFalse(profiles.isEmpty(), "expected a reflection off the on-deck parapet");
+        for (CutProfile profile : profiles) {
+            List<Coordinate> groundPts = CutProfile.computePtsGround(profile.cutPoints, null);
+            double minGroundZ = groundPts.stream().mapToDouble(c -> c.z).min().orElse(Double.NaN);
+            assertTrue(minGroundZ > 5.0,
+                    "ground reference should stay near the deck (z=10) throughout an on-deck " +
+                            "reflected path, got a minimum of " + minGroundZ);
+        }
+    }
+
+    @Test
+    public void parapetWallCopiesBridgeAbsorption() {
+        ProfileBuilder pb = bridgeWithBarrierHeight(1.0);
+        List<Double> customAlphas = Arrays.asList(0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3);
+        // Re-register with a bridge carrying custom absorption, mirroring how the deck facets
+        // already pick it up via copyAlphas(bridge) in BridgeService#exportFacetsToProcessedWalls.
+        List<Coordinate> pts = Arrays.asList(
+                new Coordinate(0, 20, 10),
+                new Coordinate(50, 20, 10),
+                new Coordinate(100, 20, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < pts.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 100L, pts.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge bridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(100L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .withAlphas(customAlphas)
+                .build();
+        ProfileBuilder customPb = new ProfileBuilder();
+        for (int x = -20; x <= 120; x += 20) {
+            for (int y = -20; y <= 120; y += 20) {
+                customPb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        customPb.addBridge(bridge);
+        customPb.finishFeeding();
+
+        List<Wall> bridgeWalls = customPb.getWallsIn(new Envelope(-50, 150, -50, 150)).stream()
+                .filter(w -> w.type == ProfileBuilder.IntersectionType.BRIDGE)
+                .collect(Collectors.toList());
+        assertFalse(bridgeWalls.isEmpty(), "expected at least one registered parapet wall");
+        for (Wall w : bridgeWalls) {
+            assertEquals(customAlphas, w.getAlphas(),
+                    "parapet wall must inherit its bridge's absorption settings, like the deck facets do");
+        }
+    }
+
+    @Test
     public void onlyContinuousSideSegmentsAreRegisteredAsReflectiveWalls() {
         ProfileBuilder pb = bridgeWithBarrierHeight(1.0);
         List<Wall> bridgeWalls = pb.getWallsIn(new Envelope(-50, 150, -50, 150)).stream()

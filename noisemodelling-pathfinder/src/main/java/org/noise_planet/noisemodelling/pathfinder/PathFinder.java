@@ -824,7 +824,11 @@ public class PathFinder {
             return true;
         }
         Bridge bridge = data.profileBuilder.getBridgeByPk(wall.getPrimaryKey());
-        return bridge != null && bridge.isPointOnBridge(sourcePosition);
+        // isPointOnBridge's +/-2m tolerance (for structural coupling) is measured from the deck's
+        // top surface, so it also accepts a source sitting just below the deck's own underside.
+        // Such a source is classified as under the bridge, not on it, and must not reflect off a
+        // parapet it cannot see - reject it the same way classifySourceAgainstBridges does.
+        return bridge != null && !bridge.isPointBelowBridge(sourcePosition) && bridge.isPointOnBridge(sourcePosition);
     }
 
     /**

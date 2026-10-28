@@ -1017,6 +1017,7 @@ public class ProfileBuilder {
                 Wall w = (Wall) new Wall(lineSegment, bridgeIndex, IntersectionType.BRIDGE)
                         .setProcessedObstructionIndex(processedObstructions.size());
                 w.setPrimaryKey(bridge.getPrimaryKey());
+                w.copyAlphas(bridge);
                 processedObstructions.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size() - 1);
             }
