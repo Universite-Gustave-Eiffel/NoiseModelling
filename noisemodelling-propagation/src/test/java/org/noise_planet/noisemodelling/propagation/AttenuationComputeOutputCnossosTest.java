@@ -22,6 +22,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.*;
@@ -6612,6 +6613,43 @@ public class AttenuationComputeOutputCnossosTest {
         for (int i = 0; i < values0.length; i++) {
             assertNotEquals(values0[i], values1[i], 0.01);
         }
+    }
+
+    /**
+     * A straight screen made of 25 panels of 4 m that share one primary key must screen like the same screen made
+     * of one wall: the side paths must go around the screen ends, not around the panel joins.
+     */
+    @Test
+    public void testScreenPanelsSideDiffraction() {
+        double[][] levels = new double[2][];
+        int[] panelCounts = {1, 25};
+        for (int run = 0; run < panelCounts.length; run++) {
+            int panels = panelCounts[run];
+            ProfileBuilder profileBuilder = new ProfileBuilder();
+            for (int panel = 0; panel < panels; panel++) {
+                Wall wall = new Wall(new Coordinate(-50 + 100.0 * panel / panels, 0, 3),
+                        new Coordinate(-50 + 100.0 * (panel + 1) / panels, 0, 3), -1, ProfileBuilder.IntersectionType.WALL);
+                wall.setPrimaryKey(1);
+                profileBuilder.addWall(wall);
+            }
+            profileBuilder.finishFeeding();
+
+            SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+            scene.addSource(new GeometryFactory().createPoint(new Coordinate(0, -10, 0.5)));
+            scene.addReceiver(new Coordinate(0, 10, 1.5));
+            scene.setDefaultGroundAttenuation(0.0);
+            scene.setComputeHorizontalDiffraction(true);
+            scene.setComputeVerticalDiffraction(true);
+            scene.reflexionOrder = 0;
+            scene.defaultCnossosParameters = new AttenuationParameters();
+
+            AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+            PathFinder pathFinder = new PathFinder(scene);
+            pathFinder.setThreadCount(1);
+            pathFinder.run(propDataOut);
+            levels[run] = propDataOut.receiversAttenuationLevels.pop().levels;
+        }
+        assertArrayEquals(levels[0], levels[1], 0.1);
     }
 
     @Test
