@@ -761,10 +761,6 @@ public class PathFinder {
                         secondPoint.getReflectionPosition(), data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
                 if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
-                    continue;
-                }
-                if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
-                    // (maybe there is a blocking building/dem, and we disabled diffraction)
                     validReflection = false;
                     break;
                 }
