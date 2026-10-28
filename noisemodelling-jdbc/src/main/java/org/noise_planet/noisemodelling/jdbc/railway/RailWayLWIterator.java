@@ -171,7 +171,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     private RailWayLWGeom fetchNext(RailWayLWGeom incompleteRecord) {
         RailWayLWGeom completeRecord = null;
         try {
-            boolean hasNext = false;
             if (spatialResultSet == null) {
                 Tuple<String, Integer> trackKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection,
                         TableLocation.parse(tableTrackGeometry, DBUtils.getDBType(connection)));
@@ -182,7 +181,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 if(!spatialResultSet.next()) {
                     return null;
                 }
-                hasNext = true;
                 if (sourceFields == null) {
                     sourceFields = new HashMap<>();
                     int fieldId = 1;
@@ -214,7 +212,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 return null;
             }
             while (spatialResultSet.next()) {
-                hasNext = true;
                 if (incompleteRecord.pk == spatialResultSet.getInt("trackid")) {
                     incompleteRecord.setRailWayLW(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLW, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
                     incompleteRecord.setRailWayLWDay(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
@@ -249,14 +246,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     break;
                 }
             }
-            if(!hasNext) {
+            if (completeRecord == null) {
+                // End of the result set: emit the pending record, even if no row was read in this call
+                // Sync cref from accumulated emissions before creating final record
+                incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
+                completeRecord = new RailWayLWGeom(incompleteRecord);
                 incompleteRecord.pk = -1;
-            } else {
-                if (completeRecord == null) {
-                    // Sync cref from accumulated emissions before creating final record
-                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
-                    completeRecord = new RailWayLWGeom(incompleteRecord);
-                }
             }
             return completeRecord;
         } catch (SQLException | IOException throwables) {
