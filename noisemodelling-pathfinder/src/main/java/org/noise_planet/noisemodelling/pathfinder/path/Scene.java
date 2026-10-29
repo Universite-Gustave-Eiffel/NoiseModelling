@@ -9,7 +9,6 @@
 
 package org.noise_planet.noisemodelling.pathfinder.path;
 
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -73,17 +72,6 @@ public class Scene {
     public Scene(ProfileBuilder profileBuilder) {
         this.profileBuilder = profileBuilder;
     }
-
-    public boolean isBodyBarrier() {
-        return bodyBarrier;
-    }
-
-    public void setBodyBarrier(boolean bodyBarrier) {
-        this.bodyBarrier = bodyBarrier;
-    }
-
-    /** bodyBarrier effet */
-    boolean bodyBarrier = false;
 
     /** Compute horizontal diffraction rays over vertical edges */
     public boolean computeHorizontalDiffraction = true;

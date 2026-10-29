@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Road Emission from Traffic
 ==========================
@@ -38,15 +38,15 @@ Mandatory inputs
    
    *  WBV  : Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)
    
-   *  LV_SPD  : Hourly average light vehicle speed (DOUBLE)
+   *  LV_SPD  : Hourly average light vehicle speed (20 to 150 km/h -- DOUBLE)
    
-   *  MV_SPD  : Hourly average medium heavy vehicles speed (DOUBLE)
+   *  MV_SPD  : Hourly average medium heavy vehicles speed (20 to 150 km/h -- DOUBLE)
    
-   *  HGV_SPD  : Hourly average heavy duty vehicles speed (DOUBLE)
+   *  HGV_SPD  : Hourly average heavy duty vehicles speed (20 to 150 km/h -- DOUBLE)
    
-   *  WAV_SPD  : Hourly average mopeds, tricycles or quads ≤ 50 cc speed (DOUBLE)
+   *  WAV_SPD  : Hourly average mopeds, tricycles or quads ≤ 50 cc speed (20 to 150 km/h -- DOUBLE)
    
-   *  WBV_SPD  : Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)
+   *  WBV_SPD  : Hourly average motorcycles, tricycles or quads > 50 cc speed (20 to 150 km/h -- DOUBLE)
    
    *  LV_D LV_E LV_N  : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)
    
@@ -58,15 +58,15 @@ Mandatory inputs
    
    *  WBV_D  WBV_E  WBV_N  : Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)
    
-   *  LV_SPD_D  LV_SPD_E LV_SPD_N  : Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  LV_SPD_D  LV_SPD_E LV_SPD_N  : Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  MV_SPD_D  MV_SPD_E MV_SPD_N  : Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  MV_SPD_D  MV_SPD_E MV_SPD_N  : Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  HGV_SPD_D  HGV_SPD_E  HGV_SPD_N  : Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  HGV_SPD_D  HGV_SPD_E  HGV_SPD_N  : Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  WAV_SPD_D  WAV_SPD_E  WAV_SPD_N  : Hourly average mopeds, tricycles or quads ≤ 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  WAV_SPD_D  WAV_SPD_E  WAV_SPD_N  : Hourly average mopeds, tricycles or quads ≤ 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
    *  TEMP  : Hourly average air temperature (DOUBLE)
    
@@ -94,7 +94,7 @@ Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``coefficientVersion`` — *Coefficient version*
-   🌧 Cnossos coefficient version  (1 = 2015, 2 = 2020)
+   🌧 Cnossos coefficient version  (1 = 2015, 2 = 2020, 528 = NL)
 
    Type: ``Double``
 

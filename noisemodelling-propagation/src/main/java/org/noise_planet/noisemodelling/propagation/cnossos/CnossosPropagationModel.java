@@ -42,12 +42,11 @@ public class CnossosPropagationModel implements PropagationModel {
      * @return List of AttenuationOutput objects [favorable, homogeneous]
      */
     public List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
-                                      AttenuationParameters attenuationParameters,
-                                      boolean isExportAttenuationMatrix) {
+                                      AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
         // Compute favorable and homogeneous propagation paths
         if (cnossosPaths.isEmpty()) {
-            double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-            cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
+            double gs = scene.getSourceGs(cutProfile.getSource().sourcePk);
+            cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile,
                     scene.profileBuilder.exactFrequencyArray, gs);
         }
         // Compute attenuation for each path
@@ -66,34 +65,5 @@ public class CnossosPropagationModel implements PropagationModel {
             attenuationOutputs.add(attenuationOutput);
         }
         return attenuationOutputs;
-    }
-
-    /**
-     * Compute attenuation along direct path between source and receiver
-     *
-     * @param source source point information
-     * @param receiver receiver point information
-     * @param scene Geometrical information about the propagation scene
-     * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @return Attenuation
-     */
-    public AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
-                                             SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
-                                             boolean isExportAttenuationMatrix){
-        CutProfile cutProfile = new CutProfile(new CutPointSource(source), new CutPointReceiver(receiver));
-        CnossosPath propagationPath = new CnossosPath(cutProfile);
-        propagationPath.setFavourable(true);
-        propagationPath.setPointList(new ArrayList<>());
-        List<Coordinate> pts2D = cutProfile.computePts2D();
-        propagationPath.setSRSegment(CnossosPathBuilder.computeSegment(pts2D.get(0), pts2D.get(1), new double[] {0, 0}));
-        propagationPath.getPointList().add(new PointPath(pts2D.get(0), 0, PointPath.POINT_TYPE.SRCE));
-        propagationPath.getPointList().add(new PointPath(pts2D.get(1), 0, PointPath.POINT_TYPE.RECV));
-        CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
-        attenuationOutput.propagationPath = propagationPath;
-        AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
-                isExportAttenuationMatrix);
-        return attenuationOutput;
-
     }
 }

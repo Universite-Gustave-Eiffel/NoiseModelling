@@ -189,7 +189,7 @@ Use ``Regular_Grid`` Block
 Split geometry and traffic periods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the table ``ROADS``, the traffic information is given for each period in the ``PERIOD`` column.
+In the table ``ROADS``, the traffic information is given for each period in the ``TIME`` column.
 
 The following Block aggregates roads by the geometry and places the associated pair ``IDSOURCE``/``PERIOD``
 with the corresponding road traffic into the ``SOURCES_EMISSION`` table.
@@ -198,7 +198,7 @@ Use the Block ``Dynamic::Split_Sources_Period`` :
 
 #. ``Source table name``: Enter ``ROADS``
 #. ``Source index field name``: Enter ``LINK_ID``
-#. ``Source period field name``: Enter ``PERIOD``.
+#. ``Source period field name``: Enter ``TIME``.
 
 Two output tables are created ``SOURCES_GEOM`` and ``SOURCES_EMISSION``
 

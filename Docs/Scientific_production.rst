@@ -102,3 +102,13 @@ Below is a **non-exhaustive** list of scientific publications in which NoiseMode
             :style: plain
             :all:
             :filter: keywords % "Interface"
+            
+
+
+Statistics
+--------------------------------
+
+.. figure:: images/Scientific_production/stats_publication_noisemodelling.png
+	:align: center
+	
+

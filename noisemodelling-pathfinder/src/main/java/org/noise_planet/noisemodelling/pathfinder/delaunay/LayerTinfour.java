@@ -251,10 +251,18 @@ public class LayerTinfour implements LayerDelaunay {
             refine = false;
             // Will triangulate multiple time if refinement is necessary
             if (maxArea > 0) {
-                ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
-                        .filter(triangle -> triangle.getArea() > maxArea)
-                        .map(SimpleTriangle::getCentroid)
-                        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+                ArrayList<Vertex> newSteinerPoints = new ArrayList<>();
+                GeometryFactory gf = new GeometryFactory();
+                for (SimpleTriangle triangle : tin.triangles()) {
+                    if (triangle.getArea() > maxArea) {
+                        Vertex centroid = triangle.getCentroid();
+                        // Check if the refinement point does not lie into a polygon
+                        if (findPolygonIndexByPoint(gf.createPoint(toCoordinate(centroid))) != -1) {
+                            continue;
+                        }
+                        newSteinerPoints.add(centroid);
+                    }
+                }
                 if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
                     refine = true;

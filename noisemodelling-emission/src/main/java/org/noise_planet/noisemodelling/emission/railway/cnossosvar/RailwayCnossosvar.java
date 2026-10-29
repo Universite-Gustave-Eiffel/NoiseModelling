@@ -22,7 +22,9 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.logging.Logger;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interpLinear;
 
@@ -43,6 +45,16 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.railway.Railway {
+
+    private static final Logger LOGGER = Logger.getLogger(RailwayCnossosvar.class.getName());
+
+    /**
+     * Minimum speed used to determine the total effective roughness (Directive 2002/49/EC,
+     * consolidated Annex II, section 2.3.2): 50 km/h for heavy rail, 30 km/h for trams and
+     * light metro. This floor must not affect the vehicle flow calculation.
+     */
+    private static final double MIN_SPEED_HEAVY_RAIL = 50.;
+    private static final double MIN_SPEED_LIGHT_RAIL = 30.;
 
     public RailwayCnossosvar() {
     }
@@ -90,11 +102,10 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
     /**
      * get Wheel Roughness by wavenumber - Only CNOSSOS
      * @param typeVehicle
-     * @param fileVersion
      * @param lambdaId
      * @return
      */
-    public Double getWheelRoughness(String typeVehicle, String fileVersion, int lambdaId) { //
+    public Double getWheelRoughness(String typeVehicle, int lambdaId) { //
         String refId = getRefValue(getVehicleNode(typeVehicle), "RefRoughness");
         return getRailWayData().get("Vehicle").get("WheelRoughness").get(refId).get("Values").get(lambdaId).doubleValue();
     }
@@ -127,6 +138,24 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      */
     public double getAxlesPerVeh(String typeVehicle) { //
         return getVehicleNode(typeVehicle).get("NbAxlePerVeh").doubleValue();
+    }
+
+    /**
+     * Get indication for heavy or light rail
+     * @param typeVehicle Vehicle type identifier (e.g. "SNCF2")
+     * @return true if light rail, false if heavy rail. A missing field defaults to heavy rail.
+     */
+    public boolean isLightRail(String typeVehicle) {
+        return getVehicleNode(typeVehicle).path("Lightrail").asBoolean(false);
+    }
+
+    /**
+     * Get the minimum speed used to compute the total effective roughness for a vehicle.
+     * @param typeVehicle Vehicle type identifier
+     * @return 30 km/h for light rail, 50 km/h otherwise
+     */
+    private double getMinimumSpeed(String typeVehicle) {
+        return isLightRail(typeVehicle) ? MIN_SPEED_LIGHT_RAIL : MIN_SPEED_HEAVY_RAIL;
     }
 
     /**
@@ -253,12 +282,11 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * track roughness, vehicle file version, and lambda ID by retrieving the wheel roughness and track roughness
      * @param typeVehicle
      * @param trackRoughnessId
-     * @param vehicleFileVersion
      * @param idLambda
      * @return
      */
-    public Double getLRoughness(String typeVehicle, String trackRoughnessId, String vehicleFileVersion,  int idLambda) { //
-        double wheelRoughness = getWheelRoughness(typeVehicle, vehicleFileVersion, idLambda);
+    public Double getLRoughness(String typeVehicle, String trackRoughnessId,  int idLambda) { //
+        double wheelRoughness = getWheelRoughness(typeVehicle, idLambda);
         double trackRoughness = getTrackRoughness(trackRoughnessId, idLambda);
         return 10 * Math.log10(Math.pow(10, wheelRoughness / 10) + Math.pow(10, trackRoughness / 10));
     }
@@ -293,7 +321,6 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
     public RailWayCnossosParameters evaluate(RailwayVehicleCnossosParametersvar vehicleParameters, RailwayTrackCnossosParameters trackParameters) throws IOException {
 
         String vehicleFileVersion = vehicleParameters.getFileVersion();
-        String trackFileVersion = trackParameters.getFileVersion();
         String typeVehicle = vehicleParameters.getTypeVehicle();
 
         double speedVehicle = vehicleParameters.getSpeedVehicle();
@@ -320,8 +347,15 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         if (isTunnel) {
             return railWayParameters;
         } else {
+            double minimumSpeed = getMinimumSpeed(typeVehicle);
+            if (speed < minimumSpeed) {
+                LOGGER.warning(String.format(Locale.ROOT,
+                        "Vehicle %s: speed %.1f km/h is below the CNOSSOS minimum of %.0f km/h; " +
+                                "using %.0f km/h to compute the total effective roughness.",
+                        typeVehicle, speed, minimumSpeed, minimumSpeed));
+            }
             //  Rolling noise calcul
-            double[] lW = getLWRolling(typeVehicle, trackRoughnessId, impactId,  curvature, speed, trackTransferId, trackFileVersion, axlesPerVeh);
+            double[] lW = getLWRolling(typeVehicle, trackRoughnessId, impactId,  curvature, speed, trackTransferId, axlesPerVeh);
             railWayParameters.addRailwaySource("ROLLING", new LineSource(lW,0.5, "ROLLING"));
             lW = getLWTraction(typeVehicle,  runningCondition,  "A", vehicleFileVersion);
             railWayParameters.addRailwaySource("TRACTIONA", new LineSource(lW,0.05, "TRACTIONA"));
@@ -331,7 +365,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
             railWayParameters.addRailwaySource("AERODYNAMICA", new LineSource(lW,0.05, "AERODYNAMICA"));
             lW = getLWAero(typeVehicle,   speed, "B", vehicleFileVersion);
             railWayParameters.addRailwaySource("AERODYNAMICB", new LineSource(lW,4, "AERODYNAMICB"));
-            lW =  getLWBridge(typeVehicle, trackRoughnessId, impactId, bridgeId, speed, trackFileVersion,axlesPerVeh);
+            lW =  getLWBridge(typeVehicle, trackRoughnessId, impactId, bridgeId, speed, axlesPerVeh);
             railWayParameters.addRailwaySource("BRIDGE", new LineSource(lW,0.5, "BRIDGE"));
 
             return railWayParameters;
@@ -407,7 +441,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      **/
 
 
-    private double[] getLWRolling(String typeVehicle, String trackRoughnessId, String impactId, int curvature, double speed, String trackTransferId, String trackFileVersion, double axlesPerVeh) {
+    private double[] getLWRolling(String typeVehicle, String trackRoughnessId, String impactId, int curvature, double speed, String trackTransferId, double axlesPerVeh) {
 
         double[] trackTransfer = new double[24];
         double[] lWTr = new double[24];
@@ -416,7 +450,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         double[] lW = new double[24];
 
         // roughnessLtot = CNOSSOS p.19 (2.3.7)
-        double[] roughnessLtot = checkNanValue(getLWRoughness(typeVehicle, trackRoughnessId, impactId, speed, trackFileVersion));
+        double[] roughnessLtot = checkNanValue(getLWRoughness(typeVehicle, trackRoughnessId, impactId, speed));
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             // lWTr = CNOSSOS p.20 (2.3.8)
@@ -453,12 +487,12 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * @param axlesPerVeh
      * @return
      */
-    private double[] getLWBridge(String typeVehicle, String trackRoughnessId, String impactId, String bridgeId, double speed, String trackFileVersion, double axlesPerVeh) {
+    private double[] getLWBridge(String typeVehicle, String trackRoughnessId, String impactId, String bridgeId, double speed, double axlesPerVeh) {
 
         double[] lW = new double[24];
 
         // roughnessLtot = CNOSSOS p.19 (2.3.7)
-        double[] roughnessLtot = checkNanValue(getLWRoughness(typeVehicle, trackRoughnessId, impactId, speed, trackFileVersion));
+        double[] roughnessLtot = checkNanValue(getLWRoughness(typeVehicle, trackRoughnessId, impactId, speed));
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             lW[idFreq] = -99;
@@ -498,13 +532,17 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
     /**
      * Roughness Level.
      * linear interpolation wavelength to frequency
+     * <p>
+     * The vehicle speed is floored to the CNOSSOS minimum before converting wavelength to
+     * frequency (Directive 2002/49/EC, consolidated Annex II, section 2.3.2). The resulting
+     * total effective roughness is also used by the bridge source, formula (2.3.18).
      * @param typeVehicle vehicle data base
      * @param trackRoughnessId track Roughness reference
      * @param impactId  impact reference
-     * @param speed  impact reference
+     * @param speed vehicle speed in km/h
      * @return Lroughness(freq)
      **/
-    private double[] getLWRoughness(String typeVehicle, String trackRoughnessId, String impactId, double speed, String trackFileVersion) {
+    private double[] getLWRoughness(String typeVehicle, String trackRoughnessId, String impactId, double speed) {
 
         double[] roughnessTotLambda = new double[35];
         double[] roughnessLtot = new double[35];
@@ -512,6 +550,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         double[] lambdaToFreqLog = new double[35];
         double[] freqMedLog = new double[24];
         double[] Lambda = new double[35];
+        double calcSpeed = max(getMinimumSpeed(typeVehicle), speed);
 
         // Resolve impact noise node once before the loop
         boolean hasImpactNoise = false;
@@ -527,9 +566,9 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         double m = 33;
         for (int idLambda = 0; idLambda < 35; idLambda++) {
             Lambda[idLambda] = Math.pow(10, m / 10);
-            lambdaToFreqLog[idLambda] = Math.log10(speed / Lambda[idLambda] * 1000 / 3.6);
+            lambdaToFreqLog[idLambda] = Math.log10(calcSpeed / Lambda[idLambda] * 1000 / 3.6);
 
-            roughnessTotLambda[idLambda] = Math.pow(10, getLRoughness(typeVehicle, trackRoughnessId,  trackFileVersion, idLambda) / 10);
+            roughnessTotLambda[idLambda] = Math.pow(10, getLRoughness(typeVehicle, trackRoughnessId, idLambda) / 10);
 
             contactFilter[idLambda] = getContactFilter(typeVehicle,  idLambda);
             roughnessLtot[idLambda] = 10 * Math.log10(roughnessTotLambda[idLambda]) + contactFilter[idLambda];

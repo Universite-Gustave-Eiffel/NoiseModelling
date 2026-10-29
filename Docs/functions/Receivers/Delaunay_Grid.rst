@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Delaunay Grid
 =============
@@ -29,12 +29,6 @@ Arguments
 
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
-
-``sourcesTableName`` — *Sources table name*
-   Name of the Road table.
-   Receivers will not be created on the specified road width
-
-   Type: ``String``
 
 ``tableBuilding`` — *Buildings table name*
    Name of the Buildings table.
@@ -90,7 +84,7 @@ Optional inputs
 
    Type: ``Boolean``
 
-   Default: ``false``
+   Default: ``true``
 
 ``maxArea`` — *Maximum Area*
    Set Maximum Area (in m2) (FLOAT). No triangles larger than provided area will be created.Smaller area will create more receivers
@@ -132,6 +126,13 @@ Optional inputs
    If provided, a sub-domain will not be computed if no sources geometries are near x meters from the sub-domain area
 
    Type: ``Double``
+
+``sourcesTableName`` — *Sources table name*
+   Name of the Road table. The roads are added into the delaunay triangulation in order to densify the mesh near the sound sources.The table must contain:
+   
+   *   THE_GEOM  : the 2D geometry of the road (POINT/LINESTRING/MULTILINESTRING)
+
+   Type: ``String``
 
 Output
 ------

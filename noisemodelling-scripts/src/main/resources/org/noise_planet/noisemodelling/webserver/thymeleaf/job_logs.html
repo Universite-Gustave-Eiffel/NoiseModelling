@@ -3,23 +3,36 @@
       xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{header :: customHead('Job log messages')}">
 <body>
-<div id="layout">
-    <div th:replace="~{menu :: menu}"></div>
-    <div id="main" class="content">
-        <div class="header"><h1 th:text="'Job #'+${jobId}"></h1>
-            <h2>Job latest logs</h2>
+    <div id="layout">
+        <div th:replace="~{menu :: menu}"></div>
+        <div id="main" class="content">
+            <div class="header"><h1 th:text="'Job #'+${jobId}"></h1>
+                <h2>Job latest logs</h2>
+            </div>
+            <nav class="pagination-links" th:if="${totalPages > 1}">
+                <th:block th:each="i : ${#numbers.sequence(1, totalPages)}">
+                    <a th:if="${i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2)}"
+                       th:href="@{/job_logs/{id}(id=${jobId}, page=${i})}"
+                       th:text="${i}"
+                       th:classappend="${i == currentPage} ? 'active'"></a>
+
+                    <span th:if="${i == 1 && currentPage > 4}">...</span>
+                    <span th:if="${i == totalPages - 1 && currentPage < totalPages - 3}">...</span>
+
+                </th:block>
+            </nav>
+            <div class="code">
+                <pre class="console-text" id="logs" th:text="${#strings.listJoin(logs, '')}"></pre>
+            </div>
         </div>
-        <div class="code">
-            <pre class="console-text" id="logs" th:text="${rows}">blah blah</pre>
-        </div>
-    </div>
-    <script th:src="@{|/js/logs_ws.js|}"></script>
-    <script th:inline="javascript">
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const path = "[(@{/ws/job_logs_stream/})]";
-        const jobId = [(${jobId})];
-        openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`);
-    </script>
+        <script th:src="@{|/js/logs_ws.js|}"></script>
+        <script th:if="${isLive}" th:inline="javascript">
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const path = "[(@{/ws/job_logs_stream/})]";
+            const jobId = [(${jobId})];
+            const lastTimestamp = [(${lastTimestamp})];
+            openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`, lastTimestamp);
+        </script>
     </div>
 </body>
 </html>

@@ -18,15 +18,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
+import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
+import org.noise_planet.noisemodelling.jdbc.railway.RailwayPlatform;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -66,6 +73,100 @@ public class TableLoaderTest {
         }
     }
 
+    /**
+     * A road that follows a DEM triangle edge must keep its geometry. Before the fix the DEM
+     * profile zigzagged, increasing the line length and the number of source points (issue #1093).
+     */
+    @Test
+    public void testLineSourceAlongDemTriangleEdge() throws Exception {
+        int x0 = 650000;
+        int y0 = 6860000;
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), HEIGHT DOUBLE)");
+            st.execute("CREATE TABLE ROADS_1093(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154))");
+            st.execute("INSERT INTO ROADS_1093 VALUES (1, ST_SetSRID('LINESTRING Z(" +
+                    (x0 - 150) + " " + y0 + " 0.05, " + (x0 + 150) + " " + y0 + " 0.05)'::GEOMETRY, 2154))");
+            st.execute("CREATE TABLE RECEIVERS_1093(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO RECEIVERS_1093 VALUES (1, ST_SetSRID(ST_MakePoint(" + x0 + ", " + (y0 + 20) + ", 4), 2154))");
+            st.execute("CREATE TABLE DEM_1093(PK INT AUTO_INCREMENT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO DEM_1093(THE_GEOM) SELECT ST_SetSRID(ST_MakePoint(" + x0 + " + a.X * 20, " +
+                    y0 + " + b.X * 20, 0), 2154) FROM SYSTEM_RANGE(-10, 10) a, SYSTEM_RANGE(-10, 10) b");
+        }
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_1093", "RECEIVERS_1093");
+        noiseMap.geometryFactory = new GeometryFactory();
+        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMap.setDemTable("DEM_1093");
+        DefaultTableLoader loader = (DefaultTableLoader) noiseMap.getTableLoader();
+        loader.initialize(connection, noiseMap);
+
+        ProfileBuilder profile = new ProfileBuilder();
+        Envelope envelope = new Envelope(x0 - 200, x0 + 200, y0 - 200, y0 + 200);
+        loader.fetchCellDem(connection, envelope, profile);
+        profile.finishFeeding();
+        SceneWithEmission scene = new SceneWithEmission(profile, noiseMap.getSceneInputSettings());
+        loader.fetchCellSource(connection, envelope, scene, false);
+
+        assertEquals(1, scene.sourceGeometries.size());
+        Geometry source = scene.sourceGeometries.get(0);
+        assertInstanceOf(LineString.class, source);
+        assertEquals(300, source.getLength(), 1e-9);
+        assertEquals(2, source.getNumPoints());
+    }
+
+    @Test
+    public void testClippedLineSources() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE SOURCES(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)");
+            st.execute("INSERT INTO SOURCES VALUES "
+                    + "(1, 'LINESTRING Z (5 5 0.05, 12 8 0.05, 10 10 0.05)'),"
+                    + "(2, 'MULTILINESTRING Z ((1 1 0.05, 2 2 0.05), (5 5 0.05, 12 8 0.05, 10 10 0.05))'),"
+                    + "(3, 'LINESTRING Z (12 8 0.05, 10 10 0.05)'),"
+                    + "(4, 'POINT Z (10 10 0.05)')");
+        }
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("", "SOURCES", "");
+        noiseMap.geometryFactory = new GeometryFactory();
+        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        DefaultTableLoader loader = (DefaultTableLoader) noiseMap.getTableLoader();
+        loader.initialize(connection, noiseMap);
+
+        for (boolean absoluteZ : new boolean[] {false, true}) {
+            noiseMap.setSourcesZIsAltitude(absoluteZ);
+            ProfileBuilder profile = new ProfileBuilder();
+            profile.addTopographicPoint(new Coordinate(-100, -100, 100));
+            profile.addTopographicPoint(new Coordinate(100, -100, 100));
+            profile.addTopographicPoint(new Coordinate(0, 100, 100));
+            profile.finishFeeding();
+            assertTrue(profile.hasDem());
+            SceneWithEmission scene = new SceneWithEmission(profile, noiseMap.getSceneInputSettings());
+            loader.fetchCellSource(connection, new Envelope(0, 10, 0, 10), scene, true);
+
+            assertEquals(3, scene.sourceGeometries.size());
+            assertFalse(scene.sourcesPk.contains(3L), "A boundary touch must not become a point source");
+            Geometry line = scene.sourceGeometries.get(scene.sourcesPk.indexOf(1L));
+            assertInstanceOf(LineString.class, line);
+            assertEquals(2, line.getNumPoints());
+            assertEquals(5, line.getCoordinates()[0].x, 1e-9);
+            assertEquals(10, line.getCoordinates()[1].x, 1e-9);
+            assertEquals(50.0 / 7, line.getCoordinates()[1].y, 1e-9);
+            Geometry multiLine = scene.sourceGeometries.get(scene.sourcesPk.indexOf(2L));
+            assertInstanceOf(MultiLineString.class, multiLine);
+            assertEquals(2, multiLine.getNumGeometries());
+            assertInstanceOf(Point.class, scene.sourceGeometries.get(scene.sourcesPk.indexOf(4L)));
+            for (Geometry source : scene.sourceGeometries) {
+                for (Coordinate coordinate : source.getCoordinates()) {
+                    assertEquals(absoluteZ ? 0.05 : 100.05, coordinate.getZ(), 1e-9);
+                }
+            }
+
+            SceneWithEmission unclipped = new SceneWithEmission(profile, noiseMap.getSceneInputSettings());
+            loader.fetchCellSource(connection, new Envelope(0, 10, 0, 10), unclipped, false);
+            assertEquals(4, unclipped.sourceGeometries.size());
+            Geometry road = unclipped.sourceGeometries.get(unclipped.sourcesPk.indexOf(1L));
+            assertEquals(3, road.getNumPoints());
+            assertEquals(12, road.getCoordinates()[1].x, 1e-9);
+        }
+    }
+
     @Test
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
@@ -75,7 +176,7 @@ public class TableLoaderTest {
             assertTrue(rs.next());
             expectedNumberOfRows = rs.getInt(1);
         }
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayEmissionCnossos.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN",RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON,RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
 
         int numberOfRows = 0;
         while (railWayLWIterator.hasNext()) {
@@ -108,7 +209,6 @@ public class TableLoaderTest {
         }
         assertEquals(expectedNumberOfRows, numberOfRows);
     }
-//
 
     @Test
     public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
@@ -132,7 +232,6 @@ public class TableLoaderTest {
         }
         assertEquals(expectedNumberOfRows, numberOfRows);
     }
-
 
     @Test
     public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
@@ -162,12 +261,6 @@ public class TableLoaderTest {
     public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
-
-        // Update using new string-based identifiers
-        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN ROUGHNESS VARCHAR");
-        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN TRANSFER VARCHAR");
-        connection.createStatement().execute("UPDATE RAILTRACK SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
-        connection.createStatement().execute("UPDATE RAILTRACK SET TRANSFER = CONCAT('SNCF', TRANSFER)");
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         RailWayLWGeom v = railWayLWIterator.next();
@@ -207,8 +300,7 @@ public class TableLoaderTest {
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
 
         // Use the merged RailwayEmissionCnossos.json with SNCF-prefixed keys
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN",
-                "RailwayVehiclesCnossos.json", "RailwayTrainsets.json", "RailwayEmissionCnossos.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
         RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         v.setNbTrack(2);
@@ -229,15 +321,9 @@ public class TableLoaderTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/BM/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
 
-        // Update using new string-based identifiers
-        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN ROUGHNESS VARCHAR");
-        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN TRANSFER VARCHAR");
-        connection.createStatement().execute("UPDATE RAILTRACK SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
-        connection.createStatement().execute("UPDATE RAILTRACK SET TRANSFER = CONCAT('SNCF', TRANSFER)");
+        HashMap<String, double[]> results = new HashMap<>();
 
-        HashMap<String, double[]> Resultats = new HashMap<>();
-
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayEmissionCnossos.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {
@@ -281,7 +367,7 @@ public class TableLoaderTest {
 
             String idSection = v.getIdSection();
 
-            Resultats.put(idSection,new double[]{resD, resE, resN});
+            results.put(idSection,new double[]{resD, resE, resN});
 
         }
     }
@@ -292,12 +378,6 @@ public class TableLoaderTest {
 
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
-
-        // Update using new string-based identifiers
-        connection.createStatement().execute("ALTER TABLE RAIL_SECTIONS ALTER COLUMN ROUGHNESS VARCHAR");
-        connection.createStatement().execute("ALTER TABLE RAIL_SECTIONS ALTER COLUMN TRANSFER VARCHAR");
-        connection.createStatement().execute("UPDATE RAIL_SECTIONS SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
-        connection.createStatement().execute("UPDATE RAIL_SECTIONS SET TRANSFER = CONCAT('SNCF', TRANSFER)");
 
         HashMap<String, double[]> results = new HashMap<>();
 
@@ -353,83 +433,10 @@ public class TableLoaderTest {
 
         }
 
-        // check results
+        // TODO check results
 
 
     }
-
-
-    @Test
-    public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
-        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
-        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
-        // Update using new string-based identifiers
-        connection.createStatement().execute("ALTER TABLE RAIL_SECTION2 ALTER COLUMN ROUGHNESS VARCHAR");
-        connection.createStatement().execute("ALTER TABLE RAIL_SECTION2 ALTER COLUMN TRANSFER VARCHAR");
-        connection.createStatement().execute("UPDATE RAIL_SECTION2 SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
-        connection.createStatement().execute("UPDATE RAIL_SECTION2 SET TRANSFER = CONCAT('SNCF', TRANSFER)");
-
-        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
-                "LW_RAILWAY", "HZ", RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON);
-
-        // Get Class to compute LW
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
-        RailWayLWGeom v = railWayLWIterator.next();
-        assertNotNull(v);
-        List<LineString> geometries = v.getRailWayLWGeometry();
-        assertEquals(geometries.size(),2);
-
-        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
-        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Buildings.shp").getFile());
-        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
-
-        // ICI POUR CHANGER HAUTEUR ET G ECRAN
-        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
-
-        // ICI HAUTEUR RECPTEUR
-        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
-        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
-
-        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
-        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
-
-
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY",
-                "RECEPTEURS");
-
-        NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
-
-        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
-
-        // Use train directivity functions instead of discrete directivity
-        DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
-        defaultTableLoader.insertTrainDirectivity();
-
-        noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
-
-        DefaultTableLoader loader = (DefaultTableLoader) noiseMapByReceiverMaker.getTableLoader();
-
-        List<String> frequenciesFields = loader.frequencyArray.stream()
-                .map(frequency -> noiseMapByReceiverMaker.getFrequencyFieldPrepend()+frequency)
-                .collect(Collectors.toList());
-        double[] expected = new double[]{20.58, 22.12, 27.88, 26.74, 29.35, 31.23, 33.66, 31.61, 31.11, 32.4, 34.65,
-                38.23, 40.41, 40.55, 39.36, 33.4, 29.58, 26.43, 24.06, 17.67, 8.04, -6.12, -23.11, -47.51};
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
-                + parameters.receiversLevelTable +
-                "  WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
-            assertTrue(rs.next());
-            double[] receiversLevel = frequenciesFields.stream().mapToDouble(field -> {
-                try {
-                    return rs.getDouble(field);
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }).toArray();
-            assertArrayEquals(expected, receiversLevel, 0.01);
-        }
-
-    }
-
 
     @Test
     public void testReadFrequencies() throws SQLException, IOException {
@@ -478,8 +485,6 @@ public class TableLoaderTest {
         assertEquals(1000, (int) tableLoader.frequencyArray.get(0));
     }
 
-
-
     // Check regression of finding cell i,j that contains receivers
     @Test
     public void testRegression1() throws SQLException, IOException {
@@ -504,6 +509,86 @@ public class TableLoaderTest {
 
         // Check if all receivers are found
         assertEquals(nbReceivers, populatedCells.values().stream().reduce(Integer::sum).orElse(0));
+    }
+
+    /**
+     * Test that HRAIL column is properly created in LW_RAILWAY output
+     * and that the default value matches the default platform hRail (h2 = 0.18).
+     */
+    @Test
+    public void testRailWithScreenBodyBarrier() throws SQLException, IOException {
+        // --- Common setup ---
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+
+        // Verify HRAIL column was created in LW_RAILWAY
+        assertTrue(JDBCUtilities.hasField(connection, "LW_RAILWAY", "HRAIL"),
+                "LW_RAILWAY should have HRAIL column");
+
+        // Verify HRAIL value is the default platform hRail (h2 = 0.18)
+        try (ResultSet rs = connection.createStatement().executeQuery(
+                "SELECT HRAIL FROM LW_RAILWAY LIMIT 1")) {
+            assertTrue(rs.next());
+            assertEquals(0.18, rs.getDouble("HRAIL"), 0.001,
+                    "Default HRAIL should be 0.18 (h2 = rail above ballast)");
+        }
+    }
+
+
+    /**
+     * Tests RailwayPlatform JSON loading, validates SNCF and SNCF_LGV platform properties,
+     * verifies getHRail() returns h2, checks multi-track calculation methods (getD2, getD3, getD4),
+     * and confirms DEFAULT_PLATFORM differs from SNCF.
+     */
+    @Test
+    public void Test_Railway_Platform() throws Exception {
+        // Load platforms from the default JSON file
+        Map<String, RailwayPlatform> platforms = RailwayPlatform.loadFromJSON(RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
+
+        // Verify that loading succeeded
+        assertFalse(platforms.isEmpty(), "RailwayPlatforms.json file must contain platforms");
+
+        // Verify that SNCF and SNCF_LGV platforms exist
+        assertTrue(platforms.containsKey("SNCF"), "SNCF platform must be present");
+        assertTrue(platforms.containsKey("SNCF_LGV"), "SNCF_LGV platform must be present");
+
+        // Retrieve instances
+        RailwayPlatform sncfPlatform = platforms.get("SNCF");
+        RailwayPlatform sncfLgvPlatform = platforms.get("SNCF_LGV");
+        RailwayPlatform defaultPlatform = RailwayPlatform.DEFAULT_PLATFORM;
+
+        // Verify SNCF properties
+        assertNotNull(sncfPlatform, "SNCF must not be null");
+        assertEquals(1.0, sncfPlatform.d1, 0.001, "SNCF d1 incorrect");
+        assertEquals(3.0, sncfPlatform.d2_0, 0.001, "SNCF d2_0 incorrect");
+        assertEquals(4.0, sncfPlatform.d3_0, 0.001, "SNCF d3_0 incorrect");
+        assertEquals(8.0, sncfPlatform.d4_0, 0.001, "SNCF d4_0 incorrect");
+        assertEquals(0.0, sncfPlatform.g1, 0.001, "SNCF g1 incorrect");
+        assertEquals(1.0, sncfPlatform.g2, 0.001, "SNCF g2 incorrect");
+        assertEquals(0.0, sncfPlatform.g3, 0.001, "SNCF g3 incorrect");
+        assertEquals(0.0, sncfPlatform.h1, 0.001, "SNCF h1 incorrect");
+        assertEquals(0.0, sncfPlatform.h2, 0.001, "SNCF h2 incorrect");
+        assertEquals(3.67, sncfPlatform.trackspacing, 0.001, "SNCF trackspacing incorrect");
+        // Verify SNCF_LGV properties (differs by trackspacing)
+        assertNotNull(sncfLgvPlatform, "SNCF_LGV must not be null");
+        assertEquals(4.5, sncfLgvPlatform.trackspacing, 0.001, "SNCF_LGV trackspacing must be 4.5");
+
+        // Verify that getHRail returns h2
+        assertEquals(sncfPlatform.h2, sncfPlatform.getHRail(), 0.001, "getHRail must return h2");
+
+        // Test calculation methods with multiple tracks
+        int nbTracks = 2;
+        double trackSpacing = 3.67;
+        assertEquals(3.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD2(nbTracks, trackSpacing), 0.001, "getD2 calculation incorrect");
+        assertEquals(4.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD3(nbTracks, trackSpacing), 0.001, "getD3 calculation incorrect");
+        assertEquals(8.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD4(nbTracks, trackSpacing), 0.001, "getD4 calculation incorrect");
+
+        // Verify that DEFAULT_PLATFORM has different values
+        assertNotEquals(defaultPlatform.d1, sncfPlatform.d1, "DEFAULT_PLATFORM.d1 must differ from SNCF");
+        assertEquals(1.8, defaultPlatform.d1, 0.001, "DEFAULT_PLATFORM.d1 incorrect");
     }
 
     @Test

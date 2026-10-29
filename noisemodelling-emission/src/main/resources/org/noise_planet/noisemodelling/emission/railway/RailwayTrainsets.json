@@ -253,5 +253,41 @@
   },
   "Z9500-2U3": {
     "SNCF64": 3
+  },
+  "NL_CAT1": {
+    "NL_CAT1": 1
+  },
+  "NL_CAT2": {
+    "NL_CAT2": 1
+  },
+  "NL_CAT3": {
+    "NL_CAT3": 1
+  },
+  "NL_CAT4": {
+    "NL_CAT4": 1
+  },
+  "NL_CAT5": {
+    "NL_CAT5": 1
+  },
+  "NL_CAT6": {
+    "NL_CAT6": 1
+  },
+  "NL_CAT7": {
+    "NL_CAT7": 1
+  },
+  "NL_CAT8": {
+    "NL_CAT8": 1
+  },
+  "NL_CAT10": {
+    "NL_CAT10": 1
+  },
+  "NL_CAT11": {
+    "NL_CAT11": 1
+  },
+  "NL_CAT12": {
+    "NL_CAT12": 1
+  },
+  "NL_trams": {
+    "NL_trams": 1
   }
 }

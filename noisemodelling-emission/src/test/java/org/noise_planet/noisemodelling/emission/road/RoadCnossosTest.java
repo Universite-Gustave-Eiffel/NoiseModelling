@@ -8,7 +8,6 @@
  */
 package org.noise_planet.noisemodelling.emission.road;
 
-import jdk.jshell.execution.Util;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters;
 import java.io.IOException;
@@ -209,7 +208,7 @@ public class RoadCnossosTest {
         double slope = -15;
         double juncDist = 200;
         int juncType = 1;
-        double[] expectedValues = new double[]{88.421, 77.09, 75.54, 75.01, 72.79, 71.13, 68.07, 63.44};
+        double[] expectedValues = new double[]{88.421, 75.41, 73.88, 74.81, 72.98, 69.91, 66.45, 61.80};
         for (int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
             RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
                     vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
@@ -221,6 +220,27 @@ public class RoadCnossosTest {
             rsParameters.setFileVersion(1);
             double result = RoadCnossos.evaluate(rsParameters);
             assertEquals(expectedValues[idFreq], result, EPSILON_TEST1, String.format("%d Hz", FREQUENCIES[idFreq]));
+        }
+    }
+
+    /**
+     * Directive 2002/49/EC, Annex II, 2.2.4: the gradient correction applies to propulsion noise only, and a
+     * bi-directional flow is split in two halves, one corrected for uphill and one for downhill. A two-way road
+     * (WAY=3) must therefore give the energy mean of WAY=1 and WAY=2.
+     */
+    @Test
+    public void testTwoWaySlope() throws IOException {
+        for (int freq : FREQUENCIES) {
+            double[] lw = new double[3];
+            for (int way = 1; way <= 3; way++) {
+                RoadCnossosParameters rsParameters = new RoadCnossosParameters(50, 50, 50, 50, 50, 900, 100, 100, 0, 0,
+                        freq, 20, "DEF", 0, 0, 200, 1);
+                rsParameters.setSlopePercentage(6);
+                rsParameters.setWay(way);
+                lw[way - 1] = RoadCnossos.evaluate(rsParameters);
+            }
+            double expected = 10 * Math.log10((Math.pow(10, lw[0] / 10) + Math.pow(10, lw[1] / 10)) / 2);
+            assertEquals(expected, lw[2], EPSILON_TEST1, String.format("%d Hz", freq));
         }
     }
 
@@ -280,5 +300,97 @@ public class RoadCnossosTest {
             globalLw += Utils.dbToW(A_WEIGHTING[i]+lw);
         }
         assertEquals(89.6, Utils.wToDba(globalLw), 0.1);
+    }
+
+    /** Test min and max speed */
+    @Test
+    public void TestMinMaxSpeed() throws IOException {
+        String [] categories = {"1", "2", "3", "4a", "4b"};
+        double vehiclePerHour = 1000;
+        double vehicleSpeed = 200; //this is higher than allowed (150)
+        double tsStud = 0.5;
+        String surfRef = "NL01";
+        int frequency = 1000;
+        double temperature = -5;
+        double pmStud = 1;
+        double slope = -15;
+        double juncDist = 200;
+        int juncType = 1;
+        for (String cat : categories) {
+            RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(cat) ? vehiclePerHour : 0,
+                    "2".equals(cat) ? vehiclePerHour : 0, "3".equals(cat) ? vehiclePerHour : 0,
+                    "4a".equals(cat) ? vehiclePerHour : 0, "4b".equals(cat) ? vehiclePerHour : 0,
+                    frequency, temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+
+            double testSpeed = -1.;
+            switch(cat) {
+                case "1":
+                    testSpeed = rsParameters.getSpeedLv();
+                    break;
+                case "2":
+                    testSpeed = rsParameters.getSpeedMv();
+                    break;
+                case "3":
+                    testSpeed = rsParameters.getSpeedHgv();
+                    break;
+                case "4a":
+                    testSpeed = rsParameters.getSpeedWav();
+                    break;
+                case "4b":
+                    testSpeed = rsParameters.getSpeedWbv();
+                    break;
+            }
+            assertEquals(150., testSpeed);
+        }
+
+        vehicleSpeed = 5.; //lower than minimum speed (20)
+        for (String cat : categories) {
+            RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+                    vehicleSpeed, vehicleSpeed, "1".equals(cat) ? vehiclePerHour : 0,
+                    "2".equals(cat) ? vehiclePerHour : 0, "3".equals(cat) ? vehiclePerHour : 0,
+                    "4a".equals(cat) ? vehiclePerHour : 0, "4b".equals(cat) ? vehiclePerHour : 0,
+                    frequency, temperature, surfRef, tsStud, pmStud, juncDist, juncType);
+
+            double testSpeed = -1.;
+            switch(cat) {
+                case "1":
+                    testSpeed = rsParameters.getSpeedLv();
+                    break;
+                case "2":
+                    testSpeed = rsParameters.getSpeedMv();
+                    break;
+                case "3":
+                    testSpeed = rsParameters.getSpeedHgv();
+                    break;
+                case "4a":
+                    testSpeed = rsParameters.getSpeedWav();
+                    break;
+                case "4b":
+                    testSpeed = rsParameters.getSpeedWbv();
+                    break;
+            }
+            assertEquals(20., testSpeed);
+        }
+    }
+
+    /** Bounds must also be applied when speeds come from road characteristics */
+    @Test
+    public void TestSpeedFromRoadCaracteristicsBounds() throws IOException {
+        RoadCnossosParameters rsParameters = new RoadCnossosParameters();
+        // Road type 3/subtype 1 returns the light vehicle speed for every category
+        rsParameters.setSpeedFromRoadCaracteristics(200., 200., false, 200., 31);
+        assertEquals(150., rsParameters.getSpeedLv());
+        assertEquals(150., rsParameters.getSpeedMv());
+        assertEquals(150., rsParameters.getSpeedHgv());
+        assertEquals(150., rsParameters.getSpeedWav());
+        assertEquals(150., rsParameters.getSpeedWbv());
+
+        rsParameters.setSpeedFromRoadCaracteristics(5., 5., false, 5., 31);
+        assertEquals(20., rsParameters.getSpeedLv());
+        assertEquals(20., rsParameters.getSpeedMv());
+        assertEquals(20., rsParameters.getSpeedHgv());
+        assertEquals(20., rsParameters.getSpeedWav());
+        assertEquals(20., rsParameters.getSpeedWbv());
     }
 }

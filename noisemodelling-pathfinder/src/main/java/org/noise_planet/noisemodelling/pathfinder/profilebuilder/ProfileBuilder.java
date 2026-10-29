@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -91,7 +92,7 @@ public class ProfileBuilder {
     private List<Triangle> topoNeighbors = new ArrayList<>();
     /** Topographic Vertices .*/
     private List<Coordinate> vertices = new ArrayList<>();
-    /** Topographic RTree. */
+    /** Query structure for DEM triangles */
     private STRtree topoTree;
 
     /** List of ground effects. */
@@ -175,34 +176,27 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null || building.poly.isEmpty()) {
-            throw  new IllegalArgumentException(
-                String.format(Locale.ROOT,
-                    "Building with PK : %s is not valid, it has a null or empty geometry.",
-                    building.primaryKey)
+            throw new IllegalArgumentException(
+                    String.format(Locale.ROOT,
+                            "Building with PK : %s is not valid, it has a null or empty geometry.",
+                            building.primaryKey)
             );
-        }
-        else if (!building.isValid) {
-            throw  new IllegalArgumentException(
-                String.format(Locale.ROOT,
-                    "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
-                    building.primaryKey)
+        } else if (!building.isValid) {
+            throw new IllegalArgumentException(
+                    String.format(Locale.ROOT,
+                            "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
+                            building.primaryKey)
             );
-        }
-        else if(!isFeedingFinished) {
-            if(envelope == null) {
+        } else {
+            if (envelope == null) {
                 envelope = building.poly.getEnvelopeInternal();
-            }
-            else {
+            } else {
                 envelope.expandToInclude(building.poly.getEnvelopeInternal());
             }
             buildings.add(building);
             buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
             return this;
         }
-        else{
-            LOGGER.warn("Cannot add building, feeding is finished.");
-        }
-        return this;
     }
 
     /**
@@ -404,13 +398,14 @@ public class ProfileBuilder {
     }
 
     private void logWarningIfCoordinatesIntoBuildings(Coordinate... coordinates) {
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
         for (Coordinate coordinate : coordinates) {
             // Check if the source is into a building
             Building building = getBuildingAtCoordinate(coordinate);
             if (building != null && building.getAverageZ() >= coordinate.z) {
                 LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
-                                " (building average altitude : {} m), it should be moved higher Geometry: {}",
-                        building.getAverageZ(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
+                                " (building roof average altitude : {} m), it should be moved higher Geometry: {}",
+                       decimalFormat.format(building.getAverageZ()), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
                 break;
             }
         }
@@ -709,6 +704,58 @@ public class ProfileBuilder {
         return groundAbsorptions;
     }
 
+
+    /**
+     * Convert points and line
+     * @throws LayerDelaunayError
+     */
+    public void buildDemQueryStructure() throws LayerDelaunayError{
+        if(!topoPoints.isEmpty() || !topoLines.isEmpty()) {
+            //Feed the Delaunay layer
+            LayerDelaunay layerDelaunay = new LayerTinfour();
+
+            // We use triangles neighbors information to navigate through triangles quickly
+            layerDelaunay.setRetrieveNeighbors(true);
+
+            for (Coordinate topoPoint : topoPoints) {
+                layerDelaunay.addVertex(topoPoint);
+            }
+
+            for (LineString topoLine : topoLines) {
+                // Attribute parameter (-1) is not used in ProfileBuilder for DEM
+                layerDelaunay.addLineString(topoLine, -1);
+            }
+
+            //Process Delaunay
+            layerDelaunay.processDelaunay();
+            topoTriangles = layerDelaunay.getTriangles();
+            topoNeighbors = layerDelaunay.getNeighbors();
+
+            //Feed the RTree
+            topoTree = new STRtree(topoNodeCapacity);
+            vertices = layerDelaunay.getVertices();
+
+            // wallIndex set will merge shared triangle segments
+            Set<IntegerTuple> wallIndex = new HashSet<>();
+            for (int i = 0; i < topoTriangles.size(); i++) {
+                final Triangle tri = topoTriangles.get(i);
+                wallIndex.add(new IntegerTuple(tri.getA(), tri.getB(), i));
+                wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
+                wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
+                // Insert triangle in rtree
+                final Coordinate vA = vertices.get(tri.getA());
+                final Coordinate vB = vertices.get(tri.getB());
+                final Envelope triangleEnvelope = new Envelope(vA, vB);
+                final Coordinate vC = vertices.get(tri.getC());
+                triangleEnvelope.expandToInclude(vC);
+                topoTree.insert(triangleEnvelope, i);
+            }
+            topoTree.build();
+            topoPoints.clear();
+            topoLines.clear();
+        }
+    }
+
     /**
      * Finish the data feeding. Once called, no more data can be added and process it in order to prepare the
      * profile retrieving.
@@ -721,64 +768,10 @@ public class ProfileBuilder {
         isFeedingFinished = true;
 
         //Process topographic points and lines
-        if(topoPoints.size()+topoLines.size() > 1) {
-            //Feed the Delaunay layer
-            LayerDelaunay layerDelaunay = new LayerTinfour();
-            layerDelaunay.setRetrieveNeighbors(true);
-            try {
-                for (Coordinate topoPoint : topoPoints) {
-                    layerDelaunay.addVertex(topoPoint);
-                }
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while adding topographic points to Delaunay layer.", e);
-                return null;
-            }
-            try {
-                for (LineString topoLine : topoLines) {
-                    //TODO ensure the attribute parameter is useless
-                    layerDelaunay.addLineString(topoLine, -1);
-                }
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while adding topographic points to Delaunay layer.", e);
-                return null;
-            }
-            //Process Delaunay
-            try {
-                layerDelaunay.processDelaunay();
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while processing Delaunay.", e);
-                return null;
-            }
-            try {
-                topoTriangles = layerDelaunay.getTriangles();
-                topoNeighbors = layerDelaunay.getNeighbors();
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while getting triangles", e);
-                return null;
-            }
-            //Feed the RTree
-            topoTree = new STRtree(topoNodeCapacity);
-            try {
-                vertices = layerDelaunay.getVertices();
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Error while getting vertices", e);
-                return null;
-            }
-            // wallIndex set will merge shared triangle segments
-            Set<IntegerTuple> wallIndex = new HashSet<>();
-            for (int i = 0; i < topoTriangles.size(); i++) {
-                final Triangle tri = topoTriangles.get(i);
-                wallIndex.add(new IntegerTuple(tri.getA(), tri.getB(), i));
-                wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
-                wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
-                // Insert triangle in rtree
-                Coordinate vA = vertices.get(tri.getA());
-                Coordinate vB = vertices.get(tri.getB());
-                Coordinate vC = vertices.get(tri.getC());
-                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                topoTree.insert(env, i);
-            }
-            topoTree.build();
+        try {
+            buildDemQueryStructure();
+        } catch (LayerDelaunayError e) {
+            throw new IllegalStateException("Error while building DEM query structure", e);
         }
 
         for (Building b : buildings) {
@@ -1210,17 +1203,22 @@ public class ProfileBuilder {
         return new Coordinate[] {this.vertices.get(tri.getA()), this.vertices.get(tri.getB()), this.vertices.get(tri.getC())};
     }
     /**
-     * Compute the next triangle index.Find the shortest intersection point of
-     * triIndex segments to the p1 coordinate
+     * Compute the next triangle index. Select the closest intersection of the triangle
+     * sides with the propagation line that is ahead of the already traveled distance.
+     * Intersections at or behind that distance are ignored when the line follows a
+     * triangle edge, which otherwise makes the navigation go back and forth. Sides
+     * without a neighbor are on the DEM boundary and are not navigation candidates.
      *
      * @param triIndex        Triangle index
      * @param propagationLine Propagation line
+     * @param currentDistance Distance already traveled from the propagation line origin
      * @return Next triangle to the specified direction, -1 if there is no
      * triangle neighbor.
      */
     private int getNextTri(final int triIndex,
                            final LineSegment propagationLine,
-                           HashSet<Integer> navigationHistory, final Coordinate segmentIntersection) {
+                           HashSet<Integer> navigationHistory, double currentDistance,
+                           final Coordinate segmentIntersection) {
         final Triangle tri = topoTriangles.get(triIndex);
         final Triangle triNeighbors = topoNeighbors.get(triIndex);
         int nearestIntersectionSide = -1;
@@ -1234,7 +1232,7 @@ public class ProfileBuilder {
         double distline_line;
         // Intersection First Side
         idNeighbor = triNeighbors.get(2);
-        if (!navigationHistory.contains(idNeighbor)) {
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
             LineSegment triSegment = new LineSegment(aTri, bTri);
             Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
@@ -1242,8 +1240,9 @@ public class ProfileBuilder {
                 intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
-                distline_line = propagationLine.p1.distance(intersectionTest);
-                if (distline_line < nearestIntersectionPtDist) {
+                distline_line = propagationLine.p0.distance(intersectionTest);
+                if (distline_line > currentDistance + JTSUtility.TRIANGLE_INTERSECTION_EPSILON
+                        && distline_line < nearestIntersectionPtDist) {
                     segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionPtDist = distline_line;
                     nearestIntersectionSide = 2;
@@ -1252,7 +1251,7 @@ public class ProfileBuilder {
         }
         // Intersection Second Side
         idNeighbor = triNeighbors.get(0);
-        if (!navigationHistory.contains(idNeighbor)) {
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
             LineSegment triSegment = new LineSegment(bTri, cTri);
             Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
@@ -1260,8 +1259,9 @@ public class ProfileBuilder {
                 intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
-                distline_line = propagationLine.p1.distance(intersectionTest);
-                if (distline_line < nearestIntersectionPtDist) {
+                distline_line = propagationLine.p0.distance(intersectionTest);
+                if (distline_line > currentDistance + JTSUtility.TRIANGLE_INTERSECTION_EPSILON
+                        && distline_line < nearestIntersectionPtDist) {
                     segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionPtDist = distline_line;
                     nearestIntersectionSide = 0;
@@ -1270,7 +1270,7 @@ public class ProfileBuilder {
         }
         // Intersection Third Side
         idNeighbor = triNeighbors.get(1);
-        if (!navigationHistory.contains(idNeighbor)) {
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
             LineSegment triSegment = new LineSegment(cTri, aTri);
             Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
@@ -1278,8 +1278,9 @@ public class ProfileBuilder {
                 intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
-                distline_line = propagationLine.p1.distance(intersectionTest);
-                if (distline_line < nearestIntersectionPtDist) {
+                distline_line = propagationLine.p0.distance(intersectionTest);
+                if (distline_line > currentDistance + JTSUtility.TRIANGLE_INTERSECTION_EPSILON
+                        && distline_line < nearestIntersectionPtDist) {
                     segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionSide = 1;
                 }
@@ -1436,6 +1437,7 @@ public class ProfileBuilder {
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         LineSegment propaLine = new LineSegment(p1, p2);
+        double currentDistance = 0;
         if(curTriP1 == -1) {
             // we are outside the bounds of the triangles
             // Find the closest triangle to p1 on the line p1 to p2
@@ -1457,11 +1459,26 @@ public class ProfileBuilder {
         Coordinate[] triangleVertex = getTriangleVertices(curTriP1);
         outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
         boolean freeField = true;
+        double lineLength = propaLine.p0.distance(propaLine.p1);
         while (navigationTri != -1) {
             navigationHistory.add(navigationTri);
             Coordinate intersectionPt = new Coordinate();
-            int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
+            int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory,
+                    currentDistance, intersectionPt);
             if(propaTri == -1) {
+                // The line can follow a triangle edge or pass exactly through a vertex, where
+                // the next triangle is not a direct neighbor. Probe just ahead to find it.
+                double probeDistance = currentDistance + MILLIMETER;
+                Coordinate probe = probeDistance < lineLength ?
+                        propaLine.pointAlong(probeDistance / lineLength) : null;
+                int probeTri = probe == null ? -1 : getTriangleIdByCoordinate(probe);
+                Coordinate[] probeVertices = probeTri == -1 ? null : getTriangleVertices(probeTri);
+                if(probeTri != -1 && probeTri != navigationTri &&
+                        !navigationHistory.contains(probeTri) &&
+                        JTSUtility.dotInTri(probe, probeVertices[0], probeVertices[1], probeVertices[2])) {
+                    navigationTri = probeTri;
+                    continue;
+                }
                 // Add p2 coordinate
                 triangleVertex = getTriangleVertices(navigationTri);
                 outputPoints.add(new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
@@ -1479,6 +1496,7 @@ public class ProfileBuilder {
                         }
                     }
                 }
+                currentDistance = propaLine.p0.distance(intersectionPt);
             }
             navigationTri = propaTri;
         }
@@ -1536,6 +1554,9 @@ public class ProfileBuilder {
      */
     public double getZGround(Coordinate coordinate, AtomicInteger triangleHint) {
         if(topoTree == null) {
+            if(!topoPoints.isEmpty()) {
+                throw new IllegalStateException("Delaunay triangulation of DEM is not done but a z ground was requested");
+            }
             return 0.0;
         }
         int i = triangleHint.get();

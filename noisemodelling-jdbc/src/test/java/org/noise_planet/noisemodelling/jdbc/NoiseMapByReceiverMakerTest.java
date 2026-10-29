@@ -14,21 +14,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.dbf.DBFRead;
+import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
+import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
+import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
@@ -38,11 +42,15 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
@@ -110,6 +118,65 @@ public class NoiseMapByReceiverMakerTest {
         DemTableLoader tableLoader = initDemTableLoader("POINTZ", "POINTZ (1 1 12)");
         assertDoesNotThrow(() -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
     }
+
+    /**
+     * Check if the altitude of the roofs of buildings are well constructed from the DEM when height is provided
+     * but the buildings polygons are in 2D.
+     */
+    @Test
+    public void testBuildingsAltitudeFromDemAndHeight() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/SourceSi.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'RECEIVERS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/RCVS20.shp").getFile()));
+            st.execute("ALTER TABLE BUILDINGS ALTER COLUMN THE_GEOM GEOMETRY;");
+            st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SetSRID(ST_Force2D(THE_GEOM), 2154);");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.initialize(connection);
+
+            NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
+            SceneWithEmission sceneWithEmission = tableLoader.create(connection, new CellIndex(0, 0), new HashSet<>());
+
+            assertFalse(sceneWithEmission.profileBuilder.getBuildings().isEmpty());
+            for (Building building : sceneWithEmission.profileBuilder.getBuildings()) {
+                // Check altitude of the building
+                assertTrue(building.getAverageZ() > 100);
+            }
+        }
+    }
+
+    /**
+     * Check if the altitude of the roofs of buildings are well read from the geometry, ignoring the HEIGHT field of the buildings table
+     */
+    @Test
+    public void testBuildingsAltitudeFromBuildingsGeometry() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/SourceSi.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'RECEIVERS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/RCVS20.shp").getFile()));
+            st.execute("DELETE FROM BUILDINGS WHERE ST_ZMIN(THE_GEOM) < 0");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.initialize(connection);
+
+            NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
+            SceneWithEmission sceneWithEmission = tableLoader.create(connection, new CellIndex(0, 0), new HashSet<>());
+
+            assertFalse(sceneWithEmission.profileBuilder.getBuildings().isEmpty());
+            for (Building building : sceneWithEmission.profileBuilder.getBuildings()) {
+                // Check altitude of the building
+                assertTrue(building.getAverageZ() > 100);
+            }
+        }
+    }
+
 
     /**
      * Check if ground surface are split according to {@link GridMapMaker#groundSurfaceSplitSideLength}
@@ -230,6 +297,51 @@ public class NoiseMapByReceiverMakerTest {
 
 
     @Test
+    public void testRecordProfile() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22,0.0 )),
+                    91,
+                    new Orientation(90,15,0),
+                    4));
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapByReceiverMaker.getSceneInputSettings().setUseTrainDirectivity(true);
+
+            File profileFile = File.createTempFile("profile", ".csv");
+            profileFile.deleteOnExit();
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().CSVProfilerOutputPath = profileFile;
+
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            List<String> lines = Files.readAllLines(profileFile.toPath());
+            assertTrue(lines.size() >= 2, "The profiler should have written at least one data row");
+            List<String> headers = Arrays.asList(lines.getFirst().split(","));
+            Set<String> expectedColumns = new HashSet<>(Arrays.asList("time","jdbc_stack","average_cut_source_distance","cut_profile_count",
+                    "jvm_used_heap_mb","jvm_max_heap_mb","receiver_min_milliseconds","receiver_median_milliseconds",
+                    "receiver_mean_milliseconds","receiver_max_milliseconds",
+                    "receiver_collect_sources_max_milliseconds","receiver_precompute_reflection_max_milliseconds",
+                    "receiver_processed_sources_percentage_mean","receiver_median_point_sources_in_range",
+                    "progression"));
+            // Check if expected columns are in the header
+            for(String columnHeader : expectedColumns) {
+                assertTrue(headers.contains(columnHeader), "Column not found: " + columnHeader);
+            }
+            int cutProfileCount = Integer.parseInt(lines.getLast().split(",")[headers.indexOf("cut_profile_count")]);
+            assertEquals(2, cutProfileCount, "Two receivers, one point source, should have 2 cut profiles");
+        }
+    }
+
+    @Test
     public void testLineDirectivity() throws Exception {
         try (Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
@@ -252,7 +364,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
-            noiseMapByReceiverMaker.setBodyBarrier(true);
             noiseMapByReceiverMaker.setThreadCount(1);
 
             // Use train directivity functions instead of discrete directivity
@@ -330,7 +441,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationOutput = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -474,6 +584,43 @@ public class NoiseMapByReceiverMakerTest {
 
 
     @Test
+    public void testEmissionTableWithDenPeriods() throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), HEIGHT DOUBLE)");
+            st.execute("CREATE TABLE SOURCES_GEOM(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO SOURCES_GEOM VALUES(1, ST_GeomFromText('POINT Z(0 0 0.5)', 2154))");
+            st.execute("CREATE TABLE SOURCES_EMISSION(IDSOURCE INT, PERIOD VARCHAR, HZ63 REAL, HZ125 REAL," +
+                    " HZ250 REAL, HZ500 REAL, HZ1000 REAL, HZ2000 REAL, HZ4000 REAL, HZ8000 REAL)");
+            for (String period : new String[]{"D", "E", "N"}) {
+                st.execute("INSERT INTO SOURCES_EMISSION VALUES(1, '" + period + "', 90, 90, 90, 90, 90, 90, 90, 90)");
+            }
+            st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, ST_GeomFromText('POINT Z(50 0 4)', 2154))");
+
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "SOURCES_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setSourcesEmissionTableName("SOURCES_EMISSION");
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(200);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
+
+            Map<String, Double> laeqPerPeriod = new HashMap<>();
+            try (ResultSet rs = st.executeQuery("SELECT PERIOD, LAEQ FROM RECEIVERS_LEVEL")) {
+                while (rs.next()) {
+                    laeqPerPeriod.put(rs.getString("PERIOD"), rs.getDouble("LAEQ"));
+                }
+            }
+            // Same spectrum for D, E and N, so DEN = L + 10 log10(12/24 + 4/24 * 10^0.5 + 8/24 * 10)
+            double laeq = laeqPerPeriod.get("D");
+            assertTrue(laeq > 0, "LAEQ of period D is " + laeq);
+            assertEquals(laeq, laeqPerPeriod.get("E"), 0.01);
+            assertEquals(laeq, laeqPerPeriod.get("N"), 0.01);
+            assertEquals(laeq + 10 * Math.log10(12. / 24. + 4. / 24. * Math.pow(10, 0.5) + 8. / 24. * 10),
+                    laeqPerPeriod.get("DEN"), 0.01);
+        }
+    }
+
+    @Test
     public void testPointDem() throws Exception {
         try (Statement st = connection.createStatement()) {
             // Import shape file
@@ -507,14 +654,13 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
             noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE METEO='homogeneous' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE METEO='homogeneous' AND PERIOD='D' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
@@ -575,14 +721,13 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
             noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
@@ -598,6 +743,251 @@ public class NoiseMapByReceiverMakerTest {
             assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutputs.get(1));
             CnossosAttenuationOutput cnossosAttenuationOutput1 = (CnossosAttenuationOutput) attenuationOutputs.get(1);
             assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput1.propagationPath.getPointList().get(1).type);
+        }
+    }
+
+    /**
+     * Test that bodyBarrier (train/screen multi-reflection) produces different results
+     * compared to standard computation without body barrier.
+     * Uses a simple programmatic geometry: source line at x=0.5, screen at x=3, receiver at x=25.
+     */
+    @Test
+    public void testBodyBarrierRailJDBC() throws SQLException, IOException {
+        // Create a simple LW source table with one source line at x=0.5
+        // Columns: PK, THE_GEOM, GS, HRAIL, + frequency columns for D/E/N periods
+        StringBuilder createSql = new StringBuilder();
+        createSql.append("CREATE TABLE LW_RAILWAY(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, DIR_ID INT, GS DOUBLE, HRAIL DOUBLE, CREF DOUBLE");
+        int[] frequencies = {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
+                800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+        for (String period : new String[]{"D", "E", "N"}) {
+            for (int freq : frequencies) {
+                createSql.append(", HZ").append(period).append(freq).append(" DOUBLE");
+            }
+        }
+        createSql.append(")");
+        connection.createStatement().execute(createSql.toString());
+
+        // Insert a source line at x=0.5, z=0.68 (ROLLING: 0.5m above rail at 0.18m), from y=-10 to y=10
+        StringBuilder insertSql = new StringBuilder();
+        insertSql.append("INSERT INTO LW_RAILWAY VALUES(1, ");
+        insertSql.append("ST_SetSRID(ST_GeomFromText('LINESTRING Z(0.5 -10 0.68, 0.5 10 0.68)'), 2154)");
+        insertSql.append(", 1, 0.0, 0.18, 0.0");
+        // Set 90 dB for all frequencies and periods
+        for (int i = 0; i < 3 * frequencies.length; i++) {
+            insertSql.append(", 90.0");
+        }
+        insertSql.append(")");
+        connection.createStatement().execute(insertSql.toString());
+
+        // Create a screen wall at x=3, height 2.5, g=0 (reflective)
+        connection.createStatement().execute(
+                "CREATE TABLE SCREENS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE, G DOUBLE)");
+        connection.createStatement().execute(
+                "INSERT INTO SCREENS VALUES(1, " +
+                        "ST_SetSRID(ST_Buffer(ST_GeomFromText('LINESTRING(3 -100, 3 100)'), 0.1, 'join=mitre endcap=flat'), 2154)" +
+                        ", 2.5, 0.0)");
+
+        // Create a receiver at x=25, z=4
+        connection.createStatement().execute(
+                "CREATE TABLE RECEPTEURS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY)");
+        connection.createStatement().execute(
+                "INSERT INTO RECEPTEURS VALUES(1, " +
+                        "ST_SetSRID(ST_GeomFromText('POINT Z(25 0 4)'), 2154))");
+
+        // --- Case A: CREF = 0 (no body barrier) ---
+        NoiseMapByReceiverMaker noiseMapNoBody = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        noiseMapNoBody.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapNoBody.run(connection, new EmptyProgressVisitor());
+
+        DefaultTableLoader loaderNoBody = (DefaultTableLoader) noiseMapNoBody.getTableLoader();
+        List<String> frequenciesFields = loaderNoBody.frequencyArray.stream()
+                .map(frequency -> noiseMapNoBody.getFrequencyFieldPrepend() + frequency)
+                .collect(Collectors.toList());
+
+        double[] levelsNoBody;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapNoBody.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsNoBody = frequenciesFields.stream().mapToDouble(field -> {
+                try { return rs.getDouble(field); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        connection.createStatement().execute("DROP TABLE IF EXISTS RECEIVERS_LEVEL");
+
+        // --- Case B: CREF = 1 (body barrier active) ---
+        connection.createStatement().execute("UPDATE LW_RAILWAY SET CREF = 1.0");
+        NoiseMapByReceiverMaker noiseMapWithBody = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        noiseMapWithBody.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapWithBody.run(connection, new EmptyProgressVisitor());
+
+        double[] levelsWithBody;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapWithBody.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsWithBody = frequenciesFields.stream().mapToDouble(field -> {
+                try { return rs.getDouble(field); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        // Body barrier (multi-reflection) should produce different levels
+        boolean different = false;
+        for (int i = 0; i < levelsNoBody.length; i++) {
+            if (Math.abs(levelsNoBody[i] - levelsWithBody[i]) > 0.01) {
+                different = true;
+                break;
+            }
+        }
+        assertTrue(different, "Body barrier ON vs OFF should produce different receiver levels");
+    }
+
+    /**
+     * Test that using a different platform (testPlatform with h2=0) on a rail section
+     * produces different propagation levels compared to DEFAULT platform (h2=0.18),
+     * because source heights change with hRail.
+     */
+    @Test
+    public void testPlatformChangeAffectsPropagation() throws SQLException, IOException {
+        // Import rail section + traffic
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+        // Add PLATFORM column to rail section (initially DEFAULT)
+        connection.createStatement().execute("ALTER TABLE Rail_Section2 ADD COLUMN PLATFORM VARCHAR(50)");
+        connection.createStatement().execute("UPDATE Rail_Section2 SET PLATFORM = 'DEFAULT'");
+
+        // Emission with DEFAULT platform (hRail=0.18)
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+
+        // Setup buildings (empty) and receiver
+        connection.createStatement().execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE)");
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154)");
+        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM, 4.0)");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154)");
+
+        // Propagation with DEFAULT platform
+        NoiseMapByReceiverMaker noiseMapDefault = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_RAILWAY", "RECEPTEURS");
+        noiseMapDefault.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapDefault.run(connection, new EmptyProgressVisitor());
+
+        DefaultTableLoader loaderDefault = (DefaultTableLoader) noiseMapDefault.getTableLoader();
+        List<String> freqFields = loaderDefault.frequencyArray.stream()
+                .map(f -> noiseMapDefault.getFrequencyFieldPrepend() + f)
+                .collect(Collectors.toList());
+
+        double[] levelsDefault;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapDefault.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsDefault = freqFields.stream().mapToDouble(f -> {
+                try { return rs.getDouble(f); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        // Cleanup output + emission tables
+        connection.createStatement().execute("DROP TABLE IF EXISTS RECEIVERS_LEVEL");
+        connection.createStatement().execute("DROP TABLE IF EXISTS LW_RAILWAY");
+
+        // Switch to testPlatform (h2=0, so hRail=0 => different source heights)
+        connection.createStatement().execute("UPDATE Rail_Section2 SET PLATFORM = 'testPlatform'");
+
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154)");
+
+        // Propagation with testPlatform
+        NoiseMapByReceiverMaker noiseMapTest = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_RAILWAY", "RECEPTEURS");
+        noiseMapTest.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapTest.run(connection, new EmptyProgressVisitor());
+
+        double[] levelsTest;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapTest.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsTest = freqFields.stream().mapToDouble(f -> {
+                try { return rs.getDouble(f); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        // Different platform => different source heights => different levels
+        boolean different = false;
+        for (int i = 0; i < levelsDefault.length; i++) {
+            if (Math.abs(levelsDefault[i] - levelsTest[i]) > 0.01) {
+                different = true;
+                break;
+            }
+        }
+        assertTrue(different, "Changing platform (DEFAULT vs testPlatform) should produce different receiver levels");
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+
+        // Get Class to compute LW
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
+        RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        List<LineString> geometries = v.getRailWayLWGeometry();
+        assertEquals(geometries.size(),2);
+
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Buildings.shp").getFile());
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+
+        // ICI POUR CHANGER HAUTEUR ET G ECRAN
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT the_geom , pk as pk, 12.0 as height, 0.2 as g FROM Rail_protect");
+
+        // ICI HAUTEUR RECPTEUR
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
+
+        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
+
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY",
+                "RECEPTEURS");
+
+        NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapByReceiverMaker.setMaximumPropagationDistance(150);
+        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.setThreadCount(1);
+
+        // Use train directivity functions instead of discrete directivity
+        DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
+        defaultTableLoader.insertTrainDirectivity();
+
+        parameters.setRaysTable("RAYS");
+        parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
+        parameters.exportAttenuationMatrix = true;
+        parameters.exportAttenuationOutput = true;
+        parameters.keepAbsorption = true;
+
+        noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+        try(Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT IDRECEIVER, IDSOURCE, PATH, METEO FROM RAYS ORDER BY IDRECEIVER, IDSOURCE, METEO")) {
+            int numberOfPropagationLinesWithDeltaBodyScreen = 0;
+            while (resultSet.next()) {
+                CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(resultSet.getString("PATH"));
+                if(Arrays.stream(attenuationOutput.deltaBodyScreen).anyMatch(x -> x > 0)) {
+                    numberOfPropagationLinesWithDeltaBodyScreen++;
+                }
+            }
+            assertNotEquals(0, numberOfPropagationLinesWithDeltaBodyScreen, "No propagation lines found with a gain from Train Body/Wall");
         }
     }
 }

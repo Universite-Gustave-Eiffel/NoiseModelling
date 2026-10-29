@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
+import org.apache.commons.math3.util.IntegerSequence;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
@@ -32,11 +33,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
@@ -99,7 +103,7 @@ public class PathFinder {
 
     /**
      * Computation stacks and timing are collected by this class in order
-     * to profile the execution of the simulation
+     * to profile the execution of the simulation.
      * @param profilerThread Instance of ProfilerThread
      */
     public void setProfilerThread(ProfilerThread profilerThread) {
@@ -119,39 +123,39 @@ public class PathFinder {
      * @param computeRaysOut Result output.
      */
     public void run(CutPlaneVisitorFactory computeRaysOut) {
-        ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
-        int endReceiverRange = 0;
-        //Launch execution of computation by batch
-        List<Future<Boolean>> tasks = new ArrayList<>();
-        ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
-        while (endReceiverRange < data.receivers.size()) {
-            //Break if the progress visitor is cancelled
-            if (cellProgress.isCanceled()) {
-                break;
-            }
-            int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-            ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
-                    this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
-            if (threadCount != 1) {
-                tasks.add(threadManager.submitBlocking(batchThread));
-            } else {
-                try {
-                    batchThread.call();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<Future<Boolean>> tasks;
+        try (ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS)) {
+            // Create the list of receivers index to compute
+            ConcurrentLinkedDeque<Integer> receiverQueue = IntStream.range(0, data.receivers.size()).boxed().collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
+            //Launch execution of computation by batch
+            tasks = new ArrayList<>();
+            ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
+            for (int threadId = 0; threadId < threadCount; threadId++) {
+                //Break if the progress visitor is canceled
+                if (cellProgress.isCanceled()) {
+                    break;
+                }
+                ThreadPathFinder batchThread = new ThreadPathFinder(receiverQueue,
+                        this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
+                if (threadCount != 1) {
+                    tasks.add(threadManager.submitBlocking(batchThread));
+                } else {
+                    try {
+                        batchThread.call();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
-            endReceiverRange = newEndReceiver;
-        }
-        //Once the execution ends, shutdown the thread manager and await termination
-        threadManager.shutdown();
-        try {
-            if(!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
-                LOGGER.warn("Timeout elapsed before termination.");
+            //Once the execution ends, shutdown the thread manager and await termination
+            threadManager.shutdown();
+            try {
+                if (!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
+                    LOGGER.warn("Timeout elapsed before termination.");
+                }
+            } catch (InterruptedException ex) {
+                LOGGER.error(ex.getLocalizedMessage(), ex);
             }
-        } catch (InterruptedException ex) {
-            LOGGER.error(ex.getLocalizedMessage(), ex);
         }
         // Must raise an exception if one the thread raised an exception
         for (Future<Boolean> task : tasks) {
@@ -161,7 +165,6 @@ public class PathFinder {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
     /**
@@ -257,8 +260,8 @@ public class PathFinder {
 
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
-        AtomicInteger cutProfileCount = new AtomicInteger(0);
-        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+        dataOut.startReceiver(receiverPointInfo, sourceList);
+
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {
@@ -281,8 +284,7 @@ public class PathFinder {
         if(profilerThread != null &&
                 profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
             ReceiverStatsMetric receiverStatsMetric = profilerThread.getMetric(ReceiverStatsMetric.class);
-            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(),
-                    cutProfileCount.get(), sourceList.size(), processedSources.get());
+            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(), sourceList.size(), processedSources.get());
             // Save computation time for this receiver
             receiverStatsMetric.onEndComputation(new ReceiverStatsMetric.ReceiverComputationTime(receiverPointInfo.receiverIndex,
                     (int) TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS),
@@ -430,15 +432,15 @@ public class PathFinder {
     }
 
     /**
-     * Recover lost attributes of source and receiver that are lost when creating intermediate profiles
+     * Recover lost attributes of source and receiver that were lost when creating intermediate profiles
      * @param rcv Receiver information
      * @param src Source information
      * @param data Propagation data
      * @param cutPoints Cut points of the full profile
      */
     private CutProfile resetSourceReceiverAttributes(ReceiverPointInfo rcv, SourcePointInfo src, Scene data, List<CutPoint> cutPoints) {
-        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
-                (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
+        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.getFirst(),
+                (CutPointReceiver) cutPoints.getLast());
         mainProfile.insertCutPoint(false,
                 cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
