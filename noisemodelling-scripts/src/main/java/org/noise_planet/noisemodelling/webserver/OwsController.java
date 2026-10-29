@@ -432,8 +432,7 @@ public class OwsController {
                             }
                         }
                     } catch (Exception ex) {
-                        Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
-                        logger.info("Warning, ignore input as there was an exception while converting input '{}'", input.getIdentifier().getValue(), ex);
+                        throw new IOException("Invalid value for input '" + input.getIdentifier().getValue() + "'", ex);
                     }
                 }
             }
