@@ -41,6 +41,7 @@ public class CnossosPathBuilder {
         Coordinate rcv = pts2D.getLast();
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
+        double maxDeltaH = Double.NEGATIVE_INFINITY;
         for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
             // Skip reflection points — they are not terrain obstacles and should not
             // create Rayleigh diffraction points
@@ -60,7 +61,7 @@ public class CnossosPathBuilder {
                     break;
                 }
             }
-            if (rcrit) {
+            if (rcrit && deltaH > maxDeltaH) {
                 rcrit = false;
                 //Add point path
 
@@ -122,6 +123,9 @@ public class CnossosPathBuilder {
                         }
                     }
 
+                    maxDeltaH = deltaH;
+                    segments.clear();
+                    points.clear();
                     segments.add(seg1);
                     segments.add(seg2);
 
