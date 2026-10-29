@@ -51,7 +51,7 @@ Mandatory inputs
 ``timeBinSize`` — *The size of time bins in seconds.*
    This parameter dictates the time resolution of the resulting data
    The time information stored will be the starting time of the time bins
-   For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins:
+   For example with a timeBinSize of 3600, the data will be analysed using the following timeBins:
    0, 3600, 7200, ..., 79200, 82800
 
    Type: ``Integer``

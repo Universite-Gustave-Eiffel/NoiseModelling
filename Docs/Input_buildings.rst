@@ -41,7 +41,7 @@ To determine the 3D shape of the building we can use some of the following eleme
 
 * ``Zground`` : The ground altitude, exprimed in meters and based on the 0 sea level
 * ``Zobject`` : The altitude in the air, exprimed in meters and based on the 0 sea level
-* ``HEIGHT``: The height, equal to the diffirence between ``Zobject`` and ``Zground``
+* ``HEIGHT``: The height, equal to the difference between ``Zobject`` and ``Zground``
 
 .. figure:: images/Input_tables/building_z_z_h.png
    :align: center
@@ -71,7 +71,7 @@ There is a DEM layer
 The DEM is triangulated. Then, all the vertices of the building are projected onto the triangle below it in order to determine their altitudes. Finally, the minimum altitude is taken and assigned to the whole building: ``Zground`` = Minimum DEM Z value. Then:
 
 * If ``HEIGHT`` > 0 then ``Zobject`` = ``Zground`` + ``HEIGHT``
-* If ``HEIGHT`` = 0 then ``Zobject`` = ``Zground`` and Warning message *"Be carreful, some buildings are 0 meter high"*
+* If ``HEIGHT`` = 0 then ``Zobject`` = ``Zground`` and Warning message *"Be careful, some buildings are 0 meter high"*
 * If ``HEIGHT`` null or < 0 then Error message *"Not possible to determine Z coordinates"*
 
 There is no DEM layer
