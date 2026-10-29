@@ -397,9 +397,9 @@ public class RoadCnossos {
 
         // In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
         if (twoWay && roadCnossosParameters.getSlopePercentage() != 0) {
-            lvRoadLvl = lvRoadLvl - getDeltaSlope(roadCnossosParameters, "1", sign) + getDeltaSlope(roadCnossosParameters, "1", -sign);
-            medRoadLvl = medRoadLvl - getDeltaSlope(roadCnossosParameters, "2", sign) + getDeltaSlope(roadCnossosParameters, "2", -sign);
-            hgvRoadLvl = hgvRoadLvl - getDeltaSlope(roadCnossosParameters, "3", sign) + getDeltaSlope(roadCnossosParameters, "3", -sign);
+            lvMotorLvl = lvMotorLvl - getDeltaSlope(roadCnossosParameters, "1", sign) + getDeltaSlope(roadCnossosParameters, "1", -sign);
+            medMotorLvl = medMotorLvl - getDeltaSlope(roadCnossosParameters, "2", sign) + getDeltaSlope(roadCnossosParameters, "2", -sign);
+            hgvMotorLvl = hgvMotorLvl - getDeltaSlope(roadCnossosParameters, "3", sign) + getDeltaSlope(roadCnossosParameters, "3", -sign);
             double lvCompound_InverseSlope = sumDbValues(lvRoadLvl, lvMotorLvl);
             double medCompound_InverseSlope = sumDbValues(medRoadLvl, medMotorLvl);
             double hgvCompound_InverseSlope = sumDbValues(hgvRoadLvl, hgvMotorLvl);
