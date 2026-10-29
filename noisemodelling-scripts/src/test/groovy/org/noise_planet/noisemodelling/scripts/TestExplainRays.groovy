@@ -36,7 +36,7 @@ class TestExplainRays extends JdbcTestCase {
                 [receiver, source, leq, meteo, period, path])
     }
 
-    private static String pathJson(int source, int receiver, String kind = 'direct', boolean includeAttenuation = true) {
+    private static String pathJson(int source, int receiver, String kind = 'direct', boolean includeAttenuation = true, int bandCount = 1) {
         boolean reflected = kind == 'reflected' || kind == 'mixed'
         boolean diffracted = kind == 'diffracted' || kind == 'mixed'
         boolean rayleigh = kind == 'rayleigh'
@@ -85,14 +85,38 @@ class TestExplainRays extends JdbcTestCase {
         ]
         if (includeAttenuation) {
             path.putAll([
-                    aDiv            : [60d],
-                    aAtm            : [0.5d],
-                    aDif            : (diffracted || rayleigh) ? [3d] : [0d],
-                    aRef            : reflected ? [2d] : [0d],
-                    aGlobal         : [63d],
+                    aDiv            : (0..<bandCount).collect { 60d + it },
+                    aAtm            : (0..<bandCount).collect { 0.5d + it },
+                    aDif            : (0..<bandCount).collect { (diffracted || rayleigh) ? 3d + it : 0d + it },
+                    aRef            : (0..<bandCount).collect { reflected ? 2d + it : 0d + it },
+                    aGlobal         : (0..<bandCount).collect { 63d + it },
                     groundAttenuation: [aGround: [0.2d]]
             ])
         }
+        return JsonOutput.toJson(path)
+    }
+
+    private static String realWriterPathJson(String kind) {
+        String pointType = kind == 'rayleigh' ? 'DIFH_RCRIT' : 'DIFH'
+        Map<String, Object> path = [
+                cutProfile     : [cutPoints: [
+                        [type: 'Source', coordinate: [x: 0d, y: 0d, z: 1d], zGround: 0d, groundCoefficient: 0.5d],
+                        [type: 'Topography', coordinate: [x: 10d, y: 0d, z: 2d], zGround: 2d, groundCoefficient: 0.5d],
+                        [type: 'Receiver', coordinate: [x: 20d, y: 0d, z: 1d], zGround: 0d, groundCoefficient: 0.5d]
+                ], curvedPath: false, profileType: 'DIRECT'],
+                lineString     : [type: 'LineString', coordinates: [[0d, 0d, 1d], [10d, 0d, 2d], [20d, 0d, 1d]]],
+                propagationPath: [pointList: [
+                        [type: 'SRCE', coordinate: [x: 0d, y: 1d, z: 'NaN'], altitude: 1d],
+                        [type: pointType, coordinate: [x: 10d, y: 2d, z: 'NaN'], altitude: 2d],
+                        [type: 'RECV', coordinate: [x: 20d, y: 1d, z: 'NaN'], altitude: 1d]
+                ]],
+                aDiv           : [60d],
+                aAtm           : [0.5d],
+                aDif           : [4d],
+                aRef           : [0d],
+                aGlobal        : [64d],
+                groundAttenuation: [aGround: [0.2d]]
+        ]
         return JsonOutput.toJson(path)
     }
 
@@ -310,6 +334,19 @@ class TestExplainRays extends JdbcTestCase {
     }
 
     @Test
+    void testAttenuationBandSelector() {
+        createRaysTable()
+        insertRay(1, 1, 70d, METEO, PERIOD, pathJson(1, 1, 'direct', true, 3))
+
+        String html = run([:])
+
+        assertTrue(html.contains('data-explain-rays-band'))
+        assertTrue(html.contains('<option value="2">'))
+        assertTrue(html.contains('data-band-2="65.0"'))
+        assertTrue(html.contains('LEQ is broadband'))
+    }
+
+    @Test
     void testRayleighCriterionMarker() {
         createRaysTable()
         insertRay(1, 1, 70d, METEO, PERIOD, pathJson(1, 1, 'rayleigh'))
@@ -351,6 +388,19 @@ class TestExplainRays extends JdbcTestCase {
         assertTrue(html.contains('data-direct-skipped="true"'))
         assertEquals(50, countOccurrences(html, 'data-ray-row="'))
         assertTrue(html.contains('does not contribute to the receiver level'))
+    }
+
+    @Test
+    void testRealWriterPointListCoordinates() {
+        createRaysTable()
+        insertRay(1, 1, 70d, METEO, PERIOD, realWriterPathJson('difh'))
+        insertRay(1, 2, 69d, METEO, PERIOD, realWriterPathJson('rayleigh'))
+
+        String html = run([:])
+
+        assertTrue(html.contains('>DH<'), 'DIFH marker should be mapped to world coordinates')
+        assertTrue(html.contains('>RC<'), 'DIFH_RCRIT marker should be mapped to world coordinates')
+        assertFalse(html.contains('<div class="explain-rays-error">'))
     }
 
     @Test

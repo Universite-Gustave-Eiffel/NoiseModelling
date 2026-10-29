@@ -24,11 +24,17 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
-import org.geotools.api.referencing.operation.MathTransform
-import org.geotools.geometry.jts.JTS
-import org.geotools.referencing.CRS
+import org.cts.CRSFactory
+import org.cts.crs.CoordinateReferenceSystem
+import org.cts.crs.GeodeticCRS
+import org.cts.op.CoordinateOperation
+import org.cts.op.CoordinateOperationFactory
+import org.cts.registry.EPSGRegistry
+import org.cts.registry.RegistryManager
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.CoordinateFilter
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiPoint
 import org.locationtech.jts.geom.MultiPolygon
@@ -180,6 +186,33 @@ static Double firstFinite(Object value) {
     return toFinite(value)
 }
 
+static List<Double> finiteBands(Object value) {
+    if (value instanceof List) {
+        return ((List) value).collect { Object item -> toFinite(item) }
+    }
+    Double single = toFinite(value)
+    return single == null ? [] : [single]
+}
+
+static List<String> bandLabels(int bandCount) {
+    List<Integer> frequencies = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+    if (bandCount == frequencies.size()) {
+        return frequencies.collect { Integer frequency -> "${frequency} Hz" }
+    }
+    return (1..bandCount).collect { Integer index -> "Band ${index}" }
+}
+
+static String renderBandCell(List<Double> bands, int bandCount) {
+    StringBuilder cell = new StringBuilder('<td')
+    for (int i = 0; i < bandCount; i++) {
+        Double value = bands != null && i < bands.size() ? bands[i] : null
+        cell.append(' data-band-').append(i).append('="').append(esc(fmt(value, 1))).append('"')
+    }
+    Double displayed = bands == null || bands.isEmpty() ? null : bands[0]
+    cell.append('>').append(esc(fmt(displayed, 1))).append('</td>')
+    return cell.toString()
+}
+
 static Integer toInteger(Object value, Integer defaultValue = null) {
     if (value == null) {
         return defaultValue
@@ -273,7 +306,7 @@ static String textOf(Object value) {
     return value == null ? null : value.toString()
 }
 
-static List<Double> coordinateOf(Object value) {
+static Coordinate coordinateOf(Object value) {
     Object coordinate = mapValue(value, 'coordinate')
     if (coordinate == null) {
         coordinate = value
@@ -287,7 +320,7 @@ static List<Double> coordinateOf(Object value) {
     if (x == null || y == null) {
         return null
     }
-    return [x, y, z]
+    return new Coordinate(x, y, z == null ? Double.NaN : z)
 }
 
 static String readPath(Object value) {
@@ -411,16 +444,14 @@ static int compareRays(Map left, Map right) {
     return idComparison != 0 ? idComparison : ((Integer) left.index <=> (Integer) right.index)
 }
 
-static double cumulativeDistance(List<Double> first, List<Double> second) {
+static double cumulativeDistance(Coordinate first, Coordinate second) {
     if (first == null || second == null) {
         return 0d
     }
-    double dx = (first[0] ?: 0d) - (second[0] ?: 0d)
-    double dy = (first[1] ?: 0d) - (second[1] ?: 0d)
-    return Math.hypot(dx, dy)
+    return Math.hypot(first.x - second.x, first.y - second.y)
 }
 
-static List<Double> cumulativeDistances(List<List<Double>> coordinates) {
+static List<Double> cumulativeDistances(List<Coordinate> coordinates) {
     List<Double> distances = new ArrayList<>()
     double distance = 0d
     for (int i = 0; i < coordinates.size(); i++) {
@@ -450,18 +481,18 @@ static List<Integer> sampleIndices(int size, int maximum) {
     return indices
 }
 
-static List<List<Double>> sampleCoordinates(List<List<Double>> coordinates, int maximum) {
+static List<Coordinate> sampleCoordinates(List<Coordinate> coordinates, int maximum) {
     if (coordinates.size() <= maximum) {
         return coordinates
     }
-    List<List<Double>> sampled = new ArrayList<>()
+    List<Coordinate> sampled = new ArrayList<>()
     for (Integer index : sampleIndices(coordinates.size(), maximum)) {
         sampled.add(coordinates[index])
     }
     return sampled
 }
 
-static double distanceAlongPolyline(List<List<Double>> coordinates, Double x, Double y) {
+static double distanceAlongPolyline(List<Coordinate> coordinates, Double x, Double y) {
     if (coordinates == null || coordinates.isEmpty() || x == null || y == null) {
         return 0d
     }
@@ -472,10 +503,10 @@ static double distanceAlongPolyline(List<List<Double>> coordinates, Double x, Do
     double bestDistance = Double.POSITIVE_INFINITY
     double bestAlong = 0d
     for (int i = 1; i < coordinates.size(); i++) {
-        double x1 = coordinates[i - 1][0] ?: 0d
-        double y1 = coordinates[i - 1][1] ?: 0d
-        double x2 = coordinates[i][0] ?: 0d
-        double y2 = coordinates[i][1] ?: 0d
+        double x1 = coordinates[i - 1].x
+        double y1 = coordinates[i - 1].y
+        double x2 = coordinates[i].x
+        double y2 = coordinates[i].y
         double dx = x2 - x1
         double dy = y2 - y1
         double lengthSquared = dx * dx + dy * dy
@@ -574,37 +605,70 @@ static Integer detectSrid(Connection connection, DBTypes dbType, List<String> ta
     return null
 }
 
-static MathTransform createWgs84Transform(Integer srid, Logger logger) {
+static CoordinateOperation createWgs84Transform(Integer srid, Logger logger) {
     if (srid == null || srid <= 0 || srid == 4326) {
         return null
     }
     try {
-        def sourceCrs = CRS.decode("EPSG:${srid}", true)
-        def targetCrs = CRS.decode('EPSG:4326', true)
-        return CRS.findMathTransform(sourceCrs, targetCrs, true)
+        CRSFactory crsFactory = new CRSFactory()
+        RegistryManager registryManager = crsFactory.getRegistryManager()
+        registryManager.addRegistry(new EPSGRegistry())
+        CoordinateReferenceSystem sourceCrs = crsFactory.getCRS("EPSG:${srid}")
+        CoordinateReferenceSystem targetCrs = crsFactory.getCRS('EPSG:4326')
+        if (sourceCrs instanceof GeodeticCRS && targetCrs instanceof GeodeticCRS) {
+            def operations = CoordinateOperationFactory.createCoordinateOperations(
+                    (GeodeticCRS) sourceCrs, (GeodeticCRS) targetCrs)
+            if (operations != null && !operations.isEmpty()) {
+                return operations.iterator().next()
+            }
+        }
     } catch (Exception exception) {
         logger.warn("Unable to build the EPSG:{} to EPSG:4326 transform: {}", srid, exception.message)
-        return null
     }
+    return null
 }
 
-static List<Double> transformCoordinate(List<Double> coordinate, MathTransform transform) {
+static Coordinate transformCoordinate(Coordinate coordinate, CoordinateOperation transform) {
     if (transform == null || coordinate == null) {
         return coordinate
     }
-    Coordinate source = new Coordinate(coordinate[0], coordinate[1])
-    Coordinate target = JTS.transform(source, null, transform)
-    if (target == null || !Double.isFinite(target.x) || !Double.isFinite(target.y)) {
+    double[] xyz = transform.transform([
+            coordinate.x,
+            coordinate.y,
+            Double.isFinite(coordinate.z) ? coordinate.z : 0d
+    ] as double[])
+    if (xyz == null || xyz.length < 2 || !Double.isFinite(xyz[0]) || !Double.isFinite(xyz[1])) {
         throw new IllegalArgumentException("Invalid projected coordinate")
     }
-    return [target.x, target.y, coordinate[2]]
+    return new Coordinate(xyz[0], xyz[1], coordinate.z)
 }
 
-static List<List<Double>> transformCoordinates(List<List<Double>> coordinates, MathTransform transform) {
+static List<Coordinate> transformCoordinates(List<Coordinate> coordinates, CoordinateOperation transform) {
     if (transform == null || coordinates == null) {
         return coordinates
     }
-    return coordinates.collect { List<Double> coordinate -> transformCoordinate(coordinate, transform) }
+    return coordinates.collect { Coordinate coordinate -> transformCoordinate(coordinate, transform) }
+}
+
+static Geometry transformGeometry(Geometry geometry, CoordinateOperation transform) {
+    if (geometry == null || transform == null) {
+        return geometry
+    }
+    Geometry transformed = geometry.copy()
+    transformed.apply({ Coordinate coordinate ->
+        double[] xyz = transform.transform([
+                coordinate.x,
+                coordinate.y,
+                Double.isFinite(coordinate.z) ? coordinate.z : 0d
+        ] as double[])
+        if (xyz == null || xyz.length < 2 || !Double.isFinite(xyz[0]) || !Double.isFinite(xyz[1])) {
+            throw new IllegalArgumentException("Invalid projected coordinate")
+        }
+        coordinate.x = xyz[0]
+        coordinate.y = xyz[1]
+    } as CoordinateFilter)
+    transformed.geometryChanged()
+    return transformed
 }
 
 static String basemapUrl(List<Double> bbox) {
@@ -639,6 +703,11 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
             aDif              : null,
             aRef              : null,
             aGlobal           : null,
+            aDivBands         : [],
+            aAtmBands         : [],
+            aDifBands         : [],
+            aRefBands         : [],
+            aGlobalBands      : [],
             ground            : null,
             cutCoords         : [],
             cutZGround        : [],
@@ -674,7 +743,7 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
 
     List<Object> cutPoints = asList(mapValue(mapValue(path, 'cutProfile'), 'cutPoints'))
     for (Object cutPoint : cutPoints) {
-        List<Double> coordinate = coordinateOf(cutPoint)
+        Coordinate coordinate = coordinateOf(cutPoint)
         if (coordinate == null) {
             continue
         }
@@ -685,7 +754,7 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
         ray.cutTypes.add(cutType)
     }
 
-    List<List<Double>> rayCoords = new ArrayList<>()
+    List<Coordinate> rayCoords = new ArrayList<>()
     Object lineCoordinates = mapValue(mapValue(path, 'lineString'), 'coordinates')
     for (Object coordinateValue : asList(lineCoordinates)) {
         if (!(coordinateValue instanceof List) || ((List) coordinateValue).size() < 2) {
@@ -696,7 +765,7 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
         Double y = toFinite(coordinate[1])
         Double z = coordinate.size() > 2 ? toFinite(coordinate[2]) : null
         if (x != null && y != null) {
-            rayCoords.add([x, y, z])
+            rayCoords.add(new Coordinate(x, y, z == null ? Double.NaN : z))
         }
     }
 
@@ -707,15 +776,15 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
     }
     if (rayCoords.isEmpty()) {
         for (Object point : pointList) {
-            List<Double> coordinate = coordinateOf(point)
-            if (coordinate != null) {
-                rayCoords.add([coordinate[0], coordinate[1], coordinate[2]])
+            Coordinate coordinate = coordinateOf(point)
+            if (coordinate != null && Double.isFinite(coordinate.z)) {
+                rayCoords.add(new Coordinate(coordinate.x, coordinate.y, coordinate.z))
             }
         }
     }
     if (rayCoords.isEmpty()) {
-        for (List<Double> coordinate : ray.cutCoords) {
-            rayCoords.add([coordinate[0], coordinate[1], coordinate[2]])
+        for (Coordinate coordinate : ray.cutCoords) {
+            rayCoords.add(new Coordinate(coordinate.x, coordinate.y, coordinate.z))
         }
     }
 
@@ -724,8 +793,8 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
         return ray
     }
     if (ray.cutCoords.isEmpty()) {
-        for (List<Double> coordinate : rayCoords) {
-            ray.cutCoords.add([coordinate[0], coordinate[1], coordinate[2]])
+        for (Coordinate coordinate : rayCoords) {
+            ray.cutCoords.add(new Coordinate(coordinate.x, coordinate.y, coordinate.z))
             ray.cutZGround.add(null)
             ray.groundCoefficients.add(null)
             ray.cutTypes.add(null)
@@ -733,11 +802,21 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
     }
 
     ray.rayCoords = rayCoords
+    ray.aDivBands = finiteBands(mapValue(path, 'aDiv'))
+    ray.aAtmBands = finiteBands(mapValue(path, 'aAtm'))
+    ray.aDifBands = finiteBands(mapValue(path, 'aDif'))
+    ray.aRefBands = finiteBands(mapValue(path, 'aRef'))
+    ray.aGlobalBands = finiteBands(mapValue(path, 'aGlobal'))
     ray.aDiv = firstFinite(mapValue(path, 'aDiv'))
     ray.aAtm = firstFinite(mapValue(path, 'aAtm'))
     ray.aDif = firstFinite(mapValue(path, 'aDif'))
     ray.aRef = firstFinite(mapValue(path, 'aRef'))
     ray.aGlobal = firstFinite(mapValue(path, 'aGlobal'))
+    if (ray.aDivBands.isEmpty() && ray.aDiv != null) { ray.aDivBands = [ray.aDiv] }
+    if (ray.aAtmBands.isEmpty() && ray.aAtm != null) { ray.aAtmBands = [ray.aAtm] }
+    if (ray.aDifBands.isEmpty() && ray.aDif != null) { ray.aDifBands = [ray.aDif] }
+    if (ray.aRefBands.isEmpty() && ray.aRef != null) { ray.aRefBands = [ray.aRef] }
+    if (ray.aGlobalBands.isEmpty() && ray.aGlobal != null) { ray.aGlobalBands = [ray.aGlobal] }
     Object groundAttenuation = mapValue(path, 'groundAttenuation')
     if (groundAttenuation instanceof Map) {
         ray.ground = firstFinite(mapValue(groundAttenuation, 'aGround'))
@@ -767,42 +846,66 @@ static Map parseRay(Object receiver, Object source, Object leq, Object meteo, Ob
     ray.direct = onlySourceReceiver || (ray.nReflections == 0 && ray.nDiffractions == 0)
     ray.type = rayType(ray.nReflections, ray.nDiffractions)
 
-    List<List<Object>> nodes = new ArrayList<>()
+    List<Double> cutDistances = cumulativeDistances(ray.cutCoords)
+    List<Map> nodes = new ArrayList<>()
+    Set<String> cutNodeKinds = new HashSet<>()
+    for (int i = 0; i < ray.cutCoords.size(); i++) {
+        String cutType = ray.cutTypes[i]
+        if (!isReflectionType(cutType) && !isDiffractionType(cutType)) {
+            continue
+        }
+        Coordinate coordinate = ray.cutCoords[i]
+        nodes.add([type: cutType, coordinate: new Coordinate(coordinate.x, coordinate.y, coordinate.z)])
+        cutNodeKinds.add(nodeLetter(cutType))
+    }
     for (Object point : pointList) {
         String pointType = textOf(mapValue(point, 'type'))
         if (!isReflectionType(pointType) && !isDiffractionType(pointType)) {
             continue
         }
-        List<Double> coordinate = coordinateOf(point)
+        String pointKind = nodeLetter(pointType)
+        if (cutNodeKinds.contains(pointKind)) {
+            continue
+        }
+        Coordinate coordinate = coordinateOf(point)
         if (coordinate == null) {
             continue
         }
-        nodes.add([pointType, coordinate[0], coordinate[1], coordinate[2]])
-    }
-    if (nodes.isEmpty()) {
-        for (int i = 0; i < ray.cutCoords.size(); i++) {
-            String cutType = ray.cutTypes[i]
-            if (!isReflectionType(cutType) && !isDiffractionType(cutType)) {
-                continue
+        Double altitude = toFinite(mapValue(point, 'altitude'))
+        if (Double.isFinite(coordinate.z)) {
+            nodes.add([type: pointType, coordinate: new Coordinate(coordinate.x, coordinate.y, coordinate.z)])
+        } else if (!ray.cutCoords.isEmpty()) {
+            double distance = coordinate.x
+            int nearestIndex = 0
+            double bestDistance = Double.POSITIVE_INFINITY
+            for (int i = 0; i < cutDistances.size(); i++) {
+                double candidate = Math.abs(cutDistances[i] - distance)
+                if (candidate < bestDistance) {
+                    bestDistance = candidate
+                    nearestIndex = i
+                }
             }
-            List<Double> coordinate = ray.cutCoords[i]
-            nodes.add([cutType, coordinate[0], coordinate[1], coordinate[2]])
+            Coordinate worldCoordinate = ray.cutCoords[nearestIndex]
+            double nodeZ = altitude != null ? altitude : worldCoordinate.z
+            nodes.add([type: pointType, coordinate: new Coordinate(worldCoordinate.x, worldCoordinate.y, nodeZ)])
         }
     }
-    nodes.sort { List<Object> left, List<Object> right ->
-        double leftDistance = distanceAlongPolyline(ray.rayCoords, toFinite(left[1]), toFinite(left[2]))
-        double rightDistance = distanceAlongPolyline(ray.rayCoords, toFinite(right[1]), toFinite(right[2]))
+    nodes.sort { Map left, Map right ->
+        Coordinate leftCoordinate = (Coordinate) left.coordinate
+        Coordinate rightCoordinate = (Coordinate) right.coordinate
+        double leftDistance = distanceAlongPolyline(ray.rayCoords, leftCoordinate.x, leftCoordinate.y)
+        double rightDistance = distanceAlongPolyline(ray.rayCoords, rightCoordinate.x, rightCoordinate.y)
         return leftDistance <=> rightDistance
     }
     ray.nodes = nodes
 
     double length = 0d
     for (int i = 1; i < ray.rayCoords.size(); i++) {
-        List<Double> previous = ray.rayCoords[i - 1]
-        List<Double> current = ray.rayCoords[i]
-        double dx = (current[0] ?: 0d) - (previous[0] ?: 0d)
-        double dy = (current[1] ?: 0d) - (previous[1] ?: 0d)
-        double dz = (current[2] ?: 0d) - (previous[2] ?: 0d)
+        Coordinate previous = ray.rayCoords[i - 1]
+        Coordinate current = ray.rayCoords[i]
+        double dx = current.x - previous.x
+        double dy = current.y - previous.y
+        double dz = (Double.isFinite(current.z) ? current.z : 0d) - (Double.isFinite(previous.z) ? previous.z : 0d)
         length += Math.sqrt(dx * dx + dy * dy + dz * dz)
     }
     ray.length = length
@@ -835,7 +938,7 @@ static Geometry asGeometry(Object value) {
     return null
 }
 
-static List<Double> loadPoint(Sql sql, Connection connection, String tableInput, Object identifier,
+static Coordinate loadPoint(Sql sql, Connection connection, String tableInput, Object identifier,
                               List<String> identifierNames, DBTypes dbType, Logger logger) {
     if (tableInput == null || tableInput.trim().isEmpty() || identifier == null) {
         return null
@@ -872,14 +975,17 @@ static List<Double> loadPoint(Sql sql, Connection connection, String tableInput,
             return null
         }
         if (geometry instanceof Point) {
-            return [geometry.coordinate.x, geometry.coordinate.y, toFinite(geometry.coordinate.z)]
+            Double z = toFinite(geometry.coordinate.z)
+            return new Coordinate(geometry.coordinate.x, geometry.coordinate.y, z == null ? Double.NaN : z)
         }
         if (geometry instanceof MultiPoint && geometry.getNumGeometries() > 0) {
             Geometry point = geometry.getGeometryN(0)
-            return [point.coordinate.x, point.coordinate.y, toFinite(point.coordinate.z)]
+            Double z = toFinite(point.coordinate.z)
+            return new Coordinate(point.coordinate.x, point.coordinate.y, z == null ? Double.NaN : z)
         }
         if (!geometry.isEmpty()) {
-            return [geometry.centroid.coordinate.x, geometry.centroid.coordinate.y, toFinite(geometry.centroid.coordinate.z)]
+            Double z = toFinite(geometry.centroid.coordinate.z)
+            return new Coordinate(geometry.centroid.coordinate.x, geometry.centroid.coordinate.y, z == null ? Double.NaN : z)
         }
     } catch (Exception exception) {
         logger.warn("Unable to read optional point table {}: {}", tableInput, exception.message)
@@ -887,10 +993,10 @@ static List<Double> loadPoint(Sql sql, Connection connection, String tableInput,
     return null
 }
 
-static List<List<List<Double>>> polygonRings(Geometry geometry, List<Double> bbox, int maximumPoints) {
-    List<List<List<Double>>> rings = new ArrayList<>()
+static List<Polygon> polygonGeometries(Geometry geometry, List<Double> bbox, int maximumPoints) {
+    List<Polygon> polygonOutput = new ArrayList<>()
     if (geometry == null) {
-        return rings
+        return polygonOutput
     }
     List<Geometry> polygons = new ArrayList<>()
     if (geometry instanceof Polygon) {
@@ -908,31 +1014,49 @@ static List<List<List<Double>>> polygonRings(Geometry geometry, List<Double> bbo
         if (exterior == null || exterior.numPoints < 4) {
             continue
         }
-        List<List<Double>> ring = new ArrayList<>()
+        List<Coordinate> ring = new ArrayList<>()
         double minX = Double.POSITIVE_INFINITY
         double minY = Double.POSITIVE_INFINITY
         double maxX = Double.NEGATIVE_INFINITY
         double maxY = Double.NEGATIVE_INFINITY
-        for (int i = 0; i < exterior.numPoints; i++) {
-            double x = exterior.getCoordinateN(i).x
-            double y = exterior.getCoordinateN(i).y
-            ring.add([x, y, null])
-            minX = Math.min(minX, x)
-            minY = Math.min(minY, y)
-            maxX = Math.max(maxX, x)
-            maxY = Math.max(maxY, y)
+        for (Coordinate coordinate : exterior.coordinates) {
+            ring.add(new Coordinate(coordinate.x, coordinate.y, coordinate.z))
+            minX = Math.min(minX, coordinate.x)
+            minY = Math.min(minY, coordinate.y)
+            maxX = Math.max(maxX, coordinate.x)
+            maxY = Math.max(maxY, coordinate.y)
         }
         boolean intersects = bbox == null || !(maxX < bbox[0] || minX > bbox[2] || maxY < bbox[1] || minY > bbox[3])
         if (intersects) {
-            rings.add(sampleCoordinates(ring, maximumPoints))
+            List<Coordinate> sampled = sampleCoordinates(ring, maximumPoints)
+            if (sampled.size() >= 4) {
+                polygonOutput.add(new GeometryFactory().createPolygon(sampled as Coordinate[]))
+            }
         }
     }
-    return rings
+    return polygonOutput
 }
 
-static List<List<List<Double>>> loadBuildingRings(Sql sql, Connection connection, String tableInput,
-                                                  DBTypes dbType, List<Double> bbox, Logger logger) {
-    List<List<List<Double>>> rings = new ArrayList<>()
+static Map sceneFilter(Connection connection, TableLocation tableLocation, String geometryColumn, List<Double> bbox) {
+    if (bbox == null) {
+        return [clause: '', params: []]
+    }
+    int srid = 0
+    try {
+        srid = GeometryTableUtilities.getSRID(connection, tableLocation)
+    } catch (Exception ignored) {
+        srid = 0
+    }
+    String envelope = srid > 0 ?
+            "ST_SetSRID(ST_MakeEnvelope(?, ?, ?, ?), ${srid})" :
+            'ST_MakeEnvelope(?, ?, ?, ?)'
+    return [clause : " WHERE ${geometryColumn} && ${envelope} AND ST_Intersects(${geometryColumn}, ${envelope})",
+            params : [bbox[0], bbox[1], bbox[2], bbox[3], bbox[0], bbox[1], bbox[2], bbox[3]]]
+}
+
+static List<Polygon> loadBuildingRings(Sql sql, Connection connection, String tableInput,
+                                      DBTypes dbType, List<Double> bbox, Logger logger) {
+    List<Polygon> rings = new ArrayList<>()
     if (tableInput == null || tableInput.trim().isEmpty()) {
         return rings
     }
@@ -949,18 +1073,28 @@ static List<List<List<Double>>> loadBuildingRings(Sql sql, Connection connection
         }
         String geometryColumn = geometryInfo.first().toString()
         String sqlTable = TableLocation.capsIdentifier(tableInput, dbType)
-        String buildingQuery = "SELECT ${geometryColumn} AS \"G\" FROM ${sqlTable} LIMIT 5000".toString()
-        sql.eachRow(buildingQuery) { row ->
-            if (rings.size() >= 800) {
-                return
-            }
-            Geometry geometry = asGeometry(row.G)
-            for (List<List<Double>> ring : polygonRings(geometry, bbox, 120)) {
+        String select = "SELECT ${geometryColumn} AS \"G\" FROM ${sqlTable}"
+        Map filter = sceneFilter(connection, tableLocation, geometryColumn, bbox)
+        def readRows = { String sqlText, List params ->
+            sql.eachRow(sqlText, params) { row ->
                 if (rings.size() >= 800) {
                     return
                 }
-                rings.add(ring)
+                Geometry geometry = asGeometry(row.G)
+                for (Polygon polygon : polygonGeometries(geometry, bbox, 120)) {
+                    if (rings.size() >= 800) {
+                        return
+                    }
+                    rings.add(polygon)
+                }
             }
+        }
+        try {
+            readRows((select + filter.clause + ' LIMIT 5000').toString(), (List) filter.params)
+        } catch (Exception spatialException) {
+            logger.warn("Spatial filter failed for optional buildings table {}; falling back to a full scan: {}",
+                    tableInput, spatialException.message)
+            readRows((select + ' LIMIT 5000').toString(), [])
         }
     } catch (Exception exception) {
         logger.warn("Unable to read optional buildings table {}: {}", tableInput, exception.message)
@@ -994,19 +1128,29 @@ static List<Map> loadGroundAreas(Sql sql, Connection connection, String tableInp
         String sqlTable = TableLocation.capsIdentifier(tableInput, dbType)
         String select = "SELECT ${geometryColumn} AS \"G\"" +
                 (coefficientColumn == null ? '' : ", ${coefficientColumn} AS \"C\"") +
-                " FROM ${sqlTable} LIMIT 5000"
-        sql.eachRow(select.toString()) { row ->
-            if (areas.size() >= 400) {
-                return
-            }
-            Geometry geometry = asGeometry(row.G)
-            Double coefficient = coefficientColumn == null ? null : toFinite(row.C)
-            for (List<List<Double>> ring : polygonRings(geometry, bbox, 160)) {
+                " FROM ${sqlTable}"
+        Map filter = sceneFilter(connection, tableLocation, geometryColumn, bbox)
+        def readRows = { String sqlText, List params ->
+            sql.eachRow(sqlText, params) { row ->
                 if (areas.size() >= 400) {
                     return
                 }
-                areas.add([ring: ring, coefficient: coefficient])
+                Geometry geometry = asGeometry(row.G)
+                Double coefficient = coefficientColumn == null ? null : toFinite(row.C)
+                for (Polygon polygon : polygonGeometries(geometry, bbox, 160)) {
+                    if (areas.size() >= 400) {
+                        return
+                    }
+                    areas.add([polygon: polygon, coefficient: coefficient])
+                }
             }
+        }
+        try {
+            readRows((select + filter.clause + ' LIMIT 5000').toString(), (List) filter.params)
+        } catch (Exception spatialException) {
+            logger.warn("Spatial filter failed for optional grounds table {}; falling back to a full scan: {}",
+                    tableInput, spatialException.message)
+            readRows((select + ' LIMIT 5000').toString(), [])
         }
         if (coefficientColumn == null) {
             logger.info("Optional grounds table {} has no recognized coefficient column; ground areas use a neutral fill", tableInput)
@@ -1044,6 +1188,9 @@ static String explainStyle() {
 .explain-rays-legend span { display: inline-flex; align-items: center; gap: .3rem; }
 .explain-rays-swatch { display: inline-block; width: .8rem; height: .8rem; border-radius: 2px; vertical-align: -0.1rem; }
 .explain-rays-line-key { display: inline-block; width: 1.1rem; border-top: 2px dashed #6b7c93; vertical-align: middle; }
+.explain-rays-table-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .4rem; font-size: .8rem; color: #334e68; }
+.explain-rays-table-toolbar select { font-size: .8rem; padding: .1rem .25rem; }
+.explain-rays-band-hint { color: #627d98; }
 .explain-rays-table-wrap { overflow-x: auto; }
 .explain-rays-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
 .explain-rays-table th, .explain-rays-table td { border-bottom: 1px solid #e4ebf2; padding: .28rem .35rem; text-align: right; white-space: nowrap; }
@@ -1079,6 +1226,16 @@ static String explainScript() {
   if (basemapImage && basemapToggle) {
     basemapToggle.addEventListener('change', function () {
       basemapImage.style.display = basemapToggle.checked ? '' : 'none';
+    });
+  }
+  var bandSelect = root.querySelector('[data-explain-rays-band]');
+  if (bandSelect) {
+    bandSelect.addEventListener('change', function () {
+      var band = bandSelect.value;
+      root.querySelectorAll('td[data-band-0]').forEach(function (cell) {
+        var value = cell.getAttribute('data-band-' + band);
+        if (value !== null) { cell.textContent = value; }
+      });
     });
   }
   var data = [];
@@ -1133,41 +1290,41 @@ static String renderError(String message) {
             '<div class="explain-rays-error">' + esc(message) + '</div></div>'
 }
 
-static String render2D(List<Map> rays, List<List<List<Double>>> buildings, List<Map> groundAreas,
-                       List<Double> receiverPoint, List<Double> sourcePoint, boolean basemapEnabled) {
+static String render2D(List<Map> rays, List<Polygon> buildings, List<Map> groundAreas,
+                       Coordinate receiverPoint, Coordinate sourcePoint, boolean basemapEnabled) {
     double minX = Double.POSITIVE_INFINITY
     double minY = Double.POSITIVE_INFINITY
     double maxX = Double.NEGATIVE_INFINITY
     double maxY = Double.NEGATIVE_INFINITY
     for (Map ray : rays) {
-        for (List<Double> coordinate : (List<List<Double>>) ray.mapCoords) {
-            if (coordinate[0] != null && coordinate[1] != null) {
-                minX = Math.min(minX, coordinate[0])
-                minY = Math.min(minY, coordinate[1])
-                maxX = Math.max(maxX, coordinate[0])
-                maxY = Math.max(maxY, coordinate[1])
+        for (Coordinate coordinate : (List<Coordinate>) ray.mapCoords) {
+            if (Double.isFinite(coordinate.x) && Double.isFinite(coordinate.y)) {
+                minX = Math.min(minX, coordinate.x)
+                minY = Math.min(minY, coordinate.y)
+                maxX = Math.max(maxX, coordinate.x)
+                maxY = Math.max(maxY, coordinate.y)
             }
         }
     }
-    for (List<List<Double>> ring : buildings) {
-        for (List<Double> coordinate : ring) {
-            minX = Math.min(minX, coordinate[0])
-            minY = Math.min(minY, coordinate[1])
-            maxX = Math.max(maxX, coordinate[0])
-            maxY = Math.max(maxY, coordinate[1])
+    for (Polygon polygon : buildings) {
+        for (Coordinate coordinate : polygon.exteriorRing.coordinates) {
+            minX = Math.min(minX, coordinate.x)
+            minY = Math.min(minY, coordinate.y)
+            maxX = Math.max(maxX, coordinate.x)
+            maxY = Math.max(maxY, coordinate.y)
         }
     }
     if (receiverPoint != null) {
-        minX = Math.min(minX, receiverPoint[0])
-        minY = Math.min(minY, receiverPoint[1])
-        maxX = Math.max(maxX, receiverPoint[0])
-        maxY = Math.max(maxY, receiverPoint[1])
+        minX = Math.min(minX, receiverPoint.x)
+        minY = Math.min(minY, receiverPoint.y)
+        maxX = Math.max(maxX, receiverPoint.x)
+        maxY = Math.max(maxY, receiverPoint.y)
     }
     if (sourcePoint != null) {
-        minX = Math.min(minX, sourcePoint[0])
-        minY = Math.min(minY, sourcePoint[1])
-        maxX = Math.max(maxX, sourcePoint[0])
-        maxY = Math.max(maxY, sourcePoint[1])
+        minX = Math.min(minX, sourcePoint.x)
+        minY = Math.min(minY, sourcePoint.y)
+        maxX = Math.max(maxX, sourcePoint.x)
+        maxY = Math.max(maxY, sourcePoint.y)
     }
     if (!Double.isFinite(minX) || !Double.isFinite(minY) || !Double.isFinite(maxX) || !Double.isFinite(maxY)) {
         return '<div class="explain-rays-empty">No 2D geometry available.</div>'
@@ -1206,49 +1363,51 @@ static String render2D(List<Map> rays, List<List<List<Double>>> buildings, List<
         String wmsUrl = basemapUrl([minX, minY, maxX, maxY])
         svg.append('<image class="explain-rays-basemap" data-explain-rays-basemap-image="true" href="')
                 .append(esc(wmsUrl))
-                .append('" x="0" y="0" width="900" height="500" preserveAspectRatio="none"></image>')
+                .append('" x="').append(svgNumber(margin)).append('" y="').append(svgNumber(margin))
+                .append('" width="').append(svgNumber(drawWidth)).append('" height="').append(svgNumber(drawHeight))
+                .append('" preserveAspectRatio="none"></image>')
     }
     for (Map area : groundAreas) {
-        List<List<Double>> ring = (List<List<Double>>) area.ring
-        if (ring == null || ring.isEmpty()) {
+        Polygon polygon = (Polygon) area.polygon
+        if (polygon == null || polygon.isEmpty()) {
             continue
         }
         StringBuilder points = new StringBuilder()
-        for (List<Double> coordinate : ring) {
+        for (Coordinate coordinate : polygon.exteriorRing.coordinates) {
             if (points.length() > 0) {
                 points.append(' ')
             }
-            points.append(svgNumber(mapX(coordinate[0]))).append(',').append(svgNumber(mapY(coordinate[1])))
+            points.append(svgNumber(mapX(coordinate.x))).append(',').append(svgNumber(mapY(coordinate.y)))
         }
         svg.append('<polygon data-layer="ground" points="').append(points)
                 .append('" fill="').append(groundFillColor((Double) area.coefficient))
                 .append('" fill-opacity="0.5" stroke="none"></polygon>')
     }
-    for (List<List<Double>> ring : buildings) {
-        if (ring.isEmpty()) {
+    for (Polygon polygon : buildings) {
+        if (polygon == null || polygon.isEmpty()) {
             continue
         }
         StringBuilder points = new StringBuilder()
-        for (List<Double> coordinate : ring) {
+        for (Coordinate coordinate : polygon.exteriorRing.coordinates) {
             if (points.length() > 0) {
                 points.append(' ')
             }
-            points.append(svgNumber(mapX(coordinate[0]))).append(',').append(svgNumber(mapY(coordinate[1])))
+            points.append(svgNumber(mapX(coordinate.x))).append(',').append(svgNumber(mapY(coordinate.y)))
         }
         svg.append('<polygon data-layer="building" points="').append(points)
                 .append('" fill="#cfd8e3" fill-opacity="1" stroke="#8a9bb0" stroke-width="0.8"></polygon>')
     }
     for (Map ray : rays) {
-        List<List<Double>> coordinates = (List<List<Double>>) ray.mapCoords
+        List<Coordinate> coordinates = (List<Coordinate>) ray.mapCoords
         if (coordinates.isEmpty()) {
             continue
         }
         StringBuilder points = new StringBuilder()
-        for (List<Double> coordinate : coordinates) {
+        for (Coordinate coordinate : coordinates) {
             if (points.length() > 0) {
                 points.append(' ')
             }
-            points.append(svgNumber(mapX(coordinate[0]))).append(',').append(svgNumber(mapY(coordinate[1])))
+            points.append(svgNumber(mapX(coordinate.x))).append(',').append(svgNumber(mapY(coordinate.y)))
         }
         svg.append('<polyline class="explain-rays-ray" data-ray-index="').append(ray.htmlIndex)
                 .append('" points="').append(points)
@@ -1257,28 +1416,28 @@ static String render2D(List<Map> rays, List<List<List<Double>>> buildings, List<
                 .append('<title>').append(esc("LEQ ${fmt((Double) ray.leq, 1)} dB - ${ray.type} - source ${ray.source}")).append('</title></polyline>')
     }
     for (Map ray : rays) {
-        List<List<Double>> coordinates = (List<List<Double>>) ray.mapCoords
+        List<Coordinate> coordinates = (List<Coordinate>) ray.mapCoords
         if (coordinates.isEmpty()) {
             continue
         }
-        List<Double> sourceCoordinate = coordinates[0]
+        Coordinate sourceCoordinate = coordinates[0]
         if (sourcePoint != null && ((Integer) ray.htmlIndex) == 0) {
             sourceCoordinate = sourcePoint
         }
-        svg.append('<circle data-marker="source" cx="').append(svgNumber(mapX(sourceCoordinate[0])))
-                .append('" cy="').append(svgNumber(mapY(sourceCoordinate[1])))
+        svg.append('<circle data-marker="source" cx="').append(svgNumber(mapX(sourceCoordinate.x)))
+                .append('" cy="').append(svgNumber(mapY(sourceCoordinate.y)))
                 .append('" r="2.4" fill="#ffd400" stroke="#111" stroke-width="0.6">')
                 .append('<title>').append(esc("Source ${ray.source}")).append('</title></circle>')
     }
     if (receiverPoint != null) {
-        svg.append('<circle data-marker="receiver" cx="').append(svgNumber(mapX(receiverPoint[0])))
-                .append('" cy="').append(svgNumber(mapY(receiverPoint[1])))
+        svg.append('<circle data-marker="receiver" cx="').append(svgNumber(mapX(receiverPoint.x)))
+                .append('" cy="').append(svgNumber(mapY(receiverPoint.y)))
                 .append('" r="5.5" fill="#00e5ff" stroke="#111" stroke-width="1.2"><title>Receiver</title></circle>')
-    } else if (!rays.isEmpty() && !((List<List<Double>>) rays[0].mapCoords).isEmpty()) {
-        List<List<Double>> coordinates = (List<List<Double>>) rays[0].mapCoords
-        List<Double> receiverCoordinate = coordinates[coordinates.size() - 1]
-        svg.append('<circle data-marker="receiver" cx="').append(svgNumber(mapX(receiverCoordinate[0])))
-                .append('" cy="').append(svgNumber(mapY(receiverCoordinate[1])))
+    } else if (!rays.isEmpty() && !((List<Coordinate>) rays[0].mapCoords).isEmpty()) {
+        List<Coordinate> coordinates = (List<Coordinate>) rays[0].mapCoords
+        Coordinate receiverCoordinate = coordinates[coordinates.size() - 1]
+        svg.append('<circle data-marker="receiver" cx="').append(svgNumber(mapX(receiverCoordinate.x)))
+                .append('" cy="').append(svgNumber(mapY(receiverCoordinate.y)))
                 .append('" r="5.5" fill="#00e5ff" stroke="#111" stroke-width="1.2"><title>Receiver</title></circle>')
     }
     svg.append('</svg>')
@@ -1286,11 +1445,11 @@ static String render2D(List<Map> rays, List<List<List<Double>>> buildings, List<
 }
 
 static String renderProfileSvg(Map ray) {
-    List<List<Double>> cutCoords = (List<List<Double>>) ray.displayCutCoords
+    List<Coordinate> cutCoords = (List<Coordinate>) ray.displayCutCoords
     List<Double> cutZGround = (List<Double>) ray.displayCutZGround
     List<Double> coefficients = (List<Double>) ray.displayGroundCoefficients
     List<String> cutTypes = (List<String>) ray.displayCutTypes
-    List<List<Double>> rayCoords = (List<List<Double>>) ray.displayRayCoords
+    List<Coordinate> rayCoords = (List<Coordinate>) ray.displayRayCoords
     if (rayCoords.isEmpty()) {
         return '<div class="explain-rays-empty">No profile available for this ray.</div>'
     }
@@ -1308,8 +1467,8 @@ static String renderProfileSvg(Map ray) {
     List<Double> terrainDistances = new ArrayList<>()
     for (int i = 0; i < cutCoords.size(); i++) {
         Double z = cutZGround != null && i < cutZGround.size() ? cutZGround[i] : null
-        if (z == null && cutCoords[i][2] != null) {
-            z = cutCoords[i][2]
+        if (z == null && Double.isFinite(cutCoords[i].z)) {
+            z = cutCoords[i].z
         }
         if (z != null) {
             terrainDistances.add(cutDistances[i])
@@ -1318,21 +1477,21 @@ static String renderProfileSvg(Map ray) {
     }
 
     List<Double> allZ = new ArrayList<>()
-    for (List<Double> coordinate : cutCoords) {
-        if (coordinate[2] != null) {
-            allZ.add(coordinate[2])
+    for (Coordinate coordinate : cutCoords) {
+        if (Double.isFinite(coordinate.z)) {
+            allZ.add(coordinate.z)
         }
     }
     allZ.addAll(terrainZ)
-    for (List<Double> coordinate : rayCoords) {
-        if (coordinate[2] != null) {
-            allZ.add(coordinate[2])
+    for (Coordinate coordinate : rayCoords) {
+        if (Double.isFinite(coordinate.z)) {
+            allZ.add(coordinate.z)
         }
     }
-    for (List<Object> node : (List<List<Object>>) ray.nodes) {
-        Double z = toFinite(node[3])
-        if (z != null) {
-            allZ.add(z)
+    for (Map node : (List<Map>) ray.nodes) {
+        Coordinate coordinate = (Coordinate) node.coordinate
+        if (Double.isFinite(coordinate.z)) {
+            allZ.add(coordinate.z)
         }
     }
     if (allZ.isEmpty()) {
@@ -1412,11 +1571,11 @@ static String renderProfileSvg(Map ray) {
     if (cutCoords.size() > 1) {
         StringBuilder points = new StringBuilder()
         for (int i = 0; i < cutCoords.size(); i++) {
-            Double z = cutCoords[i][2]
-            if (z == null && cutZGround != null && i < cutZGround.size()) {
+            Double z = cutCoords[i].z
+            if (!Double.isFinite(z) && cutZGround != null && i < cutZGround.size()) {
                 z = cutZGround[i]
             }
-            if (z == null) {
+            if (z == null || !Double.isFinite(z)) {
                 continue
             }
             if (points.length() > 0) {
@@ -1452,9 +1611,9 @@ static String renderProfileSvg(Map ray) {
         if (cutType == null || !cutType.toUpperCase(Locale.ROOT).contains('WALL')) {
             continue
         }
-        Double zTop = cutCoords[i][2]
+        Double zTop = cutCoords[i].z
         Double zGround = cutZGround != null && i < cutZGround.size() ? cutZGround[i] : null
-        if (zTop == null) {
+        if (!Double.isFinite(zTop)) {
             continue
         }
         if (zGround == null || zGround > zTop) {
@@ -1473,8 +1632,8 @@ static String renderProfileSvg(Map ray) {
 
     List<Map> rayPoints = new ArrayList<>()
     for (int i = 0; i < rayCoords.size(); i++) {
-        Double z = rayCoords[i][2]
-        if (z == null) {
+        Double z = rayCoords[i].z
+        if (!Double.isFinite(z)) {
             continue
         }
         rayPoints.add([d: rayDistances[i], z: z])
@@ -1492,19 +1651,17 @@ static String renderProfileSvg(Map ray) {
                 .append('" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline>')
     }
 
-    for (List<Object> node : (List<List<Object>>) ray.nodes) {
-        String nodeType = node[0] == null ? null : node[0].toString()
-        Double nodeX = toFinite(node[1])
-        Double nodeY = toFinite(node[2])
-        Double nodeZ = toFinite(node[3])
-        if (nodeX == null || nodeY == null || nodeZ == null) {
+    for (Map node : (List<Map>) ray.nodes) {
+        String nodeType = node.type == null ? null : node.type.toString()
+        Coordinate nodeCoordinate = (Coordinate) node.coordinate
+        if (nodeCoordinate == null || !Double.isFinite(nodeCoordinate.z)) {
             continue
         }
-        double distance = distanceAlongPolyline(cutCoords, nodeX, nodeY)
+        double distance = distanceAlongPolyline(cutCoords, nodeCoordinate.x, nodeCoordinate.y)
         double px = mapX(distance)
-        double py = mapY(nodeZ)
+        double py = mapY(nodeCoordinate.z)
         Double groundZ = valueAtDistance(terrainDistances, terrainZ, distance)
-        if (groundZ != null && groundZ < nodeZ) {
+        if (groundZ != null && groundZ < nodeCoordinate.z) {
             svg.append('<line x1="').append(svgNumber(px)).append('" y1="').append(svgNumber(mapY(groundZ)))
                     .append('" x2="').append(svgNumber(px)).append('" y2="').append(svgNumber(py))
                     .append('" stroke="').append(nodeColor(nodeType))
@@ -1560,9 +1717,18 @@ static String renderLegend(boolean hasBuildings, boolean hasGround, boolean hasB
     return html.toString()
 }
 
-static String renderTable(List<Map> tableRows) {
+static String renderTable(List<Map> tableRows, int bandCount) {
     StringBuilder html = new StringBuilder()
-    html.append('<div class="explain-rays-panel"><h4>Rays (sorted by LEQ)</h4><div class="explain-rays-table-wrap">')
+    html.append('<div class="explain-rays-panel"><h4>Rays (sorted by LEQ)</h4>')
+    if (bandCount > 0) {
+        List<String> labels = bandLabels(bandCount)
+        html.append('<div class="explain-rays-table-toolbar"><label>Attenuation band <select data-explain-rays-band>')
+        for (int i = 0; i < bandCount; i++) {
+            html.append('<option value="').append(i).append('">').append(esc(labels[i])).append('</option>')
+        }
+        html.append('</select></label><span class="explain-rays-band-hint">LEQ is broadband; attenuation columns show the selected band.</span></div>')
+    }
+    html.append('<div class="explain-rays-table-wrap">')
     html.append('<table class="explain-rays-table"><thead><tr>')
             .append('<th>#</th><th>Type</th><th>LEQ (dB)</th><th>aGlobal</th>')
             .append('<th>aDiv</th><th>aDif</th><th>aRef</th><th>aAtm</th><th>Length (m)</th>')
@@ -1575,11 +1741,11 @@ static String renderTable(List<Map> tableRows) {
                 .append('<td><span class="explain-rays-swatch" style="background:').append(typeColor((String) ray.type)).append('"></span> ')
                 .append(esc(ray.type)).append('</td>')
                 .append('<td>').append(esc(fmt((Double) ray.leq, 1))).append('</td>')
-                .append('<td>').append(esc(fmt((Double) ray.aGlobal, 1))).append('</td>')
-                .append('<td>').append(esc(fmt((Double) ray.aDiv, 1))).append('</td>')
-                .append('<td>').append(esc(fmt((Double) ray.aDif, 1))).append('</td>')
-                .append('<td>').append(esc(fmt((Double) ray.aRef, 1))).append('</td>')
-                .append('<td>').append(esc(fmt((Double) ray.aAtm, 1))).append('</td>')
+                .append(renderBandCell((List<Double>) ray.aGlobalBands, bandCount))
+                .append(renderBandCell((List<Double>) ray.aDivBands, bandCount))
+                .append(renderBandCell((List<Double>) ray.aDifBands, bandCount))
+                .append(renderBandCell((List<Double>) ray.aRefBands, bandCount))
+                .append(renderBandCell((List<Double>) ray.aAtmBands, bandCount))
                 .append('<td>').append(esc(String.valueOf(Math.round(ray.length == null ? 0d : (Double) ray.length)))).append('</td>')
                 .append('</tr>')
     }
@@ -1702,14 +1868,42 @@ def exec(Connection connection, Map input) {
         def countRow = sql.firstRow(countQuery, rayParameters)
         int totalRows = countRow == null ? 0 : ((Number) countRow.C).intValue()
 
-        List<Map> parsedRays = new ArrayList<>()
+        int maxRays = toInteger(input['maxRays'], 50)
+        maxRays = Math.max(1, Math.min(50, maxRays))
+
+        List<Map> selectedRays = new ArrayList<>()
+        Map directRay = null
+        double totalEnergy = 0d
         int pathIndex = 0
         int invalidPaths = 0
+        int validPaths = 0
         String rayQuery = "SELECT IDRECEIVER, IDSOURCE, LEQ, METEO, PERIOD, PATH FROM ${sqlTable}${receiverWhere}".toString()
         sql.eachRow(rayQuery, rayParameters) { row ->
             Map ray = parseRay(row.getObject(1), row.getObject(2), row.getObject(3), row.getObject(4), row.getObject(5), row.getObject(6), pathIndex)
             if (ray.valid) {
-                parsedRays.add(ray)
+                validPaths++
+                Double rayLeq = toFinite(ray.leq)
+                if (rayLeq != null) {
+                    totalEnergy += Math.pow(10d, rayLeq / 10d)
+                }
+                boolean meaningfulDirect = (Boolean) ray.direct && ((List) ray.rayCoords).size() >= 2 &&
+                        ray.length != null && ((Double) ray.length) > 0d
+                if (meaningfulDirect && (directRay == null || compareRays(ray, directRay) < 0)) {
+                    directRay = ray
+                }
+                if (selectedRays.size() < maxRays) {
+                    selectedRays.add(ray)
+                } else {
+                    int worstIndex = 0
+                    for (int i = 1; i < selectedRays.size(); i++) {
+                        if (compareRays(selectedRays[worstIndex], selectedRays[i]) < 0) {
+                            worstIndex = i
+                        }
+                    }
+                    if (compareRays(ray, selectedRays[worstIndex]) < 0) {
+                        selectedRays[worstIndex] = ray
+                    }
+                }
             } else {
                 invalidPaths++
                 logger.warn("Ray {} for receiver {} was ignored: {}", pathIndex, receiverValue, ray.error)
@@ -1717,30 +1911,13 @@ def exec(Connection connection, Map input) {
             pathIndex++
         }
 
-        if (parsedRays.isEmpty()) {
+        if (validPaths == 0) {
             return [result: renderError("No valid propagation ray was found for receiver ${receiverValue}, meteo ${meteoFilter == null ? 'NULL' : meteoFilter} and period ${periodFilter == null ? 'NULL' : periodFilter}.")]
         }
 
-        parsedRays.sort { Map left, Map right -> compareRays(left, right) }
-
-        int maxRays = toInteger(input['maxRays'], 50)
-        maxRays = Math.max(1, Math.min(50, maxRays))
-
-        List<Map> selectedRays = new ArrayList<>(parsedRays.subList(0, Math.min(maxRays, parsedRays.size())))
-
-        double totalEnergy = 0d
-        for (Map ray : parsedRays) {
-            Double rayLeq = toFinite(ray.leq)
-            if (rayLeq != null) {
-                totalEnergy += Math.pow(10d, rayLeq / 10d)
-            }
-        }
+        selectedRays.sort { Map left, Map right -> compareRays(left, right) }
         Double totalLeq = totalEnergy > 0d ? 10d * Math.log10(totalEnergy) : null
 
-        Map directRay = parsedRays.find { Map ray ->
-            (Boolean) ray.direct && ((List) ray.rayCoords).size() >= 2 &&
-                    ray.length != null && ((Double) ray.length) > 0d
-        }
         boolean directFound = directRay != null
         boolean directAdded = false
         boolean directSkipped = false
@@ -1758,25 +1935,33 @@ def exec(Connection connection, Map input) {
         for (int i = 0; i < selectedRays.size(); i++) {
             Map ray = selectedRays[i]
             ray.htmlIndex = i
-            ray.displayCoords = sampleCoordinates((List<List<Double>>) ray.rayCoords, 300)
-            ray.displayCutCoords = sampleCoordinates((List<List<Double>>) ray.cutCoords, 300)
-            List<Integer> cutIndices = sampleIndices(((List<List<Double>>) ray.cutCoords).size(), 300)
+            ray.displayCoords = sampleCoordinates((List<Coordinate>) ray.rayCoords, 300)
+            ray.displayCutCoords = sampleCoordinates((List<Coordinate>) ray.cutCoords, 300)
+            List<Integer> cutIndices = sampleIndices(((List<Coordinate>) ray.cutCoords).size(), 300)
             ray.displayCutZGround = cutIndices.collect { Integer index -> ((List<Double>) ray.cutZGround)[index] }
             ray.displayGroundCoefficients = cutIndices.collect { Integer index -> ((List<Double>) ray.groundCoefficients)[index] }
             ray.displayCutTypes = cutIndices.collect { Integer index -> ((List<String>) ray.cutTypes)[index] }
-            ray.displayRayCoords = sampleCoordinates((List<List<Double>>) ray.rayCoords, 300)
+            ray.displayRayCoords = sampleCoordinates((List<Coordinate>) ray.rayCoords, 300)
         }
 
         List<Map> tableRows = new ArrayList<>(selectedRays)
         tableRows.sort { Map left, Map right -> compareRays(left, right) }
+        int bandCount = 0
+        for (Map ray : selectedRays) {
+            bandCount = Math.max(bandCount, ((List) ray.aGlobalBands).size())
+            bandCount = Math.max(bandCount, ((List) ray.aDivBands).size())
+            bandCount = Math.max(bandCount, ((List) ray.aDifBands).size())
+            bandCount = Math.max(bandCount, ((List) ray.aRefBands).size())
+            bandCount = Math.max(bandCount, ((List) ray.aAtmBands).size())
+        }
 
         List<Double> bbox = [Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY]
         for (Map ray : selectedRays) {
-            for (List<Double> coordinate : (List<List<Double>>) ray.rayCoords) {
-                bbox[0] = Math.min(bbox[0], coordinate[0])
-                bbox[1] = Math.min(bbox[1], coordinate[1])
-                bbox[2] = Math.max(bbox[2], coordinate[0])
-                bbox[3] = Math.max(bbox[3], coordinate[1])
+            for (Coordinate coordinate : (List<Coordinate>) ray.rayCoords) {
+                bbox[0] = Math.min(bbox[0], coordinate.x)
+                bbox[1] = Math.min(bbox[1], coordinate.y)
+                bbox[2] = Math.max(bbox[2], coordinate.x)
+                bbox[3] = Math.max(bbox[3], coordinate.y)
             }
         }
 
@@ -1799,7 +1984,7 @@ def exec(Connection connection, Map input) {
                     [tableRaysInput, tableBuilding, tableGrounds, tableReceivers, tableSources, tableDEM], logger)
         }
         boolean basemapEnabled = sourceSrid != null && sourceSrid > 0
-        MathTransform wgs84Transform = null
+        CoordinateOperation wgs84Transform = null
         if (basemapEnabled && sourceSrid != 4326) {
             wgs84Transform = createWgs84Transform(sourceSrid, logger)
             if (wgs84Transform == null) {
@@ -1810,31 +1995,33 @@ def exec(Connection connection, Map input) {
             logger.info('Basemap enabled with EPSG:{} coordinates', sourceSrid)
         }
 
-        List<List<List<Double>>> buildings = loadBuildingRings(sql, connection, tableBuilding, dbType, sceneBbox, logger)
+        List<Polygon> buildings = loadBuildingRings(sql, connection, tableBuilding, dbType, sceneBbox, logger)
         List<Map> groundAreas = loadGroundAreas(sql, connection, tableGrounds, dbType, sceneBbox, logger)
-        List<Double> receiverPoint = loadPoint(sql, connection, tableReceivers, receiverValue,
+        Coordinate receiverPoint = loadPoint(sql, connection, tableReceivers, receiverValue,
                 ['IDRECEIVER', 'ID', 'PK'], dbType, logger)
-        List<Double> sourcePoint = loadPoint(sql, connection, tableSources,
+        Coordinate sourcePoint = loadPoint(sql, connection, tableSources,
                 selectedRays.isEmpty() ? null : selectedRays[0].source, ['IDSOURCE', 'ID', 'PK'], dbType, logger)
 
-        List<List<List<Double>>> mapBuildings = buildings
+        List<Polygon> mapBuildings = buildings
         List<Map> mapGroundAreas = groundAreas
-        List<Double> mapReceiverPoint = receiverPoint
-        List<Double> mapSourcePoint = sourcePoint
+        Coordinate mapReceiverPoint = receiverPoint
+        Coordinate mapSourcePoint = sourcePoint
         for (Map ray : selectedRays) {
-            ray.mapCoords = (List<List<Double>>) ray.displayCoords
+            ray.mapCoords = (List<Coordinate>) ray.displayCoords
         }
         if (basemapEnabled) {
             try {
-                mapBuildings = buildings.collect { List<List<Double>> ring -> transformCoordinates(ring, wgs84Transform) }
+                mapBuildings = buildings.collect { Polygon polygon ->
+                    (Polygon) transformGeometry(polygon, wgs84Transform)
+                }
                 mapGroundAreas = groundAreas.collect { Map area ->
-                    [ring       : transformCoordinates((List<List<Double>>) area.ring, wgs84Transform),
+                    [polygon    : (Polygon) transformGeometry((Geometry) area.polygon, wgs84Transform),
                      coefficient: area.coefficient]
                 }
                 mapReceiverPoint = receiverPoint == null ? null : transformCoordinate(receiverPoint, wgs84Transform)
                 mapSourcePoint = sourcePoint == null ? null : transformCoordinate(sourcePoint, wgs84Transform)
                 for (Map ray : selectedRays) {
-                    ray.mapCoords = transformCoordinates((List<List<Double>>) ray.displayCoords, wgs84Transform)
+                    ray.mapCoords = transformCoordinates((List<Coordinate>) ray.displayCoords, wgs84Transform)
                 }
             } catch (Exception projectionException) {
                 logger.warn('Unable to project the 2D scene to WGS84; basemap disabled: {}', projectionException.message)
@@ -1844,7 +2031,7 @@ def exec(Connection connection, Map input) {
                 mapReceiverPoint = receiverPoint
                 mapSourcePoint = sourcePoint
                 for (Map ray : selectedRays) {
-                    ray.mapCoords = (List<List<Double>>) ray.displayCoords
+                    ray.mapCoords = (List<Coordinate>) ray.displayCoords
                 }
             }
         }
@@ -1921,7 +2108,7 @@ def exec(Connection connection, Map input) {
                 .append(render2D(selectedRays, mapBuildings, mapGroundAreas, mapReceiverPoint, mapSourcePoint, basemapEnabled))
                 .append(renderLegend(!mapBuildings.isEmpty(), !mapGroundAreas.isEmpty(), basemapEnabled))
                 .append('</div>')
-        html.append(renderTable(tableRows))
+        html.append(renderTable(tableRows, bandCount))
         html.append('</div>')
         html.append(renderProfiles(selectedRays))
 
