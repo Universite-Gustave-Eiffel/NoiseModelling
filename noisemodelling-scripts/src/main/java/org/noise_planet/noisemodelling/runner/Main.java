@@ -121,10 +121,11 @@ public class Main {
         String workingDir = "";
         String scriptPath = "";
         Map<String, Object> customParameters = new HashMap<>();
-        // Check if -v option is invoked before parsing using commandLineParser
+        // Check if -v option is invoked before parsing using commandLineParser.
+        // It may be placed after the script path, so scan the raw arguments.
         for (String arg : args) {
             if (arg.equals("-v") || arg.equals("--version")) {
-                logger.info(VersionUtils.getVersionDescription());
+                System.out.println(VersionUtils.getVersionDescription());
                 List<LibraryInfo> libraryInfoList = FileUtilities.collectLibraryIdentifiers();
                 printBuildIdentifiers(logger, libraryInfoList);
                 return;

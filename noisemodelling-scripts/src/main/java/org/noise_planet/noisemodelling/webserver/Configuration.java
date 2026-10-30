@@ -128,14 +128,12 @@ public class Configuration {
             return null;
         }
         // Check if -v or --version argument is present
-        for (String arg : args) {
-            if (arg.equals("-v") || arg.equals("--version")) {
-                logger.info(VersionUtils.getVersionDescription());
-                return null;
-            }
-        }
         try {
             CommandLine commandLine = commandLineParser.parse(options, args, true);
+            if (commandLine.hasOption("v")) {
+                System.out.println(VersionUtils.getVersionDescription());
+                return null;
+            }
             Configuration config = new Configuration(commandLine.hasOption("u"));
             // Map options to fields
             if (commandLine.hasOption("s")) {

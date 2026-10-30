@@ -22,23 +22,36 @@ import java.util.Properties;
 public class VersionUtils {
     private static final String UNKNOWN = "Unknown";
 
-    private static String readProperty(String key) {
+    private static Properties loadProperties() {
+        Properties prop = new Properties();
         try (InputStream input = VersionUtils.class.getResourceAsStream("version.properties")) {
-            Properties prop = new Properties();
-            if (input == null) {
-                return UNKNOWN;
+            if (input != null) {
+                prop.load(input);
             }
-            prop.load(input);
-            String value = prop.getProperty(key);
-            // Unresolved maven placeholder (ex: build without git metadata)
-            if (value == null || value.isBlank() || value.startsWith("${")) {
-                return UNKNOWN;
-            }
-            return value;
         } catch (Exception ex) {
             LoggerFactory.getLogger(VersionUtils.class).error("Error while reading version.properties", ex);
+        }
+        return prop;
+    }
+
+    /**
+     * Resolve a property value, falling back to {@link #UNKNOWN} for missing,
+     * blank or unresolved maven placeholders (ex: build without git metadata).
+     *
+     * @param properties properties to read from
+     * @param key        property key
+     * @return resolved value or {@link #UNKNOWN}
+     */
+    static String resolveProperty(Properties properties, String key) {
+        String value = properties.getProperty(key);
+        if (value == null || value.isBlank() || value.startsWith("${")) {
             return UNKNOWN;
         }
+        return value;
+    }
+
+    private static String readProperty(String key) {
+        return resolveProperty(loadProperties(), key);
     }
 
     /**
