@@ -1031,7 +1031,7 @@ public class RailwayCnossosTest {
         double vMaxInfra = 160;
         double vehicleCommercial = 140;
 
-        double[] expectedValuesLWRolling = new double[]{85.05427842868576, 81.63335111832104, 81.85016281978399, 83.33976489966315, 82.28681880814882, 83.4686690054136, 85.93105562495579, 89.69743551503667, 89.08549350799547, 89.36103620382562, 89.1966481858318, 88.47702838866452, 89.69657732240154, 88.29720686001869, 87.88825879230899, 87.01392154824659, 85.87578766317526, 85.69547416608819, 82.98544960071986, 79.91544465256233, 77.67977119995606, 74.85492925014658, 72.54585957351998, 70.86333999093841};
+        double[] expectedValuesLWRolling = new double[]{85.0356275790203, 81.58351029336424, 81.85016281978399, 83.33976489966315, 82.28681880814882, 83.4686690054136, 85.93105562495579, 89.69743551503667, 89.08549350799547, 89.36103620382562, 89.1966481858318, 88.47702838866452, 89.69657732240154, 88.29720686001869, 87.88825879230899, 87.01392154824659, 85.87578766317526, 85.69547416608819, 82.98544960071986, 79.91544465256233, 77.67977119995606, 74.85492925014658, 72.54585957351998, 70.86333999093841};
         RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
         RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
@@ -1049,7 +1049,7 @@ public class RailwayCnossosTest {
          vMaxInfra = 160;
          vehicleCommercial = 140;
 
-        expectedValuesLWRolling = new double[]{87.54969983366365, 86.55794342737377, 84.92067599470874, 84.70523348185304, 82.7716998134384, 82.98776531870524, 84.25749976858529, 88.94899083419682, 89.39145390987349, 89.54697905503986, 89.52705236723705, 90.23754211877639, 91.5567850415151, 91.81504840958877, 89.77801296078712, 88.78474104561082, 89.5540219073869, 89.22164976179997, 85.00318090023626, 82.36670153730523, 79.62795077374773, 77.01031134267114, 74.50086268386653, 72.44098460810221};
+        expectedValuesLWRolling = new double[]{87.54969983366365, 86.54603707311898, 84.8623902660814, 84.70523348185304, 82.7716998134384, 82.98776531870524, 84.25749976858529, 88.94899083419682, 89.39145390987349, 89.54697905503986, 89.52705236723705, 90.23754211877639, 91.5567850415151, 91.81504840958877, 89.77801296078712, 88.78474104561082, 89.5540219073869, 89.22164976179997, 85.00318090023626, 82.36670153730523, 79.62795077374773, 77.01031134267114, 74.50086268386653, 72.44098460810221};
         vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
         trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
@@ -1070,7 +1070,7 @@ public class RailwayCnossosTest {
         vMaxInfra = 160;
         vehicleCommercial = 140;
 
-        expectedValuesLWRolling = new double[]{87.80896700246346, 87.53344344838933, 85.61580212434181, 85.18802786978557, 82.75458619212245, 83.24188976467177, 83.58338471466573, 88.64608635718687, 89.27296353283892, 89.82168594671896, 89.20286476066923, 90.74351983643352, 91.71731844080462, 92.59192971940789, 90.30350564974347, 88.97930903479569, 90.23574133024991, 90.06410942764273, 85.35336956792109, 82.94691429305296, 80.02372786783368, 77.47634951462896, 74.9563116743604, 72.8052227002117};
+        expectedValuesLWRolling = new double[]{87.80896700246346, 87.53132450555256, 85.54382120226565, 85.18802786978557, 82.75458619212245, 83.24188976467177, 83.58338471466573, 88.64608635718687, 89.27296353283892, 89.82168594671896, 89.20286476066923, 90.74351983643352, 91.71731844080462, 92.59192971940789, 90.30350564974347, 88.97930903479569, 90.23574133024991, 90.06410942764273, 85.35336956792109, 82.94691429305296, 80.02372786783368, 77.47634951462896, 74.9563116743604, 72.8052227002117};
         vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
         trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
@@ -1088,7 +1088,7 @@ public class RailwayCnossosTest {
         vMaxInfra = 160;
         vehicleCommercial = 5000;
 
-        expectedValuesLWRolling = new double[]{87.85586849125458, 88.3869564887285, 89.06787276002217, 87.2478456693535, 83.95731367252331, 83.3374979072442, 83.96625385539393, 87.60693515263586, 88.78373342115019, 89.7403258771715, 89.75197682216076, 90.39208759803819, 93.04043862621191, 93.17583955398433, 92.7085837637564, 90.3724464460148, 90.87291043993733, 92.15769325425761, 88.01217176240718, 83.93676133374842, 81.64761386215261, 78.55983634643331, 76.2365296225307, 74.03119936245403};
+        expectedValuesLWRolling = new double[]{87.85586849125458, 88.3869564887285, 89.05145286877881, 87.19529277739333, 83.95731367252331, 83.3374979072442, 83.96625385539393, 87.60693515263586, 88.78373342115019, 89.7403258771715, 89.75197682216076, 90.39208759803819, 93.04043862621191, 93.17583955398433, 92.7085837637564, 90.3724464460148, 90.87291043993733, 92.15769325425761, 88.01217176240718, 83.93676133374842, 81.64761386215261, 78.55983634643331, 76.2365296225307, 74.03119936245403};
         vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
         trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
@@ -1106,7 +1106,7 @@ public class RailwayCnossosTest {
         vMaxInfra = 5000;
         vehicleCommercial = 5000;
 
-        expectedValuesLWRolling = new double[]{83.24886480119524, 85.18194002216853, 89.08151676196012, 92.67509382376258, 93.1075012304155, 97.6376961109153, 96.74493387168253, 98.86145954177923, 98.24730900016604, 98.10859179624859, 96.04314722747985, 92.46183413347131, 92.77580082543642, 93.3599323823175, 94.06481890077399, 95.48655373413371, 99.03245435289699, 102.51154951460222, 101.27120220108063, 100.30440813817992, 99.31995947816299, 96.91915418746535, 94.53430189935037, 91.16090275052957};
+        expectedValuesLWRolling = new double[]{83.24886480119524, 85.18194002216853, 89.08151676196012, 92.67509382376258, 93.1075012304155, 97.6376961109153, 96.74493387168253, 98.86145954177923, 98.24730900016604, 98.10859179624859, 96.02424729354304, 92.4122913387775, 92.77580082543642, 93.3599323823175, 94.06481890077399, 95.48655373413371, 99.03245435289699, 102.51154951460222, 101.27120220108063, 100.30440813817992, 99.31995947816299, 96.91915418746535, 94.53430189935037, 91.16090275052957};
         vehicleParameters = new RailwayVehicleCnossosParameters(vehCat, vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
         trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
@@ -1118,5 +1118,100 @@ public class RailwayCnossosTest {
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             assertEquals(expectedValuesLWRolling[idFreq], lWCalculate[idFreq], EPSILON_TEST1);
         }
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Lightrail_Indication() throws IOException {
+        loadCnossosData();
+
+        assertTrue(railwayCnossos.isLightRail("SNCF67"));
+        assertTrue(railwayCnossos.isLightRail("SNCF68"));
+        assertTrue(railwayCnossos.isLightRail("NL_CAT7"));
+        assertTrue(railwayCnossos.isLightRail("NL_CAT10"));
+        assertTrue(railwayCnossos.isLightRail("NL_trams"));
+
+        // Missing Lightrail field defaults to heavy rail
+        assertFalse(railwayCnossos.isLightRail("NL_CAT8"));
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Minimum_Speed() throws IOException {
+        loadCnossosData();
+
+        // Vehicle flow is proportional to speed here, so the flow correction cancels and
+        // the emitted level only depends on the speed used for the total effective roughness.
+        double[] heavy20 = evaluateSource("NL_CAT8", 20, 20_000, "0", "ROLLING");
+        double[] heavy40 = evaluateSource("NL_CAT8", 40, 40_000, "0", "ROLLING");
+        double[] heavy50 = evaluateSource("NL_CAT8", 50, 50_000, "0", "ROLLING");
+        assertArrayEquals(heavy50, heavy20, EPSILON_TEST1);
+        assertArrayEquals(heavy50, heavy40, EPSILON_TEST1);
+
+        double[] light20 = evaluateSource("NL_CAT10", 20, 20_000, "0", "ROLLING");
+        double[] light30 = evaluateSource("NL_CAT10", 30, 30_000, "0", "ROLLING");
+        double[] light40 = evaluateSource("NL_CAT10", 40, 40_000, "0", "ROLLING");
+        assertArrayEquals(light30, light20, EPSILON_TEST1);
+
+        boolean differs = false;
+        for (int idFreq = 0; idFreq < light30.length; idFreq++) {
+            if (Math.abs(light30[idFreq] - light40[idFreq]) > EPSILON_TEST1) {
+                differs = true;
+                break;
+            }
+        }
+        assertTrue(differs, "40 km/h is above the light-rail minimum and must not be clamped");
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Minimum_Speed_Bridge() throws IOException {
+        loadCnossosData();
+
+        // CNOSSOS formula (2.3.18) also uses the total effective roughness, so the minimum
+        // speed applies to the bridge source as well.
+        double[] bridge20 = evaluateSource("NL_CAT8", 20, 20_000, "EU2", "BRIDGE");
+        double[] bridge50 = evaluateSource("NL_CAT8", 50, 50_000, "EU2", "BRIDGE");
+        assertArrayEquals(bridge50, bridge20, EPSILON_TEST1);
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Minimum_Speed_Does_Not_Affect_Flow() throws IOException {
+        loadCnossosData();
+
+        // Same flow and same clamped roughness speed, but different actual speeds: the only
+        // difference must be the flow correction, which uses the actual speed.
+        double flow = 20_000;
+        double[] at20 = evaluateSource("NL_CAT8", 20, flow, "0", "ROLLING");
+        double[] at50 = evaluateSource("NL_CAT8", 50, flow, "0", "ROLLING");
+        double expectedFlowDelta = 10 * Math.log10(50. / 20.);
+        for (int idFreq = 0; idFreq < at20.length; idFreq++) {
+            assertEquals(at50[idFreq] + expectedFlowDelta, at20[idFreq], EPSILON_TEST1);
+        }
+    }
+
+    private void loadCnossosData() throws IOException {
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
+    }
+
+    private double[] evaluateSource(String vehCat, double vehicleSpeed, double vehiclePerHour,
+                                    String bridgeTransfert, String source) throws IOException {
+        int rollingCondition = 0;
+        double idlingTime = 0;
+        int nTracks = 1;
+        String trackTransfer = "NL_BB1";
+        String railRoughness = "NL";
+        String impactNoise = "1";
+        int curvature = 0;
+        boolean isTunnel = false;
+        double vMaxInfra = 160;
+        double vehicleCommercial = 140;
+
+        RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(vehCat,
+                vehicleSpeed, vehiclePerHour, rollingCondition, idlingTime);
+        RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra,
+                trackTransfer, railRoughness, impactNoise, bridgeTransfert, curvature,
+                vehicleCommercial, isTunnel, nTracks);
+        return railwayCnossos.evaluate(vehicleParameters, trackParameters)
+                .getRailwaySourceList().get(source).getlW();
     }
 }

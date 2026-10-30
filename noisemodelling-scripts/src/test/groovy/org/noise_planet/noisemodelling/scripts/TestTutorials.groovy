@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.zip.GZIPOutputStream
 import java.util.zip.ZipFile
 
 import static org.junit.jupiter.api.Assertions.*
@@ -397,6 +398,40 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(Paths.get(resultsFolder, "EXPOSURES.shp").toFile().exists());
         assertTrue(buildingsPath.toFile().exists());
         assertTrue(roadsPath.toFile().exists());
+    }
+
+    @Test
+    void testTrafficFromEventsSkippedLink(@TempDir Path tempDataDir) {
+        Map<String, String> files = [
+                "output_network.xml.gz": """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE network SYSTEM "http://www.matsim.org/files/dtd/network_v2.dtd">
+<network><nodes>
+<node id="a" x="0" y="0"/><node id="b" x="100" y="0"/><node id="c" x="200" y="0"/>
+</nodes><links>
+<link id="1" from="a" to="b" length="100" freespeed="13.9" capacity="1000" permlanes="1" modes="car"/>
+<link id="2" from="b" to="c" length="100" freespeed="13.9" capacity="1000" permlanes="1" modes="car"/>
+<link id="3" from="c" to="a" length="200" freespeed="13.9" capacity="1000" permlanes="1" modes="car"/>
+</links></network>""",
+                "output_allVehicles.xml.gz": """<?xml version="1.0" encoding="UTF-8"?>
+<vehicleDefinitions xmlns="http://www.matsim.org/files/dtd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.matsim.org/files/dtd http://www.matsim.org/files/dtd/vehicleDefinitions_v2.0.xsd">
+<vehicleType id="car"/>
+<vehicle id="car1" type="car"/>
+</vehicleDefinitions>""",
+                "output_events.xml.gz": """<?xml version="1.0" encoding="utf-8"?>
+<events version="1.0">
+<event time="90.0" type="vehicle enters traffic" person="p1" link="2" vehicle="car1" networkMode="car" relativePosition="1.0"/>
+<event time="100.0" type="entered link" vehicle="car1" link="3"/>
+<event time="120.0" type="left link" vehicle="car1" link="3"/>
+</events>"""]
+        files.each { name, content ->
+            new GZIPOutputStream(Files.newOutputStream(tempDataDir.resolve(name))).withWriter("UTF-8") { it << content }
+        }
+
+        new Traffic_From_Events().exec(connection, [folder: tempDataDir.toString(), SRID: "2154", skipUnused: true])
+
+        // Only link 3 is used: its emission must be joined to its own geometry
+        Sql sql = new Sql(connection)
+        assertEquals(24, sql.firstRow("SELECT COUNT(*) CPT FROM MATSIM_ROADS R INNER JOIN MATSIM_ROADS_LW E ON R.PK = E.IDSOURCE WHERE R.LINK_ID = '3'")[0] as Integer)
     }
 
     @Test

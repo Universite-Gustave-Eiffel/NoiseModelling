@@ -584,6 +584,43 @@ public class NoiseMapByReceiverMakerTest {
 
 
     @Test
+    public void testEmissionTableWithDenPeriods() throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), HEIGHT DOUBLE)");
+            st.execute("CREATE TABLE SOURCES_GEOM(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO SOURCES_GEOM VALUES(1, ST_GeomFromText('POINT Z(0 0 0.5)', 2154))");
+            st.execute("CREATE TABLE SOURCES_EMISSION(IDSOURCE INT, PERIOD VARCHAR, HZ63 REAL, HZ125 REAL," +
+                    " HZ250 REAL, HZ500 REAL, HZ1000 REAL, HZ2000 REAL, HZ4000 REAL, HZ8000 REAL)");
+            for (String period : new String[]{"D", "E", "N"}) {
+                st.execute("INSERT INTO SOURCES_EMISSION VALUES(1, '" + period + "', 90, 90, 90, 90, 90, 90, 90, 90)");
+            }
+            st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, ST_GeomFromText('POINT Z(50 0 4)', 2154))");
+
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "SOURCES_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setSourcesEmissionTableName("SOURCES_EMISSION");
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(200);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
+
+            Map<String, Double> laeqPerPeriod = new HashMap<>();
+            try (ResultSet rs = st.executeQuery("SELECT PERIOD, LAEQ FROM RECEIVERS_LEVEL")) {
+                while (rs.next()) {
+                    laeqPerPeriod.put(rs.getString("PERIOD"), rs.getDouble("LAEQ"));
+                }
+            }
+            // Same spectrum for D, E and N, so DEN = L + 10 log10(12/24 + 4/24 * 10^0.5 + 8/24 * 10)
+            double laeq = laeqPerPeriod.get("D");
+            assertTrue(laeq > 0, "LAEQ of period D is " + laeq);
+            assertEquals(laeq, laeqPerPeriod.get("E"), 0.01);
+            assertEquals(laeq, laeqPerPeriod.get("N"), 0.01);
+            assertEquals(laeq + 10 * Math.log10(12. / 24. + 4. / 24. * Math.pow(10, 0.5) + 8. / 24. * 10),
+                    laeqPerPeriod.get("DEN"), 0.01);
+        }
+    }
+
+    @Test
     public void testPointDem() throws Exception {
         try (Statement st = connection.createStatement()) {
             // Import shape file
