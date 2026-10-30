@@ -19,6 +19,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,6 +34,15 @@ public class ConfigurationTest {
     @Test
     public void testLongVersionFlag() {
         assertVersionFlag("--version");
+    }
+
+    @Test
+    public void testConfigurationParsesWithoutVersionFlag() {
+        Configuration configuration = Configuration.createConfigurationFromArguments(
+                new String[]{"-s", "scripts/", "-p", "9001"});
+        assertNotNull(configuration);
+        assertEquals("scripts/", configuration.scriptPath);
+        assertEquals(9001, configuration.port);
     }
 
     @Test
