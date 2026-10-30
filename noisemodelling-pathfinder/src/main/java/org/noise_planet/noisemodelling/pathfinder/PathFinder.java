@@ -747,6 +747,8 @@ public class PathFinder {
             }
             if (!completeReflectionChain) {
                 // The reflection chain could not be completed, ignore this image receiver
+                LOGGER.debug("Ignoring incomplete reflection chain for source {} receiver {} on wall {} ({} reflection point(s) resolved)",
+                        src.position, rcv.position, seg.primaryKey, rayPath.size());
                 continue;
             }
             // Compute direct path between source and first reflection point, add profile to the data
