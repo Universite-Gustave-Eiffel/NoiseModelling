@@ -72,6 +72,15 @@ Table definition
 * ``COMSPD``
 	* Description: Commercial speed on the section *(in km/h)*
 	* Type: Double
+* ``PLATFORM``
+	* Description: Railway platform identifier, listed in the `RailwayPlatforms.json`_ file. It defines the platform cross-section (track gauge, ballast shoulder, ground factors and rail height). Optional; when the column is absent or empty, the ``DEFAULT`` platform is used. This input only affects emission and propagation calculations; it does not modify the site topography or its land cover. To update those, use the ``Enrich Landcover with railways`` and ``Enrich DEM with railways`` blocks.
+		* ``DEFAULT`` = Default SNCF platform on ballasted track
+		* ``SNCF`` = SNCF platform
+		* ``SNCF_LGV`` = SNCF LGV platform (wider track spacing)
+	* Type: Varchar
+* ``GS``
+	* Description: Ground factor between the rails (``0`` = hard, ``1`` = soft). Optional; overrides the ``g3`` value of the selected platform. If the column is absent or ``NULL``, the selected platform's ``g3`` is used (``1`` for ``DEFAULT``).
+	* Type: Double
 * ``ISTUNNEL``
 	* Description: Indicates whether the section is a tunnel or not (``0`` = no / ``1`` = yes)
 	* Type: Boolean 
@@ -120,4 +129,5 @@ Table definition
 .. _RailwayEmissionCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayEmissionCnossos.json
 .. _RailwayVehiclesCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json
 .. _RailwayTrainsets.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayTrainsets.json
+.. _RailwayPlatforms.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayPlatforms.json
 
