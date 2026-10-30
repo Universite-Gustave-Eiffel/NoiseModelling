@@ -10,18 +10,44 @@ import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import time
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 HEIGHTS = (1, 3, 5)
 ORDER = ("OFF", "ON", "ON", "OFF")
+STOCK_SCRIPTS = (
+    "noisemodelling/wps/Import_and_Export/Import_File.groovy",
+    "noisemodelling/wps/NoiseModelling/Noise_level_from_traffic.groovy",
+    "noisemodelling/wps/Import_and_Export/Export_Table.groovy",
+)
 
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def stock_script_hashes(stock):
+    return {name: digest(stock / name) for name in STOCK_SCRIPTS}
+
+
+def check_pins(stock, root, method):
+    """Check preparation pins before copying inputs or starting a timed family."""
+    if method.get("stock_script_sha256") != stock_script_hashes(stock):
+        raise ValueError("Stock script hashes differ from preparation")
+    wrappers = {p.name: digest(p) for p in HERE.glob("*.groovy")}
+    if method["script_sha256"] != wrappers:
+        raise ValueError("Benchmark Groovy script hashes differ from preparation")
+    resources = stock / "resources/org/noise_planet/noisemodelling/wps"
+    for name, expected in method["source_resource_sha256"].items():
+        if digest(resources / name) != expected:
+            raise ValueError(f"Input resource hash differs from preparation: {name}")
+    for height in HEIGHTS:
+        path = root / "inputs" / f"H{height}" / "h2gisdb.mv.db"
+        if digest(path) != method["inputs"][f"H{height}"]["db_sha256"]:
+            raise ValueError(f"Prepared input database hash differs: {path}")
 
 
 def environment(stock):
@@ -85,6 +111,7 @@ def prepare(stock, root):
         "data": "Official release tutorial resources; no third-party input payload redistributed here",
         "source_resource_sha256": {p.name: digest(p) for p in source_files},
         "script_sha256": {p.name: digest(p) for p in HERE.glob("*.groovy")},
+        "stock_script_sha256": stock_script_hashes(stock),
         "height_m": HEIGHTS,
         "profile_order": ORDER,
         "threads": 1,
@@ -117,11 +144,7 @@ def prepare(stock, root):
 
 def run(stock, root):
     method = json.loads((root / "METHOD_PRE_RUN.json").read_text())
-    for height in HEIGHTS:
-        assert (
-            digest(root / "inputs" / f"H{height}" / "h2gisdb.mv.db")
-            == method["inputs"][f"H{height}"]["db_sha256"]
-        )
+    check_pins(stock, root, method)
     rows = []
     for index, mode in enumerate(ORDER):
         start = time.perf_counter()
@@ -171,7 +194,14 @@ def run(stock, root):
 
 def verify(root):
     data = json.loads((root / "RESULT.json").read_text())
-    assert len(data["families"]) == 4
+    families = data["families"]
+    if [(f["index"], f["mode"]) for f in families] != list(enumerate(ORDER)):
+        raise ValueError("Expected the declared OFF/ON/ON/OFF families, in order")
+    if any(
+        not math.isfinite(f["whole_family_s"]) or f["whole_family_s"] <= 0
+        for f in families
+    ):
+        raise ValueError("Family wall times must be finite and positive")
     checked = []
     for height in HEIGHTS:
         baseline = root / "family_0_OFF" / f"H{height}" / "RECEIVERS_LEVEL.csv"
@@ -179,14 +209,22 @@ def verify(root):
             reader = csv.DictReader(stream)
             columns = reader.fieldnames
             rows = list(reader)
-        assert rows and columns
+        if not rows or not columns or len(columns) != len(set(columns)):
+            raise ValueError(f"Empty CSV or duplicate columns: {baseline}")
+        if not {"IDRECEIVER", "PERIOD", "LAEQ", "LEQ"}.issubset(columns):
+            raise ValueError(f"Missing required CSV columns: {baseline}")
+        if any(set(row) != set(columns) or None in row.values() for row in rows):
+            raise ValueError(f"Malformed CSV row shape: {baseline}")
         identities = {(r["IDRECEIVER"], r["PERIOD"]) for r in rows}
         expected_receivers = data["method"]["inputs"][f"H{height}"]["scene"]["counts"][
             "RECEIVERS"
         ]
-        assert len(rows) == len(identities)
-        assert {r["PERIOD"] for r in rows} == {"D", "E", "N", "DEN"}
-        assert len({r["IDRECEIVER"] for r in rows}) == expected_receivers
+        if len(rows) != len(identities):
+            raise ValueError(f"Duplicate receiver/period identities: {baseline}")
+        if {r["PERIOD"] for r in rows} != {"D", "E", "N", "DEN"}:
+            raise ValueError(f"Missing or unexpected periods: {baseline}")
+        if len({r["IDRECEIVER"] for r in rows}) != expected_receivers:
+            raise ValueError(f"Missing or unexpected receiver records: {baseline}")
         period_counts = {
             period: sum(r["PERIOD"] == period for r in rows)
             for period in ("D", "E", "N", "DEN")
@@ -194,7 +232,8 @@ def verify(root):
         for row in rows:
             for name in columns:
                 if name.startswith("HZ") or name in {"LAEQ", "LEQ"}:
-                    assert math.isfinite(float(row[name]))
+                    if not math.isfinite(float(row[name])):
+                        raise ValueError(f"Non-finite level in {name}: {baseline}")
         for family in data["families"]:
             path = (
                 root
@@ -203,7 +242,8 @@ def verify(root):
                 / "RECEIVERS_LEVEL.csv"
             )
             if family["index"] != 0:
-                assert filecmp.cmp(baseline, path, shallow=False), str(path)
+                if not filecmp.cmp(baseline, path, shallow=False):
+                    raise ValueError(f"Complete CSV bytes differ: {path}")
             checked.append(
                 {
                     "file": str(path.relative_to(root)),

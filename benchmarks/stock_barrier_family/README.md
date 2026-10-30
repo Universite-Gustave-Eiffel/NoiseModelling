@@ -19,8 +19,12 @@ python summarize_jfr.py /path/to/new-run
 Preparation and measurement refuse to overwrite their respective output paths.
 Keep the scripts unchanged between preparation and measurement. Setup imports
 the published `buildings`, `ROADS2`, `receivers`, `dem` and `ground_type` inputs.
-`METHOD_PRE_RUN.json` records hashes of all input resource files and both Groovy
-scripts, the three prepared H2 database hashes and complete scene descriptions.
+`METHOD_PRE_RUN.json` records hashes of all input resource files, both local Groovy
+wrappers, and all three stock scripts actually loaded: `Import_File.groovy`,
+`Noise_level_from_traffic.groovy` and `Export_Table.groovy`. It also records the
+three prepared H2 database hashes and complete scene descriptions. Before starting
+the measured families, `run` checks these hashes and raises an exception on a
+mismatch, including when Python is invoked with `-O`.
 Keep that file with the results. H2 file hashes identify the prepared local
 inputs; byte-identical independently rebuilt H2 container files are not assumed.
 
@@ -36,7 +40,9 @@ reflection algorithm.
 Calculation settings are fixed: one processing thread, reflection order 1,
 source distance 150 m, reflection distance 50 m, both diffraction options on,
 maximum error 0, temperature 20 C, humidity 70%, wall absorption 0.1. Other
-settings retain stock 5.0.1 defaults, with its scripts pinned by hash. Every
+settings retain stock 5.0.1 defaults. The loaded stock scripts are pinned to the
+hashes captured at preparation and checked again before measurement; this is not
+an independent authentication of the release. Every
 case launches a fresh stock CLI on a copy of the prepared input database and
 exports **all** `RECEIVERS_LEVEL` columns and rows using the official exporter.
 
@@ -54,7 +60,8 @@ Verification and JFR decoding occur afterwards. The verifier records actual nati
 identities and all input receivers in the combined export, finite level columns
 and byte-identical **complete**
 CSV files for the same height across all four families. It does not assert raw
-H2 output-file byte identity. Recorded JFR stacks are available in full; the
+H2 output-file byte identity. JFR recordings span startup through exit; some
+recorded stacks are truncated. The
 summary classifies each sample by the nearest recognized library frame and
 also reports leaf methods. Those counts are sampled runnable-thread stacks,
 not percentages of elapsed wall time or complete CPU accounting.
@@ -88,3 +95,11 @@ receivers, D/E/N for 756 each. All nine non-reference same-height comparisons
 passed byte for byte. Six JFR recordings contain 5119 stack samples. Observed
 JFR overhead was 5.52%, so this local profile is HARNESS_DOMINATED and remains
 a raw diagnostic, without a wall-time capacity claim.
+
+Small verifier and JFR-parser tests require only the Python standard library and
+synthetic fixtures; no Java, H2 database, release download or simulation is needed:
+
+```sh
+python -m unittest discover -s tests -v
+python -O -m unittest discover -s tests -v
+```
