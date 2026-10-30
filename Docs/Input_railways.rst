@@ -79,7 +79,7 @@ Table definition
 		* ``SNCF_LGV`` = SNCF LGV platform (wider track spacing)
 	* Type: Varchar
 * ``GS``
-	* Description: Ground factor between the rails (``0`` = hard, ``1`` = soft). Optional; overrides the ``g3`` value of the selected platform. Default value: the selected platform's ``g3`` (``1`` for ``DEFAULT``).
+	* Description: Ground factor between the rails (``0`` = hard, ``1`` = soft). Optional; overrides the ``g3`` value of the selected platform. If the column is absent or ``NULL``, the selected platform's ``g3`` is used (``1`` for ``DEFAULT``).
 	* Type: Double
 * ``ISTUNNEL``
 	* Description: Indicates whether the section is a tunnel or not (``0`` = no / ``1`` = yes)
