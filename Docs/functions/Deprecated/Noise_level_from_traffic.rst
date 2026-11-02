@@ -44,7 +44,7 @@ Mandatory inputs
    
    *  THE_GEOM  : the 3D geometry of the sources (POINT, MULTIPOINT)
    
-   *  REFL_IGNOR  : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver
+   *  REFL_IGNOR  : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
 
    💡 This table can be generated from the WPS Blocks in the "Receivers" folder
 
