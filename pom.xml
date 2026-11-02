@@ -133,6 +133,7 @@
                 <configuration>
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
+                    <timestampFormat>yyyy-MM-dd HH:mm:ss</timestampFormat>
                 </configuration>
             </plugin>
             <!-- Javadoc generation -->

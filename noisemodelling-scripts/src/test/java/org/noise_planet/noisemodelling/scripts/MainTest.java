@@ -25,7 +25,10 @@ import org.noise_planet.noisemodelling.scripts.Database_Manager.Clean_Database;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 
 import javax.sql.DataSource;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map;
@@ -172,5 +175,29 @@ public class MainTest {
         try (Connection connection = postgisDataSource.getConnection()) {
             assertTrue(JDBCUtilities.tableExists(connection, "testdelaunay.receivers"), "Table RECEIVERS should exist in PostGIS");
         }
+    }
+
+    @Test
+    public void testShortVersionFlag() {
+        String output = captureStdout(() -> Main.parseArgsAndRun("-v"));
+        assertTrue(output.contains(VersionUtils.getVersionDescription()));
+    }
+
+    @Test
+    public void testLongVersionFlagAfterScriptPath() {
+        String output = captureStdout(() -> Main.parseArgsAndRun("dummy.groovy", "--version"));
+        assertTrue(output.contains(VersionUtils.getVersionDescription()));
+    }
+
+    private static String captureStdout(Runnable runnable) {
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (PrintStream printStream = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(printStream);
+            runnable.run();
+        } finally {
+            System.setOut(originalOut);
+        }
+        return output.toString(StandardCharsets.UTF_8);
     }
 }
