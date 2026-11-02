@@ -256,8 +256,11 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         multiThread.resultsCache.cutProfileCount.addAndGet(1);
         final SceneWithEmission scene = multiThread.sceneWithEmission;
-        if(scene.getCloseReceiverReflectionWallDistance() > 0
-                && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
+        CutPointReceiver receiver = cutProfile.getReceiver();
+        double closeReflectionWallDistance = receiver == null ? 0 :
+                scene.getCloseReceiverReflectionWallDistance(receiver.receiverPk);
+        if(closeReflectionWallDistance > 0
+                && cutProfile.hasCloseReflectionBeforeReceiver(closeReflectionWallDistance)) {
             return strategy;
         }
         CutPointSource source = cutProfile.getSource();

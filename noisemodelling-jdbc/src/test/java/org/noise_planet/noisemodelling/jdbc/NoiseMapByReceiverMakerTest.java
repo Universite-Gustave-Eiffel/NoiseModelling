@@ -119,6 +119,50 @@ public class NoiseMapByReceiverMakerTest {
         assertDoesNotThrow(() -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
     }
 
+    @Test
+    public void testReceiverReflectionIgnoreField() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGONZ), HEIGHT DOUBLE)");
+            st.execute("INSERT INTO BUILDINGS VALUES(1, 'POLYGONZ ((0 0 0, 1 0 0, 1 1 0, 0 1 0, 0 0 0))', 5)");
+            st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ), REFL_IGNOR DOUBLE)");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, 'POINTZ (1.5 0 2)', 0.5)");
+            st.execute("INSERT INTO RECEIVERS VALUES(2, 'POINTZ (2.5 0 2)', NULL)");
+            st.execute("INSERT INTO RECEIVERS VALUES(3, 'POINTZ (3.5 0 2)', -1)");
+            st.execute("CREATE TABLE SOURCES(PK INT PRIMARY KEY, THE_GEOM GEOMETRY)");
+        }
+
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES", "RECEIVERS");
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.initialize(connection);
+
+        SceneWithEmission scene = noiseMapByReceiverMaker.getTableLoader().create(connection,
+                new CellIndex(0, 0), new HashSet<>());
+        assertEquals(0.5, scene.getCloseReceiverReflectionWallDistance(1L), 1e-6);
+        assertEquals(0.0, scene.getCloseReceiverReflectionWallDistance(2L), 1e-6);
+        assertEquals(0.0, scene.getCloseReceiverReflectionWallDistance(3L), 1e-6);
+    }
+
+    @Test
+    public void testReceiverWithoutReflectionIgnoreField() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGONZ), HEIGHT DOUBLE)");
+            st.execute("INSERT INTO BUILDINGS VALUES(1, 'POLYGONZ ((0 0 0, 1 0 0, 1 1 0, 0 1 0, 0 0 0))', 5)");
+            st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ))");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, 'POINTZ (1.5 0 2)')");
+            st.execute("CREATE TABLE SOURCES(PK INT PRIMARY KEY, THE_GEOM GEOMETRY)");
+        }
+
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES", "RECEIVERS");
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.initialize(connection);
+
+        SceneWithEmission scene = noiseMapByReceiverMaker.getTableLoader().create(connection,
+                new CellIndex(0, 0), new HashSet<>());
+        assertEquals(0.0, scene.getCloseReceiverReflectionWallDistance(1L), 1e-6);
+    }
+
     /**
      * Check if the altitude of the roofs of buildings are well constructed from the DEM when height is provided
      * but the buildings polygons are in 2D.

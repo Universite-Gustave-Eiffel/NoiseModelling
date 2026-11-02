@@ -30,6 +30,12 @@ If you are working with receivers based on buildings (*e.g* 50 cm around the bui
 	* Description: building's Primary Key (``PK``), allowing to link the receivers with their building
 	* Type: Integer
 
+The following column is optional and applies to reflection computation:
+
+* ``REFL_IGNOR``
+	* Description: maximum receiver-to-facade distance (in meters) below which reflection paths on the nearby facade are ignored. This replaces the former global ``confMinWallReflDist`` parameter, so the threshold can be set for each receiver. ``NULL`` or ``0`` disables the filter. A typical value is ``0.2`` when receivers are placed ``0.1`` m from the facades.
+	* Type: Double
+
 
 Parameters
 ********************

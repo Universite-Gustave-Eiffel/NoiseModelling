@@ -101,7 +101,8 @@ inputs = [
                 description: 'Name of the Receivers table </br> </br>' +
                         'The table must contain: </br> <ul>' +
                         '<li> <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY) </li> ' +
-                        '<li> <b> THE_GEOM </b> : the 3D geometry of the receivers (POINTZ) </li> </ul>' +
+                        '<li> <b> THE_GEOM </b> : the 3D geometry of the receivers (POINTZ) </li> ' +
+                        '<li> <b> REFL_IGNOR </b> : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Blocks in the "Receivers" folder',
                 type       : String.class
         ],
@@ -199,14 +200,6 @@ inputs = [
                 description: 'Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters). </br> </br>' +
                              '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
                 default    : 50,
-                type: Double.class
-        ],
-        confMinWallReflDist: [
-                name       : 'Ignore close reflections',
-                title      : 'Ignore close reflections',
-                description: 'Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. ' +
-                        'Use <b>0</b> to keep all reflections.',
-                default: 0,
                 type: Double.class
         ],
         confThreadNumber        : [
@@ -421,15 +414,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         max_ref_dist = Double.valueOf(input['confMaxReflDist'] as String)
     }
 
-    double close_receiver_reflection_wall_distance = input.getOrDefault("confMinWallReflDist", 0.0) as Double
-    if (close_receiver_reflection_wall_distance < 0) {
-        throw new IllegalArgumentException("Error : confMinWallReflDist must be greater than or equal to 0.")
-    }
-    if (close_receiver_reflection_wall_distance > 2.0) {
-        logger.warn("confMinWallReflDist is set to {} m, which is unusually high. Many reflections may be ignored.",
-                close_receiver_reflection_wall_distance)
-    }
-
     double wall_alpha = input.getOrDefault("paramWallAlpha",0.1) as Double
 
     int n_thread = input.getOrDefault("confThreadNumber",0) as Integer
@@ -553,7 +537,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
     pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
-    pointNoiseMap.setCloseReceiverReflectionWallDistance(close_receiver_reflection_wall_distance)
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 

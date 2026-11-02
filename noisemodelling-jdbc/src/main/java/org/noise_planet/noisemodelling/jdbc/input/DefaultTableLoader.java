@@ -312,7 +312,6 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.reflexionOrder = noiseMapByReceiverMaker.getSoundReflectionOrder();
         scene.maxRefDist = maximumReflectionDistance;
         scene.maxSrcDist = maximumPropagationDistance;
-        scene.setCloseReceiverReflectionWallDistance(noiseMapByReceiverMaker.getCloseReceiverReflectionWallDistance());
         scene.lineSourceSpacingRatio = noiseMapByReceiverMaker.getSceneInputSettings().getLineSourceSpacingRatio();
         scene.setComputeVerticalDiffraction(noiseMapByReceiverMaker.isComputeVerticalDiffraction());
         scene.setComputeHorizontalDiffraction(noiseMapByReceiverMaker.isComputeHorizontalDiffraction());
@@ -331,9 +330,18 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         } else {
             throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
+        String reflectionIgnoreField = null;
+        for(String field : JDBCUtilities.getColumnNames(connection, receiverTableName)) {
+            if(field.equalsIgnoreCase("REFL_IGNOR")) {
+                reflectionIgnoreField = field;
+                break;
+            }
+        }
+        String reflectionIgnoreSelect = reflectionIgnoreField == null ? "" :
+                ", " + TableLocation.quoteIdentifier(reflectionIgnoreField, dbType);
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + " FROM " +
-                        receiverTableName + " WHERE " +
+                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + reflectionIgnoreSelect +
+                        " FROM " + receiverTableName + " WHERE " +
                         TableLocation.quoteIdentifier(receiverGeomName, dbType) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
@@ -355,7 +363,14 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                         if(!noiseMapByReceiverMaker.isReceiversZIsAltitude()) {
                             pt = scene.profileBuilder.makeGeometryRelativeZToAbsolute(pt, true);
                         }
-                        scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
+                        double reflectionIgnoreDistance = 0;
+                        if(reflectionIgnoreField != null) {
+                            reflectionIgnoreDistance = rs.getDouble(reflectionIgnoreField);
+                            if(rs.wasNull()) {
+                                reflectionIgnoreDistance = 0;
+                            }
+                        }
+                        scene.addReceiver(receiverPk, pt.getCoordinate(), reflectionIgnoreDistance);
                     }
                 }
             }

@@ -7198,6 +7198,56 @@ public class AttenuationComputeOutputCnossosTest {
                 "Only direct paths should remain after filtering the near-receiver reflection profile.");
     }
 
+    @Test
+    public void reflectionFilterUsesReceiverSpecificDistance() throws IOException {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(0.0, -2.5, 5.0),
+                        new Coordinate(1.0, -2.5, 5.0),
+                        new Coordinate(1.0, 2.5, 5.0),
+                        new Coordinate(0.0, 2.5, 5.0)
+                })
+                .finishFeeding();
+
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(geometryFactory.createPoint(new Coordinate(11.49, 0.0, 2.0)));
+        scene.addReceiver(1L, new Coordinate(1.49, 0.0, 2.0), 0.5);
+        scene.addReceiver(2L, new Coordinate(1.49, 1.0, 2.0), 0.0);
+        scene.defaultGroundAttenuation = 0.0;
+        scene.reflexionOrder = 1;
+        scene.maxSrcDist = 50.0;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(false);
+
+        AttenuationParameters attData = new AttenuationParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+        scene.defaultCnossosParameters = attData;
+
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder pathFinder = new PathFinder(scene);
+        pathFinder.setThreadCount(1);
+        pathFinder.run(propDataOut);
+
+        Set<Long> receiversWithReflection = propDataOut.getAttenuationOutputs().stream()
+                .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
+                .map(path -> path.getCutProfile().getReceiver().receiverPk)
+                .collect(Collectors.toSet());
+        assertFalse(receiversWithReflection.contains(1L),
+                "The reflection path should be ignored for the receiver with a 0.5 m REFL_IGNOR value.");
+        assertTrue(receiversWithReflection.contains(2L),
+                "The reflection path should be kept for the receiver without a REFL_IGNOR value.");
+
+        Set<Long> receiversWithDirectPath = propDataOut.getAttenuationOutputs().stream()
+                .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT)
+                .map(path -> path.getCutProfile().getReceiver().receiverPk)
+                .collect(Collectors.toSet());
+        assertEquals(Set.of(1L, 2L), receiversWithDirectPath,
+                "Direct paths should be kept for both receivers.");
+    }
+
 
     /**
      * Test that wall height is taken into account when computing reflections.
@@ -7271,11 +7321,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
         scene.addSource(geometryFactory.createPoint(new Coordinate(11.49, 0.0, 2.0)));
-        scene.addReceiver(new Coordinate(1.49, 0.0, 2.0));
+        scene.addReceiver(1L, new Coordinate(1.49, 0.0, 2.0),
+                enableReflectionProfileFilter ? 0.5 : 0.0);
         scene.defaultGroundAttenuation = 0.0;
         scene.reflexionOrder = 1;
         scene.maxSrcDist = 50.0;
-        scene.setCloseReceiverReflectionWallDistance(enableReflectionProfileFilter ? 0.5 : 0.0);
         scene.setComputeHorizontalDiffraction(false);
         scene.setComputeVerticalDiffraction(false);
 
