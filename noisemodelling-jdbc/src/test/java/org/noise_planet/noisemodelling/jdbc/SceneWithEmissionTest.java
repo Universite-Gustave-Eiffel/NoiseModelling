@@ -675,6 +675,57 @@ public class SceneWithEmissionTest {
     }
 
     @Test
+    public void testReceiverReflectionIgnoreFilterInSingleThreadOutput() {
+        GeometryFactory factory = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(0.0, -2.5, 5.0),
+                        new Coordinate(1.0, -2.5, 5.0),
+                        new Coordinate(1.0, 2.5, 5.0),
+                        new Coordinate(0.0, 2.5, 5.0)
+                })
+                .finishFeeding();
+
+        SceneWithEmission scene = new SceneWithEmission(profileBuilder);
+        scene.addSource(1L, factory.createPoint(new Coordinate(11.49, 0.0, 2.0)));
+        scene.addReceiver(1L, new Coordinate(1.49, 0.0, 2.0), 0.5);
+        scene.addReceiver(2L, new Coordinate(1.49, 1.0, 2.0), 0.0);
+        scene.defaultGroundAttenuation = 0.0;
+        scene.reflexionOrder = 1;
+        scene.maxSrcDist = 50.0;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(false);
+        scene.defaultCnossosParameters.setHumidity(HUMIDITY);
+        scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
+
+        AttenuationOutputMultiThread output = new AttenuationOutputMultiThread(scene);
+        output.noiseMapDatabaseParameters.setExportRaysMethod(
+                NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
+        output.noiseMapDatabaseParameters.setExportAttenuationMatrix(true);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(output);
+
+        Set<Long> receiversWithReflection = new HashSet<>();
+        Set<Long> receiversWithDirectPath = new HashSet<>();
+        for (AttenuationOutput attenuationOutput : output.resultsCache.attenuationOutputs) {
+            long receiverPk = attenuationOutput.getCutProfile().getReceiver().receiverPk;
+            if (attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION) {
+                receiversWithReflection.add(receiverPk);
+            } else if (attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT) {
+                receiversWithDirectPath.add(receiverPk);
+            }
+        }
+        assertFalse(receiversWithReflection.contains(1L),
+                "The JDBC single-thread output should ignore the reflection path for receiver 1.");
+        assertTrue(receiversWithReflection.contains(2L),
+                "The JDBC single-thread output should keep the reflection path for receiver 2.");
+        assertEquals(Set.of(1L, 2L), receiversWithDirectPath,
+                "Direct paths should be kept for both receivers.");
+    }
+
+    @Test
     public void testDynamicConfMaxErrorFixtureKeepsSameRayCount() throws Exception {
         long rayCountWithoutPruning = runDynamicConfMaxErrorFixture(0.0);
         long rayCountWithPruning = runDynamicConfMaxErrorFixture(0.1);
