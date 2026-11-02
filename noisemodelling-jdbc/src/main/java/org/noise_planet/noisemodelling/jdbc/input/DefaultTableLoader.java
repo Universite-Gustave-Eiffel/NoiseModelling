@@ -370,6 +370,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                 reflectionIgnoreDistance = 0;
                             }
                         }
+                        if(reflectionIgnoreDistance > 2.0) {
+                            LOGGER.warn("REFL_IGNOR is set to {} m for receiver {}, which is unusually high. Many reflections may be ignored.",
+                                    reflectionIgnoreDistance, receiverPk);
+                        }
                         scene.addReceiver(receiverPk, pt.getCoordinate(), reflectionIgnoreDistance);
                     }
                 }
