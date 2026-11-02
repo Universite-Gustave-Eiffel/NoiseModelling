@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
@@ -50,8 +51,11 @@ public class AttenuationVisitor implements CutPlaneVisitor {
         propagationModel = multiThreadParent.propagationModelCreator.create();
         multiThreadParent.cutProfileCount.addAndGet(1);
         final SceneWithAttenuation scene = multiThreadParent.scene;
-        if(scene.getCloseReceiverReflectionWallDistance() > 0
-                && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
+        CutPointReceiver receiver = cutProfile.getReceiver();
+        double closeReflectionWallDistance = receiver == null ? 0 :
+                scene.getCloseReceiverReflectionWallDistance(receiver.receiverPk);
+        if(closeReflectionWallDistance > 0
+                && cutProfile.hasCloseReflectionBeforeReceiver(closeReflectionWallDistance)) {
             return PathSearchStrategy.CONTINUE;
         }
         // Push attenuation for each period

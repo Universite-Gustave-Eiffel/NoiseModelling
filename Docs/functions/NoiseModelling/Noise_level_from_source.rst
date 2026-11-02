@@ -46,6 +46,8 @@ Mandatory inputs
    
    *   THE_GEOM  : the 3D geometry of the receivers (POINTZ)
    
+   *   REFL_IGNOR  : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
+
    💡 This table can be generated from the WPS Blocks in the "Receivers" folder
 
    Type: ``String``
@@ -158,13 +160,6 @@ Optional inputs
    Type: ``Double``
 
    Default: ``150``
-
-``confMinWallReflDist`` — *Ignore close reflections*
-   Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
-
-   Type: ``Double``
-
-   Default: ``0``
 
 ``confRaysName`` — *Export scene*
    You can provide a table name to export the propagation rays with the attenuation computation details into the specified table (ex:RAYS).You can also provide a folder path URI (ex: file:///C:/Users/joe/My%20Documents/3D%20Scene/ or file:/home/user/scene3d/; you can paste the path in the browser address to convert it to an URI) to export the 3D scene (DEM, Buildings, Sources) for each sub-domains. The export format is KML and can be viewed into earth.google.com .🛠 If not provided nothing is exported
