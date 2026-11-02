@@ -11,6 +11,7 @@
         <groovy-version>5.0.3</groovy-version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
+        <buildnumber.plugin.phase>validate</buildnumber.plugin.phase>
     </properties>
     <organization>
         <name>UMRAE, CEREMA, Univ Gustave Eiffel</name>
@@ -124,7 +125,7 @@
                 <artifactId>buildnumber-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>validate</phase>
+                        <phase>${buildnumber.plugin.phase}</phase>
                         <goals>
                             <goal>create</goal>
                         </goals>
@@ -133,7 +134,6 @@
                 <configuration>
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
-                    <skip>${buildnumber.skip}</skip>
                 </configuration>
             </plugin>
             <!-- Javadoc generation -->
