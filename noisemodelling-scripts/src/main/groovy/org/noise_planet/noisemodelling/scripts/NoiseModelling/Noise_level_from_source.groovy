@@ -102,7 +102,7 @@ inputs = [
                         'The table must contain: </br> <ul>' +
                         '<li> <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY) </li> ' +
                         '<li> <b> THE_GEOM </b> : the 3D geometry of the receivers (POINTZ) </li> ' +
-                        '<li> <b> REFL_IGNOR </b> : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver </li> </ul>' +
+                        '<li> <b> REFL_IGNOR </b> : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections. </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Blocks in the "Receivers" folder',
                 type       : String.class
         ],

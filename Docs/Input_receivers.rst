@@ -33,7 +33,7 @@ If you are working with receivers based on buildings (*e.g* 50 cm around the bui
 The following column is optional and applies to reflection computation:
 
 * ``REFL_IGNOR``
-	* Description: maximum receiver-to-facade distance (in meters) below which reflection paths on the nearby facade are ignored. This replaces the former global ``confMinWallReflDist`` parameter, so the threshold can be set for each receiver. ``NULL`` or ``0`` disables the filter. A typical value is ``0.2`` when receivers are placed ``0.1`` m from the facades.
+	* Description: optional maximum receiver-to-facade distance (in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
 	* Type: Double
 
 
