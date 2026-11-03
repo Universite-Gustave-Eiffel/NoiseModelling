@@ -440,7 +440,12 @@ public class GenerateFunctionsDocs {
             sb.append("\n   Type: ``").append(p.type.getSimpleName()).append("``\n");
         }
         if (p.defaultValue != null) {
-            sb.append("\n   Default: ``").append(p.defaultValue).append("``\n");
+            String defaultValue = p.defaultValue.toString();
+            if (defaultValue.isEmpty()) {
+                sb.append("\n   Default: (empty string)\n");
+            } else {
+                sb.append("\n   Default: ``").append(defaultValue).append("``\n");
+            }
         }
         if (!p.allowedValues.isEmpty()) {
             sb.append("\n   Allowed values: ``");
