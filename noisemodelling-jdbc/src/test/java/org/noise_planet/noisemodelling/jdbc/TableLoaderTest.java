@@ -305,6 +305,18 @@ public class TableLoaderTest {
     }
 
     @Test
+    public void testNoiseEmissionRailWayRejectsNullTrackCount() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        connection.createStatement().execute("UPDATE RAILTRACK SET NTRACK = NULL"
+                + " WHERE PK = (SELECT MIN(PK) FROM RAILTRACK)");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN"));
+        assertTrue(exception.getMessage().contains("NTRACK"));
+    }
+
+    @Test
     public void testNoiseEmissionRailWayIteratorThrowsWhenExhausted() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());

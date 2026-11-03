@@ -33,7 +33,7 @@ Table definition
 	* Description: A section identifier (PRIMARY KEY)
 	* Type: Integer
 * ``NTRACK``
-	* Description: Number of tracks. Optional, defaults to 2 when the column is absent or NULL. If provided, must be a positive integer.
+	* Description: Number of tracks. Optional: when the column is absent, 2 tracks are assumed. If present, must be a positive integer; NULL is rejected.
 	* Type: Integer
 * ``TRACKSPD`` *
 	* Description: Maximum speed on the section *(in km/h)*
