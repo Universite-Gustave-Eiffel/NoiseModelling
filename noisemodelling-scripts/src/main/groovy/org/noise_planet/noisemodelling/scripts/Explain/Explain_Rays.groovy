@@ -253,6 +253,13 @@ static String svgNumber(Double value) {
     return String.format(Locale.ROOT, '%.2f', value)
 }
 
+static String mapNumber(Double value) {
+    if (value == null || !Double.isFinite(value)) {
+        return '0'
+    }
+    return String.format(Locale.ROOT, '%.10f', value)
+}
+
 static String jsonSafe(String json) {
     return json
             .replace('&', '\\u0026')
@@ -1182,8 +1189,15 @@ static String explainStyle() {
 @media (max-width: 960px) { .explain-rays-grid { grid-template-columns: minmax(0, 1fr); } }
 .explain-rays-panel { border: 1px solid #d9e2ec; border-radius: 6px; padding: .6rem; background: #ffffff; margin-bottom: .8rem; }
 .explain-rays-svg { width: 100%; height: auto; display: block; background: #f8fafc; border-radius: 4px; }
-.explain-rays-map-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: .35rem; font-size: .8rem; color: #334e68; }
+.explain-rays-map-toolbar { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .35rem; font-size: .8rem; color: #334e68; }
 .explain-rays-map-toolbar label { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; }
+.explain-rays-map { position: relative; }
+.explain-rays-map-controls { position: absolute; top: .4rem; right: .4rem; display: flex; gap: .25rem; z-index: 2; }
+.explain-rays-map-controls button { width: 1.7rem; height: 1.7rem; padding: 0; border: 1px solid #9fb3c8; border-radius: 4px; background: #ffffff; color: #243b53; font-size: .95rem; line-height: 1; cursor: pointer; box-shadow: 0 1px 2px rgba(16, 42, 67, .15); }
+.explain-rays-map-controls button:hover { background: #eef6ff; }
+.explain-rays-map-controls button:active { background: #d9e2ec; }
+.explain-rays-map .explain-rays-svg { cursor: grab; touch-action: none; }
+.explain-rays-map .explain-rays-svg.is-panning { cursor: grabbing; }
 .explain-rays-legend { display: flex; flex-wrap: wrap; gap: .6rem; margin: .5rem 0 0 0; font-size: .8rem; color: #334e68; }
 .explain-rays-legend span { display: inline-flex; align-items: center; gap: .3rem; }
 .explain-rays-swatch { display: inline-block; width: .8rem; height: .8rem; border-radius: 2px; vertical-align: -0.1rem; }
@@ -1221,11 +1235,231 @@ static String explainScript() {
   var lines = Array.prototype.slice.call(root.querySelectorAll('polyline[data-ray-index]'));
   var profiles = Array.prototype.slice.call(root.querySelectorAll('details[data-ray-index]'));
   var meta = root.querySelector('[data-explain-rays-selected]');
+  var map = root.querySelector('[data-explain-rays-map]');
   var basemapImage = root.querySelector('[data-explain-rays-basemap-image]');
   var basemapToggle = root.querySelector('[data-explain-rays-basemap]');
+  var initialViewBox = null;
+  var initialBasemap = null;
+  var basemapTimer = null;
+  var scene = null;
+
+  function copyViewBox(box) {
+    return { x: box.x, y: box.y, width: box.width, height: box.height };
+  }
+
+  function parseViewBox() {
+    if (map && map.viewBox && map.viewBox.baseVal) {
+      var box = map.viewBox.baseVal;
+      if (isFinite(box.width) && box.width > 0) {
+        return { x: box.x, y: box.y, width: box.width, height: box.height };
+      }
+    }
+    return { x: 0, y: 0, width: 900, height: 500 };
+  }
+
+  function svgPoint(clientX, clientY) {
+    if (map && map.createSVGPoint && map.getScreenCTM()) {
+      var point = map.createSVGPoint();
+      point.x = clientX;
+      point.y = clientY;
+      return point.matrixTransform(map.getScreenCTM().inverse());
+    }
+    return { x: clientX, y: clientY };
+  }
+
+  function clampViewBox(box) {
+    if (!initialViewBox) { return box; }
+    var minimum = initialViewBox.width / 40;
+    var width = Math.max(minimum, Math.min(initialViewBox.width, box.width));
+    var height = width * initialViewBox.height / initialViewBox.width;
+    var x = Math.max(initialViewBox.x, Math.min(initialViewBox.x + initialViewBox.width - width, box.x));
+    var y = Math.max(initialViewBox.y, Math.min(initialViewBox.y + initialViewBox.height - height, box.y));
+    return { x: x, y: y, width: width, height: height };
+  }
+
+  function readScene() {
+    if (!map) { return null; }
+    var values = [
+      parseFloat(map.getAttribute('data-scene-min-x')),
+      parseFloat(map.getAttribute('data-scene-min-y')),
+      parseFloat(map.getAttribute('data-scene-max-x')),
+      parseFloat(map.getAttribute('data-scene-max-y')),
+      parseFloat(map.getAttribute('data-draw-x')),
+      parseFloat(map.getAttribute('data-draw-y')),
+      parseFloat(map.getAttribute('data-draw-width')),
+      parseFloat(map.getAttribute('data-draw-height'))
+    ];
+    for (var i = 0; i < values.length; i++) {
+      if (!isFinite(values[i])) { return null; }
+    }
+    return {
+      minX: values[0], minY: values[1], maxX: values[2], maxY: values[3],
+      drawX: values[4], drawY: values[5], drawWidth: values[6], drawHeight: values[7]
+    };
+  }
+
+  function viewBoxToBbox(box) {
+    if (!scene || scene.drawWidth <= 0 || scene.drawHeight <= 0) { return null; }
+    var spanX = scene.maxX - scene.minX;
+    var spanY = scene.maxY - scene.minY;
+    var west = scene.minX + (box.x - scene.drawX) / scene.drawWidth * spanX;
+    var east = scene.minX + (box.x + box.width - scene.drawX) / scene.drawWidth * spanX;
+    var north = scene.maxY - (box.y - scene.drawY) / scene.drawHeight * spanY;
+    var south = scene.maxY - (box.y + box.height - scene.drawY) / scene.drawHeight * spanY;
+    return [Math.min(west, east), Math.min(south, north), Math.max(west, east), Math.max(south, north)];
+  }
+
+  function setBasemapGeometry(x, y, width, height) {
+    basemapImage.setAttribute('x', x);
+    basemapImage.setAttribute('y', y);
+    basemapImage.setAttribute('width', width);
+    basemapImage.setAttribute('height', height);
+    basemapImage.setAttribute('preserveAspectRatio', 'none');
+  }
+
+  function applyBasemap(box) {
+    if (!basemapImage || !scene) { return; }
+    if (basemapToggle && !basemapToggle.checked) { return; }
+    var bbox = viewBoxToBbox(box);
+    var source = initialBasemap ? initialBasemap.href : (basemapImage.getAttribute('href') || basemapImage.getAttribute('xlink:href'));
+    if (!bbox || !source) { return; }
+    var href = source.replace(/BBOX=[^&]*/i, 'BBOX=' + bbox.map(function (value) {
+      return value.toFixed(8);
+    }).join(','));
+    setBasemapGeometry(box.x, box.y, box.width, box.height);
+    basemapImage.setAttribute('href', href);
+    basemapImage.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', href);
+  }
+
+  function resetBasemap() {
+    if (!basemapImage || !initialBasemap) { return; }
+    setBasemapGeometry(initialBasemap.x, initialBasemap.y, initialBasemap.width, initialBasemap.height);
+    basemapImage.setAttribute('href', initialBasemap.href);
+    basemapImage.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', initialBasemap.href);
+  }
+
+  function scheduleBasemap(box) {
+    if (!basemapImage || !scene) { return; }
+    if (basemapToggle && !basemapToggle.checked) { return; }
+    if (basemapTimer) { clearTimeout(basemapTimer); }
+    basemapTimer = setTimeout(function () {
+      basemapTimer = null;
+      applyBasemap(box);
+    }, 250);
+  }
+
+  function setViewBox(box) {
+    if (!map) { return; }
+    map.setAttribute('viewBox', box.x.toFixed(2) + ' ' + box.y.toFixed(2) + ' ' + box.width.toFixed(2) + ' ' + box.height.toFixed(2));
+    scheduleBasemap(box);
+  }
+
+  function zoomAt(factor, clientX, clientY) {
+    if (!map || !initialViewBox) { return; }
+    var box = parseViewBox();
+    var point = svgPoint(clientX, clientY);
+    var target = clampViewBox({ x: box.x, y: box.y, width: box.width * factor, height: box.height * factor });
+    var ratio = target.width / box.width;
+    target.x = point.x - (point.x - box.x) * ratio;
+    target.y = point.y - (point.y - box.y) * ratio;
+    setViewBox(clampViewBox(target));
+  }
+
+  function zoomCenter(factor) {
+    if (!map || !initialViewBox) { return; }
+    var box = parseViewBox();
+    var centerX = box.x + box.width / 2;
+    var centerY = box.y + box.height / 2;
+    var target = clampViewBox({ x: box.x, y: box.y, width: box.width * factor, height: box.height * factor });
+    var ratio = target.width / box.width;
+    target.x = centerX - (centerX - box.x) * ratio;
+    target.y = centerY - (centerY - box.y) * ratio;
+    setViewBox(clampViewBox(target));
+  }
+
+  function resetView() {
+    if (!map || !initialViewBox) { return; }
+    if (basemapTimer) {
+      clearTimeout(basemapTimer);
+      basemapTimer = null;
+    }
+    map.setAttribute('viewBox', initialViewBox.x + ' ' + initialViewBox.y + ' ' + initialViewBox.width + ' ' + initialViewBox.height);
+    resetBasemap();
+  }
+
+  if (map) {
+    initialViewBox = copyViewBox(parseViewBox());
+    scene = readScene();
+    if (basemapImage) {
+      initialBasemap = {
+        href: basemapImage.getAttribute('href') || basemapImage.getAttribute('xlink:href'),
+        x: basemapImage.getAttribute('x'),
+        y: basemapImage.getAttribute('y'),
+        width: basemapImage.getAttribute('width'),
+        height: basemapImage.getAttribute('height')
+      };
+    }
+    var zoomIn = root.querySelector('[data-explain-rays-zoom-in]');
+    var zoomOut = root.querySelector('[data-explain-rays-zoom-out]');
+    var zoomReset = root.querySelector('[data-explain-rays-zoom-reset]');
+    if (zoomIn) { zoomIn.addEventListener('click', function () { zoomCenter(0.7); }); }
+    if (zoomOut) { zoomOut.addEventListener('click', function () { zoomCenter(1 / 0.7); }); }
+    if (zoomReset) { zoomReset.addEventListener('click', resetView); }
+    map.addEventListener('wheel', function (event) {
+      var wheelMovement = event['del' + 'taY'];
+      if (!wheelMovement) { return; }
+      event.preventDefault();
+      zoomAt(wheelMovement < 0 ? 0.8 : 1.25, event.clientX, event.clientY);
+    }, { passive: false });
+    var pan = null;
+    var didPan = false;
+    map.addEventListener('pointerdown', function (event) {
+      if (event.button !== undefined && event.button !== 0) { return; }
+      pan = { x: event.clientX, y: event.clientY, box: parseViewBox() };
+      didPan = false;
+      if (map.setPointerCapture && event.pointerId !== undefined) {
+        try { map.setPointerCapture(event.pointerId); } catch (err) { }
+      }
+    });
+    map.addEventListener('pointermove', function (event) {
+      if (!pan) { return; }
+      var dx = event.clientX - pan.x;
+      var dy = event.clientY - pan.y;
+      if (!didPan && Math.abs(dx) + Math.abs(dy) < 4) { return; }
+      didPan = true;
+      map.classList.add('is-panning');
+      var rect = map.getBoundingClientRect();
+      if (!rect.width || !rect.height) { return; }
+      setViewBox(clampViewBox({
+        x: pan.box.x - dx * (pan.box.width / rect.width),
+        y: pan.box.y - dy * (pan.box.height / rect.height),
+        width: pan.box.width,
+        height: pan.box.height
+      }));
+      event.preventDefault();
+    });
+    function endPan(event) {
+      if (!pan) { return; }
+      pan = null;
+      map.classList.remove('is-panning');
+      if (map.releasePointerCapture && event && event.pointerId !== undefined) {
+        try { map.releasePointerCapture(event.pointerId); } catch (err) { }
+      }
+    }
+    map.addEventListener('pointerup', endPan);
+    map.addEventListener('pointercancel', endPan);
+    map.addEventListener('click', function (event) {
+      if (!didPan) { return; }
+      didPan = false;
+      event.stopPropagation();
+      event.preventDefault();
+    }, true);
+  }
+
   if (basemapImage && basemapToggle) {
     basemapToggle.addEventListener('change', function () {
       basemapImage.style.display = basemapToggle.checked ? '' : 'none';
+      if (basemapToggle.checked && map) { scheduleBasemap(parseViewBox()); }
     });
   }
   var bandSelect = root.querySelector('[data-explain-rays-band]');
@@ -1357,7 +1591,22 @@ static String render2D(List<Map> rays, List<Polygon> buildings, List<Map> ground
     Closure<Double> mapY = { Double y -> height - margin - ((y - minY) / spanY) * drawHeight }
 
     StringBuilder svg = new StringBuilder()
-    svg.append('<svg class="explain-rays-svg" viewBox="0 0 900 500" role="img" aria-label="2D propagation rays" preserveAspectRatio="xMidYMid meet">')
+    svg.append('<div class="explain-rays-map">')
+    svg.append('<div class="explain-rays-map-controls" role="group" aria-label="Map zoom">')
+    svg.append('<button type="button" data-explain-rays-zoom-in title="Zoom in" aria-label="Zoom in">+</button>')
+    svg.append('<button type="button" data-explain-rays-zoom-out title="Zoom out" aria-label="Zoom out">&#8722;</button>')
+    svg.append('<button type="button" data-explain-rays-zoom-reset title="Reset view" aria-label="Reset view">&#8634;</button>')
+    svg.append('</div>')
+    svg.append('<svg class="explain-rays-svg" data-explain-rays-map="true" viewBox="0 0 900 500" role="img" aria-label="2D propagation rays" preserveAspectRatio="xMidYMid meet"')
+            .append(' data-scene-min-x="').append(mapNumber(minX)).append('"')
+            .append(' data-scene-min-y="').append(mapNumber(minY)).append('"')
+            .append(' data-scene-max-x="').append(mapNumber(maxX)).append('"')
+            .append(' data-scene-max-y="').append(mapNumber(maxY)).append('"')
+            .append(' data-draw-x="').append(svgNumber(margin)).append('"')
+            .append(' data-draw-y="').append(svgNumber(margin)).append('"')
+            .append(' data-draw-width="').append(svgNumber(drawWidth)).append('"')
+            .append(' data-draw-height="').append(svgNumber(drawHeight)).append('"')
+            .append('>')
     svg.append('<rect x="0" y="0" width="900" height="500" fill="#f8fafc"></rect>')
     if (basemapEnabled) {
         String wmsUrl = basemapUrl([minX, minY, maxX, maxY])
@@ -1441,6 +1690,7 @@ static String render2D(List<Map> rays, List<Polygon> buildings, List<Map> ground
                 .append('" r="5.5" fill="#00e5ff" stroke="#111" stroke-width="1.2"><title>Receiver</title></circle>')
     }
     svg.append('</svg>')
+    svg.append('</div>')
     return svg.toString()
 }
 
@@ -2104,7 +2354,7 @@ def exec(Connection connection, Map input) {
         } else {
             html.append('<span>Basemap unavailable (no SRID)</span>')
         }
-        html.append('<span>Layers: ground 50% / buildings 100%</span></div>')
+        html.append('<span>Layers: ground 50% / buildings 100% &middot; Wheel to zoom / drag to pan</span></div>')
                 .append(render2D(selectedRays, mapBuildings, mapGroundAreas, mapReceiverPoint, mapSourcePoint, basemapEnabled))
                 .append(renderLegend(!mapBuildings.isEmpty(), !mapGroundAreas.isEmpty(), basemapEnabled))
                 .append('</div>')

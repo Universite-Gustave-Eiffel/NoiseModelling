@@ -373,6 +373,22 @@ class TestExplainRays extends JdbcTestCase {
     }
 
     @Test
+    void testMapZoomControls() {
+        createRaysTable()
+        insertRay(1, 1, 70d, METEO, PERIOD, pathJson(1, 1, 'direct'))
+
+        String html = run([:])
+
+        assertTrue(html.contains('data-explain-rays-map="true"'))
+        assertTrue(html.contains('data-explain-rays-zoom-in'))
+        assertTrue(html.contains('data-explain-rays-zoom-out'))
+        assertTrue(html.contains('data-explain-rays-zoom-reset'))
+        assertTrue(html.contains('data-scene-min-x='))
+        assertTrue(html.contains('data-draw-width='))
+        assertTrue(html.contains('Wheel to zoom'))
+    }
+
+    @Test
     void testNegligibleDirectIsNotAdded() {
         createRaysTable()
         for (int i = 1; i <= 59; i++) {
