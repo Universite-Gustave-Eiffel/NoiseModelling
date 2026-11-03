@@ -52,7 +52,7 @@ public class CnossosPathBuilder {
 
             double dSO = src.distance(o);
             double dOR = o.distance(rcv);
-            double deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
+            double deltaH = dSR.orientationIndex(o) * (dSR.p0.distance(o) + dOR - dSR.getLength());
             boolean rcrit = false;
             for(double f : exactFrequencyArray) {
                 if(deltaH > -(340./f) / 20) {
@@ -472,6 +472,25 @@ public class CnossosPathBuilder {
             if(!horizontalPlaneDiffraction) {
                 // Check for Rayleigh criterion for segments computation
                 LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
+                if(cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
+                    // The real propagation path is Source -> Reflection(s) -> Receiver. Following the
+                    // Directive the propagation attenuations are computed on the unfolded path
+                    // (image source -> receiver), so the reference line is the straight line through
+                    // the reflection point and the receiver, not the direct source-receiver line.
+                    int reflectionIndex = -1;
+                    for(int i = 1; i < cutProfile.cutPoints.size() - 1; i++) {
+                        if(cutProfile.cutPoints.get(i) instanceof CutPointReflection) {
+                            reflectionIndex = i;
+                            break;
+                        }
+                    }
+                    if(reflectionIndex >= 0) {
+                        Coordinate reflectionPoint = pts2D.get(reflectionIndex);
+                        double slope = (lastPts2D.y - reflectionPoint.y) / (lastPts2D.x - reflectionPoint.x);
+                        Coordinate unfoldedSource = new Coordinate(0, reflectionPoint.y - slope * reflectionPoint.x);
+                        dSR = new LineSegment(unfoldedSource, lastPts2D);
+                    }
+                }
                 // Look for diffraction over edge on free field (frequency dependent)
                 computeRayleighDiff(srPath, cutProfile, cnossosPath, dSR, rayleighSegments, rayleighPoints, pts2D,
                         pts2DGround, cut2DGroundIndex, exactFrequencyArray);
