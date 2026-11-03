@@ -25,6 +25,11 @@ import java.util.Map;
  * These parameters define the cross-section of the railway track platform
  * used for noise emission and propagation calculations.
  * Platform definitions are loaded from a JSON resource file (RailwayPlatforms.json).
+ * <p>
+ * Note: only the rail height ({@link #h2}, exposed through {@link #getHRail()}) and the
+ * ground factor between the rails ({@link #g3}) are consumed directly by the emission and
+ * propagation pipeline. The other fields describe the platform cross-section and are used
+ * by the "Enrich DEM with railways" and "Enrich Landcover with railways" blocks.
  */
 public class RailwayPlatform {
 

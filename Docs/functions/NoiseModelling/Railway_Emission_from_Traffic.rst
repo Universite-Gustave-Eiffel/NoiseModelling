@@ -40,6 +40,10 @@ Mandatory inputs
    
    * COMSPD : Commercial speed on the section (in km/h) (DOUBLE)
    
+   * PLATFORM : Railway platform identifier, listed in the RailwayPlatforms.json file, e.g. "DEFAULT", "SNCF" or "SNCF_LGV" (VARCHAR, optional). If absent or empty, the DEFAULT platform is used. This input only affects emission and propagation calculations; it does not modify the site topography or its land cover. To update those, use the Enrich Landcover with railways and Enrich DEM with railways blocks
+   
+   * GS : Ground factor between the rails from 0 (hard) to 1 (soft) (DOUBLE, optional). Overrides the platform g3 value. If absent or null, the selected platform g3 is used (1 for DEFAULT)
+   
    * ISTUNNEL : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN)
 
    Type: ``String``

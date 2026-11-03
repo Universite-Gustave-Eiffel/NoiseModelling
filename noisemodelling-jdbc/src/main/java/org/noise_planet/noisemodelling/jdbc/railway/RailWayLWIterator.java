@@ -201,9 +201,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
                 incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
                 incompleteRecord.platform = readPlatform(spatialResultSet);
-                // GS from explicit column, otherwise use platform g3 (ground factor between rails)
+                // GS from explicit column (unless null), otherwise use platform g3 (ground factor between rails)
                 if (hasColumn(spatialResultSet, "GS")) {
                     incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                    if (spatialResultSet.wasNull()) {
+                        incompleteRecord.gs = incompleteRecord.platform.g3;
+                    }
                 } else {
                     incompleteRecord.gs = incompleteRecord.platform.g3;
                 }
@@ -238,9 +241,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
                     incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
                     incompleteRecord.platform = readPlatform(spatialResultSet);
-                    // GS from explicit column, otherwise use platform g3 (ground factor between rails)
+                    // GS from explicit column (unless null), otherwise use platform g3 (ground factor between rails)
                     if (hasColumn(spatialResultSet, "GS")) {
                         incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                        if (spatialResultSet.wasNull()) {
+                            incompleteRecord.gs = incompleteRecord.platform.g3;
+                        }
                     } else {
                         incompleteRecord.gs = incompleteRecord.platform.g3;
                     }
