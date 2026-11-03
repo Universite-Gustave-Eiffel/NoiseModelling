@@ -27,7 +27,6 @@ import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,13 +42,6 @@ public class RailWayCnossosParameters extends RailWayParameters {
     public static final Integer[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new Integer[]{50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
     public static final String[] sourceType = new String[] {"ROLLING", "TRACTIONA", "TRACTIONB", "AERODYNAMICA", "AERODYNAMICB", "BRIDGE"};
 
-    private double[] lWRolling = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-    private double[] lWTractionA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-    private double[] lWTractionB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-    private double[] lWAerodynamicA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-    private double[] lWAerodynamicB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-    private double[] lWBridge = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-
     /** Reflection coefficient of the vehicle body barrier, power-weighted average of ReflectingBarrierEffect
      *  from vehicle JSON. 0 = no body barrier (open freight), 1 = fully reflecting body.
      *  Weighted by the acoustic power of low sources (ROLLING, TRACTIONA, AERODYNAMICA). */
@@ -61,20 +53,6 @@ public class RailWayCnossosParameters extends RailWayParameters {
     private static final Set<String> LOW_SOURCE_TYPES = Set.of("ROLLING", "TRACTIONA", "AERODYNAMICA");
 
     public RailWayCnossosParameters() {
-        Arrays.fill(lWRolling, -99.99);
-        Arrays.fill(lWTractionA, -99.99);
-        Arrays.fill(lWTractionB, -99.99);
-        Arrays.fill(lWAerodynamicA, -99.99);
-        Arrays.fill(lWAerodynamicB, -99.99);
-        Arrays.fill(lWBridge, -99.99);
-
-        setLWRolling(lWRolling);
-        setLWTractionA(lWTractionA);
-        setLWTractionB(lWTractionB);
-        setLWAerodynamicA(lWAerodynamicA);
-        setLWAerodynamicB(lWAerodynamicB);
-        setLWBridge(lWBridge);
-
     }
 
 
@@ -103,54 +81,6 @@ public class RailWayCnossosParameters extends RailWayParameters {
         return lineSource1;
     }
 
-
-    public double[] getLWRolling() {
-        return lWRolling;
-    }
-
-    public void setLWRolling(double[] LWRolling) {
-        this.lWRolling = LWRolling;
-    }
-
-    public double[] getLWTractionA() {
-        return lWTractionA;
-    }
-
-    public void setLWTractionA(double[] LWTractionA) {
-        this.lWTractionA = LWTractionA;
-    }
-
-    public double[] getLWTractionB() {
-        return lWTractionB;
-    }
-
-    public void setLWTractionB(double[] LWTractionB) {
-        this.lWTractionB = LWTractionB;
-    }
-
-    public double[] getLWAerodynamicA() {
-        return lWAerodynamicA;
-    }
-
-    public void setLWAerodynamicA(double[] LWAerodynamicA) {
-        this.lWAerodynamicA = LWAerodynamicA;
-    }
-
-    public double[] getLWAerodynamicB() {
-        return lWAerodynamicB;
-    }
-
-    public void setLWAerodynamicB(double[] LWAerodynamicB) {
-        this.lWAerodynamicB = LWAerodynamicB;
-    }
-
-    public double[] getLWBridge() {
-        return lWBridge;
-    }
-
-    public void setLWBridge(double[] LWBridge) {
-        this.lWBridge = LWBridge;
-    }
 
     /**
      * Compute the attenuation for the specified noise source and parameters
