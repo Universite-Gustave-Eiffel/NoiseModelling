@@ -14,6 +14,7 @@ Acoustic Tools
     :maxdepth: 1
 
     functions/Acoustic_Tools/Add_Laeq_Leq_columns
+    functions/Acoustic_Tools/Combine_Noise_Maps
     functions/Acoustic_Tools/Create_Isolines
     functions/Acoustic_Tools/Create_Isosurface
     functions/Acoustic_Tools/DynamicIndicators
