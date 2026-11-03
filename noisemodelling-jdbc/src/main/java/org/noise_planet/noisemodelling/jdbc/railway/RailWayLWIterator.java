@@ -249,8 +249,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom>, AutoCloseable
         }
         record.pk = rs.getInt("trackid");
         record.geometry = splitGeometry(rs.getGeometry());
+        // Reset the spacing so a NULL TRACKSPC cannot inherit the previous section value
+        record.distance = RailWayLWGeom.DEFAULT_DISTANCE;
         if (sourceFields.containsKey("TRACKSPC")) {
-            record.distance = readDouble(rs, "TRACKSPC", record.distance);
+            record.distance = readDouble(rs, "TRACKSPC", RailWayLWGeom.DEFAULT_DISTANCE);
         }
         readSources(record, rs);
     }

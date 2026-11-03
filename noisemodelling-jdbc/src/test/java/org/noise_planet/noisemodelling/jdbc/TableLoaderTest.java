@@ -317,6 +317,30 @@ public class TableLoaderTest {
     }
 
     @Test
+    public void testNoiseEmissionRailWayTrackSpacingDoesNotLeakBetweenSections() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN TRACKSPC DOUBLE");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRACKSPC = 5"
+                + " WHERE PK = (SELECT MIN(PK) FROM RAILTRACK)");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRACKSPC = NULL"
+                + " WHERE PK = (SELECT MAX(PK) FROM RAILTRACK)");
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
+        double firstDistance = -1;
+        double lastDistance = -1;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWGeom section = railWayLWIterator.next();
+            if (firstDistance < 0) {
+                firstDistance = section.getDistance();
+            }
+            lastDistance = section.getDistance();
+        }
+        assertEquals(5, firstDistance, 1e-9);
+        assertEquals(RailWayLWGeom.DEFAULT_DISTANCE, lastDistance, 1e-9);
+    }
+
+    @Test
     public void testNoiseEmissionRailWaySkipsSilentSourceLines() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
