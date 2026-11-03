@@ -1417,16 +1417,19 @@ static String explainScript() {
       if (event.button !== undefined && event.button !== 0) { return; }
       pan = { x: event.clientX, y: event.clientY, box: parseViewBox() };
       didPan = false;
-      if (map.setPointerCapture && event.pointerId !== undefined) {
-        try { map.setPointerCapture(event.pointerId); } catch (err) { }
-      }
     });
     map.addEventListener('pointermove', function (event) {
       if (!pan) { return; }
+      if (event.buttons === 0) { endPan(event); return; }
       var dx = event.clientX - pan.x;
       var dy = event.clientY - pan.y;
       if (!didPan && Math.abs(dx) + Math.abs(dy) < 4) { return; }
-      didPan = true;
+      if (!didPan) {
+        didPan = true;
+        if (map.setPointerCapture && event.pointerId !== undefined) {
+          try { map.setPointerCapture(event.pointerId); } catch (err) { }
+        }
+      }
       map.classList.add('is-panning');
       var rect = map.getBoundingClientRect();
       if (!rect.width || !rect.height) { return; }

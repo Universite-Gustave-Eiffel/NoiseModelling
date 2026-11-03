@@ -90,6 +90,14 @@ Experimental Matsim
     functions/Experimental_Matsim/Receivers_From_Activities_Random
     functions/Experimental_Matsim/Traffic_From_Events
 
+Explain
+~~~~~~~
+
+.. toctree::
+    :maxdepth: 1
+
+    functions/Explain/Explain_Rays
+
 Geometric Tools
 ~~~~~~~~~~~~~~~
 
