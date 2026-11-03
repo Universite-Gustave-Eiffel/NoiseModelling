@@ -32,8 +32,8 @@ Table definition
 * ``IDSECTION`` *
 	* Description: A section identifier (PRIMARY KEY)
 	* Type: Integer
-* ``NTRACK`` *
-	* Description: Number of tracks
+* ``NTRACK``
+	* Description: Number of tracks. Optional, defaults to 2 when the column is absent or NULL. If provided, must be a positive integer.
 	* Type: Integer
 * ``TRACKSPD`` *
 	* Description: Maximum speed on the section *(in km/h)*
