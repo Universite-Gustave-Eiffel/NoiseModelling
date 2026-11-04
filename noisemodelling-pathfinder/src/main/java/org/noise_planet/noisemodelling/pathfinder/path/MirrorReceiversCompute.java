@@ -32,7 +32,7 @@ import java.util.List;
 public class MirrorReceiversCompute {
     private static final double DEFAULT_CIRCLE_POINT_ANGLE = Math.PI / 24;
     STRtree mirrorReceiverTree;
-    public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = 50000;
+    public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = Integer.MAX_VALUE;
     private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
     private final Coordinate receiverCoordinate;
     private final List<Wall> buildWalls;
