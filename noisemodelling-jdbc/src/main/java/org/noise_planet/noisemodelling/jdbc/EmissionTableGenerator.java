@@ -43,6 +43,23 @@ public class EmissionTableGenerator {
     public static final double EVENING_RATIO = 4. / 24. * dBToW(5.0);
     public static final double NIGHT_RATIO = 8. / 24. * dBToW(10.0);
     public static final double[] RATIOS = new double[] {DAY_RATIO, EVENING_RATIO, NIGHT_RATIO};
+    /** Level used throughout the railway code to mark a frequency band without emission. */
+    private static final double SILENT_LEVEL_DB = -99.0;
+
+    /**
+     * @return true if every frequency band of every provided spectrum is at or below the
+     * silent level. Such a source line carries no acoustic energy and must not be inserted.
+     */
+    private static boolean isSilent(double[]... spectra) {
+        for (double[] spectrum : spectra) {
+            for (double value : spectrum) {
+                if (Double.isFinite(value) && value > SILENT_LEVEL_DB) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     /**
      * Cache table fields in upper case in Map
@@ -319,101 +336,108 @@ public class EmissionTableGenerator {
             throw new SQLException(ex);
         }
 
-        while (railWayLWIterator.hasNext()) {
-            RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
+        try (railWayLWIterator) {
+            while (railWayLWIterator.hasNext()) {
+                RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
 
-            RailWayParameters railWayLWDay = railWayLWGeom.getRailWayLWDay();
-            RailWayParameters railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
-            RailWayParameters railWayLWNight = railWayLWGeom.getRailWayLWNight();
-            List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
+                RailWayParameters railWayLWDay = railWayLWGeom.getRailWayLWDay();
+                RailWayParameters railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
+                RailWayParameters railWayLWNight = railWayLWGeom.getRailWayLWNight();
+                List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
 
-            int pk = railWayLWGeom.getPK();
-            double hRail = railWayLWGeom.getPlatform().getHRail();
-            double[] LWDay = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-            double[] LWEvening = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-            double[] LWNight = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-            Arrays.fill(LWDay, -99.00);
-            Arrays.fill(LWEvening, -99.00);
-            Arrays.fill(LWNight, -99.00);
-            double heightSource = 0;
-            int directivityId = 0;
-            boolean day = (!railWayLWDay.getRailwaySourceList().isEmpty());
-            boolean evening = (!railWayLWEvening.getRailwaySourceList().isEmpty());
-            boolean night = (!railWayLWNight.getRailwaySourceList().isEmpty());
-            for (int iSource = 0; iSource < 6; iSource++) {
+                int pk = railWayLWGeom.getPK();
+                double hRail = railWayLWGeom.getPlatform().getHRail();
+                double[] LWDay = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+                double[] LWEvening = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+                double[] LWNight = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+                Arrays.fill(LWDay, -99.00);
+                Arrays.fill(LWEvening, -99.00);
+                Arrays.fill(LWNight, -99.00);
+                double heightSource = 0;
+                int directivityId = 0;
+                boolean day = (!railWayLWDay.getRailwaySourceList().isEmpty());
+                boolean evening = (!railWayLWEvening.getRailwaySourceList().isEmpty());
+                boolean night = (!railWayLWNight.getRailwaySourceList().isEmpty());
+                for (int iSource = 0; iSource < 6; iSource++) {
 
-                heightSource = 0;
-                switch (iSource) {
-                    case 0:
-                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("ROLLING").getlW();
-                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("ROLLING").getlW();
-                        if (night) LWNight = railWayLWNight.getRailwaySourceList().get("ROLLING").getlW();
-                        heightSource = 0.5 + hRail;
-                        directivityId = 1;
-                        break;
-                    case 1:
-                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONA").getlW();
-                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONA").getlW();
-                        if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONA").getlW();
-                        heightSource = 0.5 + hRail;
-                        directivityId = 2;
-                        break;
-                    case 2:
-                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONB").getlW();
-                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONB").getlW();
-                        if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONB").getlW();
-                        heightSource = 4 + hRail;
-                        directivityId = 3;
-                        break;
-                    case 3:
-                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICA").getlW();
-                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICA").getlW();
-                        if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICA").getlW();
-                        heightSource = 0.5 + hRail;
-                        directivityId = 4;
-                        break;
-                    case 4:
-                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICB").getlW();
-                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICB").getlW();
-                        if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICB").getlW();
-                        heightSource = 4 + hRail;
-                        directivityId = 5;
-                        break;
-                    case 5:
-                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("BRIDGE").getlW();
-                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("BRIDGE").getlW();
-                        if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("BRIDGE").getlW();
-                        heightSource = 0.5 + hRail;
-                        directivityId = 6;
-                        break;
+                    heightSource = 0;
+                    switch (iSource) {
+                        case 0:
+                            if (day) LWDay = railWayLWDay.getRailwaySourceList().get("ROLLING").getlW();
+                            if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("ROLLING").getlW();
+                            if (night) LWNight = railWayLWNight.getRailwaySourceList().get("ROLLING").getlW();
+                            heightSource = 0.5 + hRail;
+                            directivityId = 1;
+                            break;
+                        case 1:
+                            if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONA").getlW();
+                            if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONA").getlW();
+                            if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONA").getlW();
+                            heightSource = 0.5 + hRail;
+                            directivityId = 2;
+                            break;
+                        case 2:
+                            if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONB").getlW();
+                            if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONB").getlW();
+                            if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONB").getlW();
+                            heightSource = 4 + hRail;
+                            directivityId = 3;
+                            break;
+                        case 3:
+                            if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                            if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                            if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                            heightSource = 0.5 + hRail;
+                            directivityId = 4;
+                            break;
+                        case 4:
+                            if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                            if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                            if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                            heightSource = 4 + hRail;
+                            directivityId = 5;
+                            break;
+                        case 5:
+                            if (day) LWDay = railWayLWDay.getRailwaySourceList().get("BRIDGE").getlW();
+                            if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("BRIDGE").getlW();
+                            if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("BRIDGE").getlW();
+                            heightSource = 0.5 + hRail;
+                            directivityId = 6;
+                            break;
+                    }
+
+                    if (isSilent(LWDay, LWEvening, LWNight)) {
+                        continue;
+                    }
+
+                    try (PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString())) {
+                        for (Geometry trackGeometry : geometries) {
+
+                            Geometry sourceGeometry = ST_UpdateZ.updateZ(ST_Force3D.force3D(trackGeometry), heightSource).copy() ;
+
+                            int cursor = 1;
+                            ps.setInt(cursor++, pk);
+                            ps.setObject(cursor++, sourceGeometry);
+                            ps.setInt(cursor++, directivityId);
+                            ps.setDouble(cursor++, railWayLWGeom.getGs());
+                            ps.setDouble(cursor++, hRail);
+                            ps.setDouble(cursor++, railWayLWGeom.getCref());
+                            for (double v : LWDay) {
+                                ps.setDouble(cursor++, v);
+                            }
+                            for (double v : LWEvening) {
+                                ps.setDouble(cursor++, v);
+                            }
+                            for (double v : LWNight) {
+                                ps.setDouble(cursor++, v);
+                            }
+                            ps.addBatch();
+                        }
+                        ps.executeBatch();
+                    }
                 }
 
-                PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
-                for (Geometry trackGeometry : geometries) {
-
-                    Geometry sourceGeometry = ST_UpdateZ.updateZ(ST_Force3D.force3D(trackGeometry), heightSource).copy() ;
-
-                    int cursor = 1;
-                    ps.setInt(cursor++, pk);
-                    ps.setObject(cursor++, sourceGeometry);
-                    ps.setInt(cursor++, directivityId);
-                    ps.setDouble(cursor++, railWayLWGeom.getGs());
-                    ps.setDouble(cursor++, hRail);
-                    ps.setDouble(cursor++, railWayLWGeom.getCref());
-                    for (double v : LWDay) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWEvening) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWNight) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    ps.addBatch();
-                }
-                ps.executeBatch();
             }
-
         }
 
         // Add primary key to the LW table

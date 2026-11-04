@@ -24,7 +24,7 @@ Mandatory inputs
    
    * IDSECTION* : A section identifier (PRIMARY KEY) (INTEGER)
    
-   * NTRACK* : Number of tracks (INTEGER)
+   * NTRACK : Number of tracks (INTEGER). Optional: when the column is absent, two tracks are assumed. If present, it must be a positive integer; NULL is rejected.
    
    * TRACKSPD* : Maximum speed on the section (in km/h) (DOUBLE)
    

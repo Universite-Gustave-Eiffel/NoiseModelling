@@ -59,7 +59,7 @@ inputs = [
                 description : '<b>Name of the Railway Track table.</b> </br><br>' +
                         'This function recognize the following columns (* mandatory): </br><ul>' +
                         '<li><b>IDSECTION</b>* : A section identifier (PRIMARY KEY) (INTEGER)</li>' +
-                        '<li><b>NTRACK</b>* : Number of tracks (INTEGER)</li>' +
+                        '<li><b>NTRACK</b> : Number of tracks (INTEGER). Optional: when the column is absent, two tracks are assumed. If present, it must be a positive integer; NULL is rejected.</li>' +
                         '<li><b>TRACKSPD</b>* : Maximum speed on the section (in km/h) (DOUBLE)</li>' +
                         '<li><b>TRANSFER</b> : Track transfer function identifier, e.g. "SNCF5" or "EU7" (VARCHAR)</li>' +
                         '<li><b>ROUGHNESS</b> : Rail roughness identifier, e.g. "SNCF1" or "EU3" (VARCHAR)</li>' +

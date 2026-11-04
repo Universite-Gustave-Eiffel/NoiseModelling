@@ -27,9 +27,11 @@ public class RailWayLWGeom {
     RailWayCnossosParameters railWayLWNight;
     List<LineString> geometry;
     int pk = -1;
+    /** Default spacing between parallel tracks (m). */
+    public static final double DEFAULT_DISTANCE = 2;
     int nbTrack;
     String idSection;
-    double distance = 2;
+    double distance = DEFAULT_DISTANCE;
     /** Ground factor at the source. Defaults to platform g3 (ground factor between rails). */
     double gs = RailwayPlatform.DEFAULT_PLATFORM.g3;
     RailwayPlatform platform = RailwayPlatform.DEFAULT_PLATFORM;

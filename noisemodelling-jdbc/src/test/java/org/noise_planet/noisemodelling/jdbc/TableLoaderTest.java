@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -258,6 +259,120 @@ public class TableLoaderTest {
     }
 
     @Test
+    public void testNoiseEmissionRailWayLastSectionSingleTrain() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two tracks, the last one with a single train
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK ORDER BY PK LIMIT 2)");
+        connection.createStatement().execute("DELETE FROM RAILTRAIN WHERE IDSECTION = (SELECT IDSECTION FROM RAILTRACK ORDER BY PK DESC LIMIT 1)"
+                + " AND PK <> (SELECT MIN(T.PK) FROM RAILTRAIN T, RAILTRACK R WHERE T.IDSECTION = R.IDSECTION"
+                + " AND R.PK = (SELECT MAX(PK) FROM RAILTRACK))");
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(2, numberOfRows);
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayRejectsUnknownTrainType() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        connection.createStatement().execute("UPDATE RAILTRAIN SET TYPETRAIN = 'UNKNOWN_TRAIN'"
+                + " WHERE PK = (SELECT MIN(PK) FROM RAILTRAIN)");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN"));
+        assertTrue(exception.getMessage().contains("UNKNOWN_TRAIN"));
+        assertTrue(exception.getMessage().contains("section"));
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayRejectsInvalidTrackCount() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        connection.createStatement().execute("UPDATE RAILTRACK SET NTRACK = 0"
+                + " WHERE PK = (SELECT MIN(PK) FROM RAILTRACK)");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN"));
+        assertTrue(exception.getMessage().contains("NTRACK"));
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayRejectsNullTrackCount() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        connection.createStatement().execute("UPDATE RAILTRACK SET NTRACK = NULL"
+                + " WHERE PK = (SELECT MIN(PK) FROM RAILTRACK)");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN"));
+        assertTrue(exception.getMessage().contains("NTRACK"));
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayIteratorThrowsWhenExhausted() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
+        while (railWayLWIterator.hasNext()) {
+            assertNotNull(railWayLWIterator.next());
+        }
+        assertThrows(NoSuchElementException.class, railWayLWIterator::next);
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayTrackSpacingDoesNotLeakBetweenSections() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN TRACKSPC DOUBLE");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRACKSPC = 5"
+                + " WHERE PK = (SELECT MIN(PK) FROM RAILTRACK)");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRACKSPC = NULL"
+                + " WHERE PK = (SELECT MAX(PK) FROM RAILTRACK)");
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
+        double firstDistance = -1;
+        double lastDistance = -1;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWGeom section = railWayLWIterator.next();
+            if (firstDistance < 0) {
+                firstDistance = section.getDistance();
+            }
+            lastDistance = section.getDistance();
+        }
+        assertEquals(5, firstDistance, 1e-9);
+        assertEquals(RailWayLWGeom.DEFAULT_DISTANCE, lastDistance, 1e-9);
+    }
+
+    @Test
+    public void testNoiseEmissionRailWaySkipsSilentSourceLines() throws SQLException, IOException {
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("RailTrain.dbf").getFile());
+
+        connection.createStatement().execute("UPDATE RAILTRAIN SET TDAY='0', TEVENING='0', TNIGHT='1'");
+        EmissionTableGenerator.makeTrainLWTable(connection, "RAILTRACK", "RAILTRAIN", "LW_RAILWAY", "HZ");
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM LW_RAILWAY")) {
+            assertTrue(rs.next());
+            assertTrue(rs.getInt(1) > 0, "Night traffic must still produce source lines");
+        }
+
+        connection.createStatement().execute("UPDATE RAILTRAIN SET TNIGHT='0'");
+        EmissionTableGenerator.makeTrainLWTable(connection, "RAILTRACK", "RAILTRAIN", "LW_RAILWAY", "HZ");
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM LW_RAILWAY")) {
+            assertTrue(rs.next());
+            assertEquals(0, rs.getInt(1), "All-silent source lines must not be inserted");
+        }
+    }
+
+    @Test
     public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
@@ -269,7 +384,6 @@ public class TableLoaderTest {
         RailWayParameters railWayLW = v.getRailWayLW();
         List<LineString> geometries = v.getRailWayLWGeometry();
 
-        v = railWayLWIterator.next();
         assertFalse(railWayLWIterator.hasNext());
 
     }
@@ -310,7 +424,6 @@ public class TableLoaderTest {
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertNotNull(geometries);
 
-        v = railWayLWIterator.next();
         assertFalse(railWayLWIterator.hasNext());
     }
 
