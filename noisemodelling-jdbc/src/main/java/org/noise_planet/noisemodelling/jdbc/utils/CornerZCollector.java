@@ -11,17 +11,18 @@ package org.noise_planet.noisemodelling.jdbc.utils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
- * This class collects coordinates and keeps the Z values of points nearest to each corner of the envelope.
- * It stores only the 4 best candidates found so far, avoiding a full list in memory.
+ * This class collects coordinates and gives each corner of their envelope the Z value of the nearest point.
  */
 public class CornerZCollector {
 
     private final Envelope envelope = new Envelope();
-    // Stores the current best point (the one that provided the Z value) for each corner
-    private final Coordinate[] bestPoints = new Coordinate[4];
-    private final double[] minDistances = {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
+    // Collected points, the nearest one to each final corner is searched in getCorners
+    private final List<Coordinate> points = new ArrayList<>();
 
     // Cached corner points
     private final Coordinate[] corners = new Coordinate[] {
@@ -33,35 +34,8 @@ public class CornerZCollector {
      * @param c The coordinate to add.
      */
     public void addCoordinate(Coordinate c) {
-        if (envelope.isNull()) {
-            envelope.init(c);
-            updateCorners();
-            // Initialize best points with the first point
-            for (int i = 0; i < 4; i++) {
-                bestPoints[i] = c;
-                minDistances[i] = corners[i].distance(c);
-            }
-        } else if (!envelope.contains(c)) {
-            envelope.expandToInclude(c);
-            updateCorners();
-            // Re-evaluate distances for all points as corners have moved
-            for (int i = 0; i < 4; i++) {
-                double dist = corners[i].distance(c);
-                if (dist < minDistances[i]) {
-                    minDistances[i] = dist;
-                    bestPoints[i] = c;
-                }
-            }
-        } else {
-            // Envelope unchanged, only compare with current cached corners
-            for (int i = 0; i < 4; i++) {
-                double dist = corners[i].distance(c);
-                if (dist < minDistances[i]) {
-                    minDistances[i] = dist;
-                    bestPoints[i] = c;
-                }
-            }
-        }
+        envelope.expandToInclude(c);
+        points.add(c);
     }
 
     /**
@@ -84,7 +58,19 @@ public class CornerZCollector {
      * @return An array of coordinates representing the corners with the best Z values or null if no points have been added.
      */
     public Coordinate[] getCorners() {
-        if (bestPoints[0] == null) return null;
+        if (points.isEmpty()) return null;
+        updateCorners();
+        Coordinate[] bestPoints = new Coordinate[4];
+        double[] minDistances = {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
+        for (Coordinate c : points) {
+            for (int i = 0; i < 4; i++) {
+                double dist = corners[i].distance(c);
+                if (dist < minDistances[i]) {
+                    minDistances[i] = dist;
+                    bestPoints[i] = c;
+                }
+            }
+        }
 
         return new Coordinate[] {
                 new Coordinate(corners[0].x, corners[0].y, bestPoints[0].getZ()),
