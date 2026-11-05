@@ -450,8 +450,8 @@ public class KMLDocument {
                 xmlOut.writeStartElement("name");
                 xmlOut.writeCharacters(String.format(Locale.ROOT, "Source %d", scene.sourcesPk.get(sourceIndex)));
                 xmlOut.writeEndElement();//Name
-                //Write geometry
-                Geometry source = scene.sourceGeometries.get(sourceIndex);
+                //Write geometry (transform a copy, the scene sources are still used by the computation)
+                Geometry source = scene.sourceGeometries.get(sourceIndex).copy();
                 doTransform(source);
                 KMLWriter writer = new KMLWriter();
                 StringBuffer stringBuffer = new StringBuffer();
