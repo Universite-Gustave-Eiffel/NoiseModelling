@@ -1,0 +1,780 @@
+{
+  "cutPoints": [
+    {
+      "type": "Source",
+      "coordinate": {
+        "x": 345534.870653,
+        "y": 6687174.140673,
+        "z": 50.4
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "sourcePk": 1,
+      "li": 1.0,
+      "orientation": {
+        "yaw": 0.0,
+        "pitch": 0.0,
+        "roll": 0.0
+      }
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345543.60244919016,
+        "y": 6687111.479150546,
+        "z": 40.0
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345543.5,
+          "y": 6687111.2,
+          "z": 40.0
+        },
+        "p1": {
+          "x": 345554.4,
+          "y": 6687140.9,
+          "z": 40.0
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345543.6484496838,
+        "y": 6687111.149039661,
+        "z": 40.0
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345550.2,
+          "y": 6687108.9,
+          "z": 40.0
+        },
+        "p1": {
+          "x": 345543.5,
+          "y": 6687111.2,
+          "z": 40.0
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345547.40521908575,
+        "y": 6687084.189536128,
+        "z": 40.2
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345547.2,
+          "y": 6687083.5,
+          "z": 40.2
+        },
+        "p1": {
+          "x": 345549.7,
+          "y": 6687091.9,
+          "z": 40.2
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345548.3949247345,
+        "y": 6687077.087164361,
+        "z": 40.2
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345549.4,
+          "y": 6687076.8,
+          "z": 40.2
+        },
+        "p1": {
+          "x": 345545.9,
+          "y": 6687077.8,
+          "z": 40.2
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345550.1671266969,
+        "y": 6687064.369406109,
+        "z": 43.5
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345547.4,
+          "y": 6687064.6,
+          "z": 43.5
+        },
+        "p1": {
+          "x": 345551.0,
+          "y": 6687064.3,
+          "z": 43.5
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345550.6286829626,
+        "y": 6687061.05716454,
+        "z": 43.5
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345551.0,
+          "y": 6687064.3,
+          "z": 43.5
+        },
+        "p1": {
+          "x": 345549.5,
+          "y": 6687051.2,
+          "z": 43.5
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345551.39124555775,
+        "y": 6687055.584827333,
+        "z": 42.7
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345550.7,
+          "y": 6687051.6,
+          "z": 42.7
+        },
+        "p1": {
+          "x": 345552.4,
+          "y": 6687061.4,
+          "z": 42.7
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345551.88829712546,
+        "y": 6687052.017862725,
+        "z": 42.7
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345559.8,
+          "y": 6687054.8,
+          "z": 42.7
+        },
+        "p1": {
+          "x": 345550.7,
+          "y": 6687051.6,
+          "z": 42.7
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345553.0752494748,
+        "y": 6687043.5,
+        "z": 38.0
+      },
+      "zGround": 38.0,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345553.7719925356,
+        "y": 6687038.5,
+        "z": 35.99311065673828
+      },
+      "zGround": 35.99311065673828,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345554.1197010166,
+        "y": 6687036.004758206,
+        "z": 40.8
+      },
+      "zGround": 35.99311065673828,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345544.5,
+          "y": 6687039.6,
+          "z": 40.8
+        },
+        "p1": {
+          "x": 345554.4,
+          "y": 6687035.9,
+          "z": 40.8
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345554.2073705689,
+        "y": 6687035.375619883,
+        "z": 40.8
+      },
+      "zGround": 35.99311065673828,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345554.4,
+          "y": 6687035.9,
+          "z": 40.8
+        },
+        "p1": {
+          "x": 345550.8,
+          "y": 6687026.1,
+          "z": 40.8
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345556.5,
+        "y": 6687018.923145792,
+        "z": 35.99311065673828
+      },
+      "zGround": 35.99311065673828,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345557.9524509005,
+        "y": 6687008.5,
+        "z": 36.12948182496701
+      },
+      "zGround": 36.12948182496701,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345558.3863356995,
+        "y": 6687005.3863357,
+        "z": 35.679245752424194
+      },
+      "zGround": 35.679245752424194,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345558.64919396135,
+        "y": 6687003.5,
+        "z": 35.20469284057617
+      },
+      "zGround": 35.20469284057617,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "GroundEffect",
+      "coordinate": {
+        "x": 345559.13691410393,
+        "y": 6687000.0,
+        "z": 35.20469284057617
+      },
+      "zGround": 35.20469284057617,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345563.52639538713,
+        "y": 6686968.5,
+        "z": 35.20469284057617
+      },
+      "zGround": 35.20469284057617,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345564.2231384479,
+        "y": 6686963.5,
+        "z": 34.17769241333008
+      },
+      "zGround": 34.17769241333008,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345569.1003398737,
+        "y": 6686928.5,
+        "z": 34.17769241333008
+      },
+      "zGround": 34.17769241333008,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345569.79708293447,
+        "y": 6686923.5,
+        "z": 33.6889533996582
+      },
+      "zGround": 33.6889533996582,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345573.06299680326,
+        "y": 6686900.062996803,
+        "z": 33.6889533996582
+      },
+      "zGround": 33.6889533996582,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345573.2807982386,
+        "y": 6686898.5,
+        "z": 33.947538151212356
+      },
+      "zGround": 33.947538151212356,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345573.9775412994,
+        "y": 6686893.5,
+        "z": 34.04871027019767
+      },
+      "zGround": 34.04871027019767,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345574.28605189524,
+        "y": 6686891.2860518955,
+        "z": 33.546179697337166
+      },
+      "zGround": 33.546179697337166,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Reflection",
+      "coordinate": {
+        "x": 345574.4379769265,
+        "y": 6686890.195800411,
+        "z": 42.26460547010034
+      },
+      "zGround": 33.315862685790336,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345569.5,
+          "y": 6686892.7,
+          "z": 42.3
+        },
+        "p1": {
+          "x": 345590.0,
+          "y": 6686882.3,
+          "z": 42.2
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ]
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345576.5,
+        "y": 6686891.3045859765,
+        "z": 33.90255814417154
+      },
+      "zGround": 33.90255814417154,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345580.58284028183,
+        "y": 6686893.5,
+        "z": 34.41498947143555
+      },
+      "zGround": 34.41498947143555,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345593.53731223894,
+        "y": 6686900.465844226,
+        "z": 40.9
+      },
+      "zGround": 34.41498947143555,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345610.1,
+          "y": 6686892.4,
+          "z": 40.9
+        },
+        "p1": {
+          "x": 345583.2,
+          "y": 6686905.5,
+          "z": 40.9
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "GroundEffect",
+      "coordinate": {
+        "x": 345600.0,
+        "y": 6686903.94094351,
+        "z": 34.41498947143555
+      },
+      "zGround": 34.41498947143555,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345601.5,
+        "y": 6686904.747519523,
+        "z": 34.41498947143555
+      },
+      "zGround": 34.41498947143555,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345603.27788560104,
+        "y": 6686905.703519442,
+        "z": 40.9
+      },
+      "zGround": 34.57111873185039,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345586.9,
+          "y": 6686913.6,
+          "z": 40.9
+        },
+        "p1": {
+          "x": 345609.3,
+          "y": 6686902.8,
+          "z": 40.9
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345606.5,
+        "y": 6686907.436106232,
+        "z": 34.85407638549805
+      },
+      "zGround": 34.85407638549805,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345609.18597377965,
+        "y": 6686908.880400913,
+        "z": 38.3
+      },
+      "zGround": 34.85407638549805,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345609.0,
+          "y": 6686908.5,
+          "z": 38.3
+        },
+        "p1": {
+          "x": 345613.4,
+          "y": 6686917.5,
+          "z": 38.3
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345619.61631123687,
+        "y": 6686914.488974245,
+        "z": 38.3
+      },
+      "zGround": 34.85407638549805,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345613.4,
+          "y": 6686917.5,
+          "z": 38.3
+        },
+        "p1": {
+          "x": 345619.8,
+          "y": 6686914.4,
+          "z": 38.3
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345626.5,
+        "y": 6686918.190453068,
+        "z": 34.85407638549805
+      },
+      "zGround": 34.85407638549805,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345627.07566849183,
+        "y": 6686918.5,
+        "z": 34.90120168902316
+      },
+      "zGround": 34.90120168902316,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345631.5,
+        "y": 6686920.879039778,
+        "z": 35.56710939126147
+      },
+      "zGround": 35.56710939126147,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345636.3742341338,
+        "y": 6686923.5,
+        "z": 35.90171813964844
+      },
+      "zGround": 35.90171813964844,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345651.5,
+        "y": 6686931.633386615,
+        "z": 35.90171813964844
+      },
+      "zGround": 35.90171813964844,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345654.9713654178,
+        "y": 6686933.5,
+        "z": 36.19822707116501
+      },
+      "zGround": 36.19822707116501,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345658.2780751877,
+        "y": 6686935.2780751875,
+        "z": 36.32879638671875
+      },
+      "zGround": 36.32879638671875,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345672.59339816595,
+        "y": 6686942.975672607,
+        "z": 38.0
+      },
+      "zGround": 36.32879638671875,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345682.2,
+          "y": 6686936.8,
+          "z": 38.0
+        },
+        "p1": {
+          "x": 345672.4,
+          "y": 6686943.1,
+          "z": 38.0
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_ENTER"
+    },
+    {
+      "type": "Wall",
+      "coordinate": {
+        "x": 345673.81363841554,
+        "y": 6686943.631816951,
+        "z": 38.0
+      },
+      "zGround": 36.32879638671875,
+      "groundCoefficient": 0.0,
+      "wall": {
+        "p0": {
+          "x": 345673.2,
+          "y": 6686944.0,
+          "z": 38.0
+        },
+        "p1": {
+          "x": 345677.7,
+          "y": 6686941.3,
+          "z": 38.0
+        }
+      },
+      "wallAlpha": [
+        0.1
+      ],
+      "intersectionType": "BUILDING_EXIT"
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345681.5,
+        "y": 6686947.76490687,
+        "z": 36.32879638671875
+      },
+      "zGround": 36.32879638671875,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345686.5,
+        "y": 6686950.453493579,
+        "z": 36.76042556762695
+      },
+      "zGround": 36.76042556762695,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Topography",
+      "coordinate": {
+        "x": 345692.16562798584,
+        "y": 6686953.5,
+        "z": 36.76042556762695
+      },
+      "zGround": 36.76042556762695,
+      "groundCoefficient": 0.0
+    },
+    {
+      "type": "Receiver",
+      "coordinate": {
+        "x": 345695.805598,
+        "y": 6686955.457275,
+        "z": 38.354208177070745
+      },
+      "zGround": 36.854208177070745,
+      "groundCoefficient": 0.0,
+      "receiverPk": 1
+    }
+  ],
+  "curvedPath": false,
+  "profileType": "REFLECTION",
+  "raySourceReceiverDirectivity": {
+    "yaw": 172.06699720390452,
+    "pitch": -1.6254534307918742,
+    "roll": 0.0
+  }
+}

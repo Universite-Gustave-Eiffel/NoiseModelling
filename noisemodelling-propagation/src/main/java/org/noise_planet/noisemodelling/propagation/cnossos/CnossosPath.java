@@ -120,6 +120,10 @@ public class CnossosPath {
         if(getCutPoints().isEmpty() || coordinates.length <= 1) {
             return geometryFactory.createLineString();
         }
+        // pointList must be sorted by increasing distance along the profile: the cut
+        // point cursor below only moves forward when mapping profile distances to map
+        // coordinates. A non-monotonic list would clamp to the current segment and
+        // attach the wrong map position to the point (see CnossosPathBuilder).
         for(PointPath pointPath : pointList) {
             // report x,y from cut point
             while(cutPointCursor < getCutPoints().size() - 1) {
