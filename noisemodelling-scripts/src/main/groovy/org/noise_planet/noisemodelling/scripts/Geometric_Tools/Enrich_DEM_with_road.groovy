@@ -138,6 +138,20 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
     }
 }
 
+/**
+ * Stop the script when lines of the table have no Z value: the DEM points created along a line take
+ * their altitude from the line, so the DEM can only be enriched with 3D lines.
+ * @param sql connection to the database
+ * @param lineTable name of the table of lines (roads or railways)
+ */
+static void checkLinesHaveZ(Sql sql, String lineTable) {
+    int linesWithoutZ = sql.firstRow("SELECT COUNT(*) FROM " + lineTable + " WHERE ST_CoordDim(THE_GEOM) < 3")[0] as Integer
+    if (linesWithoutZ > 0) {
+        throw new IllegalArgumentException("Error : " + linesWithoutZ + " lines of the table " + lineTable
+                + " have no Z value. The DEM can only be enriched with 3D lines.")
+    }
+}
+
 
 def exec(Connection connection, input) {
 
@@ -193,6 +207,7 @@ def exec(Connection connection, input) {
     logger.info('Start enrich the DEM')
 
     def sql = new Sql(connection)
+    checkLinesHaveZ(sql, inputRoad)
 
     def import_roads = """
     ------------
@@ -200,8 +215,8 @@ def exec(Connection connection, input) {
     -- Road width is precalculated into WIDTH column. When largeur < 3, then 3m
 
     DROP TABLE IF EXISTS dem_roads;
-    CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth IS NOT NULL AND $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
-        FROM $inputRoad WHERE st_zmin(THE_GEOM) > 0;
+    CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth IS NOT NULL AND $roadWidth>3 THEN $roadWidth/2.0 ELSE 1.5 END) as WIDTH 
+        FROM $inputRoad WHERE ST_CoordDim(THE_GEOM) = 3;
     CREATE SPATIAL INDEX ON dem_roads(THE_GEOM);
     ALTER TABLE dem_roads ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_roads add primary key(PK_LINE);
@@ -215,9 +230,9 @@ def exec(Connection connection, input) {
 
     DROP TABLE DEM_WITHOUT_PTLINE IF EXISTS;
     CREATE TABLE DEM_WITHOUT_PTLINE(THE_GEOM geometry(POINTZ, $srid), source varchar) AS SELECT st_setsrid(THE_GEOM, $srid), 'DEM' FROM $inputDEM;
-    -- Remove DEM points that are less than $roadWidth far FROM roads
+    -- Remove DEM points that are less than the road half-width + 5 m far FROM roads
     DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_roads b 
-        WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, 20) && b.THE_GEOM 
+        WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, (SELECT MAX(WIDTH) + 5 FROM dem_roads)) && b.THE_GEOM 
         AND ST_DISTANCE(DEM_WITHOUT_PTLINE.THE_GEOM, b.THE_GEOM)< b.WIDTH+5 LIMIT 1) ;
     
     -- Create buffer points from roads and copy the elevation from the roads to the point

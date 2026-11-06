@@ -131,6 +131,20 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
     }
 }
 
+/**
+ * Stop the script when lines of the table have no Z value: the DEM points created along a line take
+ * their altitude from the line, so the DEM can only be enriched with 3D lines.
+ * @param sql connection to the database
+ * @param lineTable name of the table of lines
+ */
+static void checkLinesHaveZ(Sql sql, String lineTable) {
+    int linesWithoutZ = sql.firstRow("SELECT COUNT(*) FROM " + lineTable + " WHERE ST_CoordDim(THE_GEOM) < 3")[0] as Integer
+    if (linesWithoutZ > 0) {
+        throw new IllegalArgumentException("Error : " + linesWithoutZ + " lines of the table " + lineTable
+                + " have no Z value. The DEM can only be enriched with 3D lines.")
+    }
+}
+
 
 def exec(Connection connection, input) {
 
@@ -209,7 +223,7 @@ def exec(Connection connection, input) {
         outputsuffix = input["outputsuffix"] as String
     }
 
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputsuffix"] as String
+    String enrichedDEM = inputDEM + "_" + outputsuffix
 
     
     // print to command window
@@ -225,6 +239,7 @@ def exec(Connection connection, input) {
     logger.info('Start enrich the DEM')
 
     def sql = new Sql(connection)
+    checkLinesHaveZ(sql, inputLine)
 
 
     def import_dem_without_source = """
