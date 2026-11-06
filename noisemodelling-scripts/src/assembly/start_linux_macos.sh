@@ -1,2 +1,2 @@
 #!/bin/bash
-bash bin/WebServer -u -s scripts/ -r ""
+bash bin/WebServer -u -s scripts/ -r "" "$@"

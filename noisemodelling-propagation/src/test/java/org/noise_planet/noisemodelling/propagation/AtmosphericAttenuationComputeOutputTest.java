@@ -9,7 +9,6 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.junit.jupiter.api.Test;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 

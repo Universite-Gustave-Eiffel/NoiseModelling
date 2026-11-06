@@ -38,20 +38,18 @@ public abstract class GridMapMaker {
     /** True if Z of receivers geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
      * When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
      */
-    protected boolean receiverHasSeaLevelZCoordinates = false;
+    protected boolean receiversZIsAltitude = false;
     /** True if Z of sources geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
      *  When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
      */
-    protected boolean sourceHasSeaLevelZCoordinates = false;
+    protected boolean sourcesZIsAltitude = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
-    protected double closeReceiverReflectionWallDistance = 0;
     protected double gs = 0;
     // Soil areas are split by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
 
-    protected boolean bodyBarrier = false; // it needs to be true if train propagation is computed (multiple reflection between the train and a screen)
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
@@ -120,13 +118,6 @@ public abstract class GridMapMaker {
         this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
     }
 
-
-    /**
-     * true if train propagation is computed (multiple reflection between the train and a screen)
-     */
-    public void setBodyBarrier(boolean bodyBarrier) {
-        this.bodyBarrier = bodyBarrier;
-    }
 
     public double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;
@@ -229,30 +220,30 @@ public abstract class GridMapMaker {
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
-    public boolean isReceiverHasAbsoluteZCoordinates() {
-        return receiverHasSeaLevelZCoordinates;
+    public boolean isReceiversZIsAltitude() {
+        return receiversZIsAltitude;
     }
 
     /**
      *
-     * @param receiverHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
+     * @param receiversZIsAltitude True if provided Z value are sea level (false for relative to ground level)
      */
-    public void setReceiverHasAbsoluteZCoordinates(boolean receiverHasAbsoluteZCoordinates) {
-        this.receiverHasSeaLevelZCoordinates = receiverHasAbsoluteZCoordinates;
+    public void setReceiversZIsAltitude(boolean receiversZIsAltitude) {
+        this.receiversZIsAltitude = receiversZIsAltitude;
     }
 
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
-    public boolean isSourceHasAbsoluteZCoordinates() {
-        return sourceHasSeaLevelZCoordinates;
+    public boolean isSourcesZIsAltitude() {
+        return sourcesZIsAltitude;
     }
 
     /**
-     * @param sourceHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
+     * @param sourcesZIsAltitude True if provided Z value are sea level (false for relative to ground level)
      */
-    public void setSourceHasAbsoluteZCoordinates(boolean sourceHasAbsoluteZCoordinates) {
-        this.sourceHasSeaLevelZCoordinates = sourceHasAbsoluteZCoordinates;
+    public void setSourcesZIsAltitude(boolean sourcesZIsAltitude) {
+        this.sourcesZIsAltitude = sourcesZIsAltitude;
     }
 
     /**
@@ -346,22 +337,6 @@ public abstract class GridMapMaker {
      */
     public void setMaximumReflectionDistance(double maximumReflectionDistance) {
         this.maximumReflectionDistance = maximumReflectionDistance;
-    }
-
-    /**
-     * @return Maximum receiver-to-wall distance in meters below which reflection cut profiles can be ignored.
-     *         A value of 0 means the optional filter is disabled.
-     */
-    public double getCloseReceiverReflectionWallDistance() {
-        return closeReceiverReflectionWallDistance;
-    }
-
-    /**
-     * @param closeReceiverReflectionWallDistance Maximum receiver-to-wall distance in meters below which
-     *                                            reflection cut profiles can be ignored. A value of 0 disables the filter.
-     */
-    public void setCloseReceiverReflectionWallDistance(double closeReceiverReflectionWallDistance) {
-        this.closeReceiverReflectionWallDistance = closeReceiverReflectionWallDistance;
     }
 
     /**

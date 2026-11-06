@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Atmospheric Template
 ====================
@@ -14,27 +14,53 @@ Overview
 Arguments
 ---------
 
-Mandatory inputs
-~~~~~~~~~~~~~~~~
-
-``tableSourcesEmission`` — *Sources emission table name*
-   Name of the Sources table (ex. SOURCES_EMISSION)  The table must contain:
-   
-   *  IDSOURCE * : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)
-   
-   *  PERIOD * : Time period, you will find this column on the output (VARCHAR)
-
-   Type: ``String``
-
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``tablePeriodAtmosphericSettings`` — *Atmospheric settings table name output for each time period*
+``confDutchFraction`` — *Dutch favourable fraction*
+   Use the Dutch formulas on calculating the ratio for favourable/homogenous propagation
+
+   Type: ``Boolean``
+
+``confFavourableOccurrencesDefault`` — *Default favourable occurrences*
+   Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   
+   .. figure:: acoustics_parameters_confFavorableOccurrences.png
+      :align: center
+      :alt: Noise level from source
+   
+   . For Netherlands check confDutchFraction instead of using this parameter.
+
+   Type: ``String``
+
+   Default: ````
+
+``confHumidity`` — *Relative humidity*
+   🌧 Humidity for noise propagation (%) [0,100]
+
+   Type: ``Double``
+
+   Default: ``70``
+
+``confTemperature`` — *Air temperature*
+   🌡 Air temperature (°C)
+
+   Type: ``Double``
+
+   Default: ``15``
+
+``tablePeriodAtmosphericSettings`` — *Output table name*
    Name of the Atmospheric settings table  The table will contain the following columns:
    
    *   PERIOD : time period (VARCHAR PRIMARY KEY)
    
-   *   WINDROSE : probability of occurrences of favourable propagation conditions (ARRAY(16))
+   *   WINDROSE : Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   
+   .. figure:: acoustics_parameters_confFavorableOccurrences.png
+      :align: center
+      :alt: Noise level from source
+   
+   or DutchD, DutchE, DutchN for Netherlands
    
    *   TEMPERATURE : Temperature in celsius (FLOAT)
    
@@ -49,6 +75,15 @@ Optional inputs
    Type: ``String``
 
    Default: ``SOURCES_ATMOSPHERIC``
+
+``tableSourcesEmission`` — *Sources emission table name*
+   Name of the Sources table (ex. SOURCES_EMISSION)  The table must contain:
+   
+   *  IDSOURCE * : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)
+   
+   *  PERIOD * : Time period, you will find this column on the output (VARCHAR)
+
+   Type: ``String``
 
 Output
 ------

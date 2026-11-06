@@ -13,6 +13,9 @@ The other tables are accessible via the left menu in the ``Input tables & parame
 .. warning::
 	In the lists below, the columns noted with ``*`` are mandatory
 
+.. warning::
+    The train speed is the lowest value of: track speed (``TRACKSPD``), commercial speed (``COMSPD``), train speed
+    (``TRAINSPD``), and the maximum speed (``Vmax``) of the train type (as listed in the `RailwayVehiclesCnossos.json`_ file).
 
 Railways sections
 ---------------------
@@ -29,8 +32,8 @@ Table definition
 * ``IDSECTION`` *
 	* Description: A section identifier (PRIMARY KEY)
 	* Type: Integer
-* ``NTRACK`` *
-	* Description: Number of tracks
+* ``NTRACK``
+	* Description: Number of tracks. Optional: when the column is absent, 2 tracks are assumed. If present, must be a positive integer; NULL is rejected.
 	* Type: Integer
 * ``TRACKSPD`` *
 	* Description: Maximum speed on the section *(in km/h)*
@@ -66,7 +69,7 @@ Table definition
 		* ``0`` = Any type of track or bridge except metal bridges with unballasted tracks
 		* ``1`` = Metal bridges with unballasted tracks + 5dB
 	* Type: Integer
-* ``TRACKSPC``
+* ``COMSPD``
 	* Description: Commercial speed on the section *(in km/h)*
 	* Type: Double
 * ``ISTUNNEL``
@@ -95,7 +98,7 @@ Table definition
 	* Description: A traffic identifier (PRIMARY KEY)
 	* Type: Integer
 * ``IDSECTION`` *
-	* Description: A section identifier, refering to ``RAIL_SECTIONS`` table
+	* Description: A section identifier, referring to ``RAIL_SECTIONS`` table
 	* Type: Integer
 * ``TRAINTYPE`` *
 	* Description: Type of vehicle, listed in the `RailwayTrainsets.json`_ file *(mainly for french SNCF)*
@@ -115,5 +118,6 @@ Table definition
 
 
 .. _RailwayEmissionCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayEmissionCnossos.json
+.. _RailwayVehiclesCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json
 .. _RailwayTrainsets.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayTrainsets.json
 

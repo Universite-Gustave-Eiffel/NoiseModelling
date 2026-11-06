@@ -104,8 +104,8 @@ public class SegmentPath {
      */
     public void writeStream( DataOutputStream out ) throws IOException {
         out.writeDouble(gPath);
-        Path.writeVector(out, meanGdPlane);
-        Path.writeCoordinate(out, pInit);
+        CnossosPath.writeVector(out, meanGdPlane);
+        CnossosPath.writeCoordinate(out, pInit);
     }
 
     /**
@@ -117,8 +117,8 @@ public class SegmentPath {
      */
     public void readStream( DataInputStream in ) throws IOException {
         gPath = in.readDouble();
-        meanGdPlane = Path.readVector(in);
-        pInit = Path.readCoordinate(in);
+        meanGdPlane = CnossosPath.readVector(in);
+        pInit = CnossosPath.readCoordinate(in);
     }
 
 

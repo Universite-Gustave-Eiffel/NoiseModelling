@@ -14,6 +14,7 @@ import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
+import org.locationtech.jts.geom.util.LineStringExtracter;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
@@ -25,6 +26,8 @@ import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosPa
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.jdbc.utils.CornerZCollector;
+import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
@@ -35,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
@@ -160,6 +164,11 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                 frequencySet.addAll(readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend()+periodFieldName, sourceFields));
             }
+            if(!noiseMapByReceiverMaker.getSourcesEmissionTableName().isEmpty()) {
+                // D, E and N are values of the PERIOD field, the band fields have no period suffix (ex. HZ63)
+                frequencySet.addAll(readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend(),
+                        JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName())));
+            }
             frequencyArray = new ArrayList<>(frequencySet);
             exactFrequencyArray = new ArrayList<>();
             aWeightingArray = new ArrayList<>();
@@ -284,7 +293,6 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.defaultCnossosParameters = defaultParameters;
         scene.periodSet.addAll(cnossosParametersPerPeriod.keySet());
 
-
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query
         // optimization
@@ -302,11 +310,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.profileBuilder.finishFeeding();
 
         scene.reflexionOrder = noiseMapByReceiverMaker.getSoundReflectionOrder();
-        scene.setBodyBarrier(noiseMapByReceiverMaker.isBodyBarrier());
         scene.maxRefDist = maximumReflectionDistance;
         scene.maxSrcDist = maximumPropagationDistance;
-        scene.mirrorReceiverCapacity = noiseMapByReceiverMaker.getMirrorReceiverCapacity();
-        scene.setCloseReceiverReflectionWallDistance(noiseMapByReceiverMaker.getCloseReceiverReflectionWallDistance());
         scene.lineSourceSpacingRatio = noiseMapByReceiverMaker.getSceneInputSettings().getLineSourceSpacingRatio();
         scene.setComputeVerticalDiffraction(noiseMapByReceiverMaker.isComputeVerticalDiffraction());
         scene.setComputeHorizontalDiffraction(noiseMapByReceiverMaker.isComputeHorizontalDiffraction());
@@ -325,9 +330,18 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         } else {
             throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
+        String reflectionIgnoreField = null;
+        for(String field : JDBCUtilities.getColumnNames(connection, receiverTableName)) {
+            if(field.equalsIgnoreCase("REFL_IGNOR")) {
+                reflectionIgnoreField = field;
+                break;
+            }
+        }
+        String reflectionIgnoreSelect = reflectionIgnoreField == null ? "" :
+                ", " + TableLocation.quoteIdentifier(reflectionIgnoreField, dbType);
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + " FROM " +
-                        receiverTableName + " WHERE " +
+                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + reflectionIgnoreSelect +
+                        " FROM " + receiverTableName + " WHERE " +
                         TableLocation.quoteIdentifier(receiverGeomName, dbType) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
@@ -346,10 +360,21 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
-                        if(!noiseMapByReceiverMaker.isReceiverHasAbsoluteZCoordinates()) {
+                        if(!noiseMapByReceiverMaker.isReceiversZIsAltitude()) {
                             pt = scene.profileBuilder.makeGeometryRelativeZToAbsolute(pt, true);
                         }
-                        scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
+                        double reflectionIgnoreDistance = 0;
+                        if(reflectionIgnoreField != null) {
+                            reflectionIgnoreDistance = rs.getDouble(reflectionIgnoreField);
+                            if(rs.wasNull()) {
+                                reflectionIgnoreDistance = 0;
+                            }
+                        }
+                        if(reflectionIgnoreDistance > 2.0) {
+                            LOGGER.warn("REFL_IGNOR is set to {} m for receiver {}, which is unusually high. Many reflections may be ignored.",
+                                    reflectionIgnoreDistance, receiverPk);
+                        }
+                        scene.addReceiver(receiverPk, pt.getCoordinate(), reflectionIgnoreDistance);
                     }
                 }
             }
@@ -635,9 +660,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             if(geomFields.isEmpty()) {
                 throw new SQLException("Digital elevation model table \""+ demTable +"\" must exist and contain a POINT field");
             }
-            String topoGeomName = geomFields.get(0);
-            double sumZ = 0;
-            int topoCount = 0;
+            String topoGeomName = geomFields.getFirst();
+            CornerZCollector cornerZCollector = new CornerZCollector();
+            AtomicInteger topoCount = new AtomicInteger(0);
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
                             demTable + " WHERE " +
@@ -645,30 +670,60 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
-                        Geometry pt = rs.getGeometry();
-                        if(pt != null) {
-                            Coordinate ptCoordinate = pt.getCoordinate();
-                            profileBuilder.addTopographicPoint(ptCoordinate);
-                            if(!Double.isNaN(ptCoordinate.z)) {
-                                sumZ+=ptCoordinate.z;
-                                topoCount+=1;
-                            }
-                        }
+                        Geometry geometry = rs.getGeometry();
+                        processDemGeometry(profileBuilder, geometry, demTable, cornerZCollector, topoCount);
                     }
                 }
-                double averageZ = 0;
-                if(topoCount > 0) {
-                    averageZ = sumZ / topoCount;
-                }
-                // add corners of envelope to guaranty topography continuity
-                Envelope extentedEnvelope = new Envelope(fetchEnvelope);
-                extentedEnvelope.expandBy(fetchEnvelope.getDiameter());
-                Coordinate[] coordinates = geometryFactory.toGeometry(extentedEnvelope).getCoordinates();
-                for (int i = 0; i < coordinates.length - 1; i++) {
-                    Coordinate coordinate = coordinates[i];
-                    profileBuilder.addTopographicPoint(new Coordinate(coordinate.x, coordinate.y, averageZ));
+                // add corners of extended envelope to guaranty topography continuity in the simulation
+                cornerZCollector.expandEnvelope(fetchEnvelope.getDiameter());
+                for (Coordinate coordinate : cornerZCollector.getCorners()) {
+                    profileBuilder.addTopographicPoint(coordinate);
                 }
             }
+        }
+        try {
+            profileBuilder.buildDemQueryStructure();
+        } catch (LayerDelaunayError e) {
+            throw new SQLException("Error while building DEM query structure", e);
+        }
+    }
+
+    /**
+     * Push a geometry into the profile builder
+     * @param profileBuilder the profile builder mesh to which the DEM data will be added.
+     * @param geometry Dem geometry, POINT, LineString or geometry collection
+     * @param demTable Name of the DEM table
+     * @param cornerZCollector Collect Z values for dem points envelope
+     * @param topoCount Return the number of DEM points
+     */
+    private static void processDemGeometry(ProfileBuilder profileBuilder, Geometry geometry, String demTable,
+                                           CornerZCollector cornerZCollector, AtomicInteger topoCount) {
+        if (geometry instanceof Point) {
+            Coordinate ptCoordinate = geometry.getCoordinate();
+            if (Double.isNaN(ptCoordinate.getZ())) {
+                throw new IllegalArgumentException("The table " + demTable +
+                        " contains at least one DEM geometry without Z ordinate." +
+                        " You must specify X,Y,Z for each DEM point/linestring vertex.");
+            }
+            cornerZCollector.addCoordinate(ptCoordinate);
+            topoCount.addAndGet(1);
+            profileBuilder.addTopographicPoint(ptCoordinate);
+        } else if (geometry instanceof GeometryCollection) {
+            for(int i = 0; i < geometry.getNumGeometries(); i++) {
+                processDemGeometry(profileBuilder, geometry.getGeometryN(i), demTable, cornerZCollector, topoCount);
+            }
+        } else if (geometry instanceof LineString) {
+            Coordinate[] lineStringCoordinates = geometry.getCoordinates();
+            topoCount.addAndGet(lineStringCoordinates.length);
+            for(Coordinate coordinate : geometry.getCoordinates()) {
+                if (Double.isNaN(coordinate.getZ())) {
+                    throw new IllegalArgumentException("The table " + demTable +
+                            " contains at least one DEM geometry without Z ordinate." +
+                            " You must specify X,Y,Z for each DEM point/linestring vertex.");
+                }
+                cornerZCollector.addCoordinate(coordinate);
+            }
+            profileBuilder.addTopographicLine((LineString) geometry);
         }
     }
 
@@ -781,7 +836,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
                         if (doIntersection) {
-                            geo = domainConstraint.intersection(geo);
+                            Geometry clipped = domainConstraint.intersection(geo);
+                            // Boundary-only contacts have no length and must not become point emitters.
+                            geo = geo instanceof LineString || geo instanceof MultiLineString
+                                    ? LineStringExtracter.getGeometry(clipped) : clipped;
                         }
                         if (!geo.isEmpty()) {
                             Coordinate[] coordinates = geo.getCoordinates();
@@ -793,7 +851,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                             " You must specify X,Y,Z for each source");
                                 }
                             }
-                            if(!noiseMapByReceiverMaker.isSourceHasAbsoluteZCoordinates()) {
+                            if(!noiseMapByReceiverMaker.isSourcesZIsAltitude()) {
                                 if(scene.profileBuilder.hasDem()) {
                                     // Coordinates are supposed to be relative to the digital elevation model
                                     // So we must compute the altitude values

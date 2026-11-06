@@ -17,7 +17,7 @@ Table definition
 	In the list below, the columns noted with ``*`` are mandatory
 
 * ``THE_GEOM`` *
-	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
+	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Buildings geometry modelling` section below)
 	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON`` or ``LINESTRING``)
 * ``HEIGHT``
 	* Description: building's height above the ground *(in meters)*. Optional, used only if the geometry is defined in 2D, ignored otherwise
@@ -32,7 +32,7 @@ Table definition
 .. note::
 	If you want to generate a scene without buildings, create two fictitious buildings, placed in two corners of the scene, and assign them a height of 0 meter.
 
-Geometry modelling
+Buildings geometry modelling
 ---------------------
 
 In NoiseModelling, the geometry of the building is used to calculate the 3D ray path of the acoustic wave. Therefore, we need to know the footprint of the building as well as the points in height (at the roof, the gutter, ...)
@@ -41,7 +41,7 @@ To determine the 3D shape of the building we can use some of the following eleme
 
 * ``Zground`` : The ground altitude, exprimed in meters and based on the 0 sea level
 * ``Zobject`` : The altitude in the air, exprimed in meters and based on the 0 sea level
-* ``HEIGHT``: The height, equal to the diffirence between ``Zobject`` and ``Zground``
+* ``HEIGHT``: The height, equal to the difference between ``Zobject`` and ``Zground``
 
 .. figure:: images/Input_tables/building_z_z_h.png
    :align: center
@@ -71,7 +71,7 @@ There is a DEM layer
 The DEM is triangulated. Then, all the vertices of the building are projected onto the triangle below it in order to determine their altitudes. Finally, the minimum altitude is taken and assigned to the whole building: ``Zground`` = Minimum DEM Z value. Then:
 
 * If ``HEIGHT`` > 0 then ``Zobject`` = ``Zground`` + ``HEIGHT``
-* If ``HEIGHT`` = 0 then ``Zobject`` = ``Zground`` and Warning message *"Be carreful, some buildings are 0 meter high"*
+* If ``HEIGHT`` = 0 then ``Zobject`` = ``Zground`` and Warning message *"Be careful, some buildings are 0 meter high"*
 * If ``HEIGHT`` null or < 0 then Error message *"Not possible to determine Z coordinates"*
 
 There is no DEM layer

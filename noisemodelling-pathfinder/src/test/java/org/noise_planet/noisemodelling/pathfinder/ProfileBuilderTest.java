@@ -25,10 +25,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinderTest.assertZProfil;
 
 /**
@@ -67,19 +64,19 @@ public class ProfileBuilderTest {
     }
 
     /**
-     * Test the finish of {@link ProfileBuilder} feeding.
+     * Test that we can't add more buildings after the profileBuilder is initialized.
+     * A java.lang.UnsupportedOperationException is expected to be thrown
      * @throws ParseException JTS WKT parsing exception.
      */
     @Test
+
     public void finishBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
         profileBuilder.addBuilding(READER.read("POLYGON((1 1 10,5 1 10,5 5 10,1 5 10,1 1 10))"), -1);
         assertNotNull(profileBuilder.finishFeeding());
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8 56,8 10 56,8 4 56,6 8 56))"), -1);
-
-        List<Building> list = profileBuilder.getBuildings();
-        assertEquals(1, list.size());
+        assertThrows(UnsupportedOperationException.class, () -> {
+            profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
+        });
     }
 
     /**
@@ -148,6 +145,55 @@ public class ProfileBuilderTest {
         assertEquals(8.0, pts.get(pts.size() - 1).getCoordinate().x, DELTA);
         assertEquals(10.0, pts.get(pts.size() - 1).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(pts.size() - 1).getCoordinate().z, DELTA);
+    }
+
+    /**
+     * A line that follows a DEM triangle edge and crosses its vertices must keep its length
+     * and all the ground elevation points. Navigation used to go back and forth along the
+     * edge, producing a zigzag profile and over-estimated line source power (issue #1093).
+     */
+    @Test
+    public void demLineSourceOnTriangleEdgeTest() {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        for (int x = -40; x <= 40; x += 20) {
+            for (int y = -40; y <= 40; y += 20) {
+                profileBuilder.addTopographicPoint(new Coordinate(x, y, 0.01 * x * x));
+            }
+        }
+        profileBuilder.finishFeeding();
+        LineString source = new GeometryFactory().createLineString(new Coordinate[]{
+                new Coordinate(-30, 0, 0.05), new Coordinate(30, 0, 0.05)});
+        LineString split = profileBuilder.splitGeometryLineToDem(source, ProfileBuilder.MILLIMETER);
+        assertEquals(source.getLength(), split.getLength(), DELTA);
+        double[] expectedZ = {10.05, 4.05, 0.05, 4.05, 10.05};
+        assertEquals(expectedZ.length, split.getNumPoints());
+        for (int i = 0; i < split.getNumPoints(); i++) {
+            assertEquals(expectedZ[i], split.getCoordinateN(i).z, DELTA);
+            if (i > 0) {
+                assertTrue(split.getCoordinateN(i).x > split.getCoordinateN(i - 1).x);
+            }
+        }
+    }
+
+    /**
+     * A line starting outside the DEM must keep all the ground elevation points once it
+     * enters the triangulation, and must not stop on the DEM boundary.
+     */
+    @Test
+    public void demLineSourceFromOutsideTest() {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        for (int x = -40; x <= 40; x += 20) {
+            for (int y = -40; y <= 40; y += 20) {
+                profileBuilder.addTopographicPoint(new Coordinate(x, y, 0.01 * (x * x + y * y)));
+            }
+        }
+        profileBuilder.finishFeeding();
+        LineString source = new GeometryFactory().createLineString(new Coordinate[]{
+                new Coordinate(-100, 7, 0.05), new Coordinate(100, 7, 0.05)});
+        LineString split = profileBuilder.splitGeometryLineToDem(source, ProfileBuilder.MILLIMETER);
+        assertEquals(source.getLength(), split.getLength(), DELTA);
+        assertEquals(6, split.getNumPoints());
+        assertEquals(1.45, split.getCoordinateN(3).z, DELTA);
     }
 
     /**

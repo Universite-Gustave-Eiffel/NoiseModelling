@@ -59,21 +59,21 @@ inputs = [
                         '<li><b> HGV </b> : Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
                         '<li><b> WAV </b> : Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
                         '<li><b> WBV </b> : Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
-                        '<li><b> LV_SPD </b> : Hourly average light vehicle speed (DOUBLE)</li>' +
-                        '<li><b> MV_SPD </b> : Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
-                        '<li><b> HGV_SPD </b> : Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
-                        '<li><b> WAV_SPD </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
-                        '<li><b> WBV_SPD </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> LV_SPD </b> : Hourly average light vehicle speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> MV_SPD </b> : Hourly average medium heavy vehicles speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> HGV_SPD </b> : Hourly average heavy duty vehicles speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> WAV_SPD </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> WBV_SPD </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (20 to 150 km/h -- DOUBLE)</li>' +
                         "<li><b> LV_D </b><b>LV_E </b><b>LV_N </b> : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> MV_D </b><b>MV_E </b><b>MV_N </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> HGV_D </b><b> HGV_E </b><b> HGV_N </b> : Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> WAV_D </b><b> WAV_E </b><b> WAV_N </b> : Hourly average mopeds, tricycles or quads &le; 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> WBV_D </b><b> WBV_E </b><b> WBV_N </b> : Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> : Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> : Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> : Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> : Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>" +
+                        "<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> : Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>" +
+                        "<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> : Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>" +
+                        "<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>" +
+                        "<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>" +
                         "<li><b> TEMP </b> : Hourly average air temperature (DOUBLE)</li>" +
                         "<li><b> TEMP_D </b><b> TEMP_E </b><b> TEMP_N </b> : Hourly average air temperature (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>" +
@@ -89,7 +89,7 @@ inputs = [
                 coefficientVersion            : [
                         name       : 'Coefficient version',
                         title      : 'Coefficient version',
-                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020)',
+                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020, 528 = NL)',
                         default    : 2,
                         type       : Double.class
                 ],
@@ -189,9 +189,14 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
         def tupMeta = GeometryTableUtilities.getFirstColumnMetaData(connection, sourceTableIdentifier)
         if (tupMeta != null) {
+            boolean hasZ = tupMeta.second().hasZ()
             tupMeta.second().setHasZ(true)
             createDefinitions << "$geomName ${tupMeta.second().SQL}"
-            logger.warn("The geometry field ${geomName} z value will be forced to 0.05m height.")
+            if(hasZ) {
+                logger.warn("The geometry field ${geomName} z value of the roads will be forced to 0.05m height. If you had the altitude on the roads, consider using the script Enrich_DEM_with_road in order to provide a precise road platform.")
+            } else {
+                logger.info("The roads geometry field ${geomName} does not have z values, a default height of 0.05m will be used.")
+            }
         }
     }
 

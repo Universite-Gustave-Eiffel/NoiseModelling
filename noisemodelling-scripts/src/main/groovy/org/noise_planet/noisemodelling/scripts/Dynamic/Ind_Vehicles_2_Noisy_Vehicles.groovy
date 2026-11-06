@@ -309,6 +309,7 @@ class VehicleEmissionProcessData {
             RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
             rsParameters.setRoadSurface(RoadSurface)
             rsParameters.setSlopePercentage(0)
+            rsParameters.setFrequency(f)
             res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
             kk++
         }

@@ -193,7 +193,7 @@ public class AcousticIndicatorsFunctions {
      * @param array2 Second array
      * @return Sum of the two arrays
      */
-    public static double[] sumArray(double array1[], double array2[]) {
+    public static double[] sumArray(double[] array1, double[] array2) {
         if (array1.length != array2.length) {
             if(array1.length == 0) {
                 return array2;

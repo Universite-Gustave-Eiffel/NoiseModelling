@@ -64,7 +64,7 @@ public class ProfilerThread  implements Runnable {
         StringBuilder sb = new StringBuilder();
         for (Metric m : metrics) {
             for (String metricValue : m.getCurrentValues()) {
-                if (sb.length() != 0) {
+                if (!sb.isEmpty()) {
                     sb.append(",");
                 }
                 sb.append(metricValue);

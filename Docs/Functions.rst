@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 List of functions
 ^^^^^^^^^^^^^^^^^
@@ -14,6 +14,7 @@ Acoustic Tools
     :maxdepth: 1
 
     functions/Acoustic_Tools/Add_Laeq_Leq_columns
+    functions/Acoustic_Tools/Combine_Noise_Maps
     functions/Acoustic_Tools/Create_Isolines
     functions/Acoustic_Tools/Create_Isosurface
     functions/Acoustic_Tools/DynamicIndicators
@@ -40,6 +41,7 @@ Database Manager
 
     functions/Database_Manager/Add_Primary_Key
     functions/Database_Manager/Clean_Database
+    functions/Database_Manager/Copy_Table_with_Select
     functions/Database_Manager/Display_Database
     functions/Database_Manager/Drop_a_Table
     functions/Database_Manager/Execute_Query

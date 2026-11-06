@@ -13,6 +13,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.LOGGER;
 
@@ -21,8 +22,7 @@ import static org.noise_planet.noisemodelling.pathfinder.PathFinder.LOGGER;
  * Return true if the computation is done without issues
  */
 public final class ThreadPathFinder implements Callable<Boolean> {
-    int startReceiver; // Included
-    int endReceiver; // Excluded
+    ConcurrentLinkedDeque<Integer> receivers;
     PathFinder propagationProcess;
     ProgressVisitor visitor;
     CutPlaneVisitor dataOut;
@@ -31,18 +31,16 @@ public final class ThreadPathFinder implements Callable<Boolean> {
 
     /**
      * Create the ThreadPathFinder constructor
-     * @param startReceiver
-     * @param endReceiver
-     * @param propagationProcess
-     * @param visitor
-     * @param dataOut
-     * @param data
+     * @param receivers Receivers to process, this queue will be consumed by this instance
+     * @param propagationProcess Propagation process instance
+     * @param visitor Keep track of the computation progress and cancellation
+     * @param dataOut Output data instance
+     * @param data Input data
      */
-    public ThreadPathFinder(int startReceiver, int endReceiver, PathFinder propagationProcess,
+    public ThreadPathFinder(ConcurrentLinkedDeque<Integer> receivers, PathFinder propagationProcess,
                             ProgressVisitor visitor, CutPlaneVisitor dataOut,
                             Scene data) {
-        this.startReceiver = startReceiver;
-        this.endReceiver = endReceiver;
+        this.receivers = receivers;
         this.propagationProcess = propagationProcess;
         this.visitor = visitor;
         this.dataOut = dataOut;
@@ -55,7 +53,8 @@ public final class ThreadPathFinder implements Callable<Boolean> {
     @Override
     public Boolean call() throws Exception {
         try {
-            for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
+            Integer idReceiver;
+            while((idReceiver = receivers.poll()) != null) {
                 if (visitor != null) {
                     if (visitor.isCanceled()) {
                         break;

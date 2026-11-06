@@ -53,7 +53,7 @@ In the ``New field`` part, fill the information below:
 * ``Type`` : Integer
 * ``Length`` : 2
 
-Once done, click on ``Add to Fields List``. Then redo this step with the following informations:
+Once done, click on ``Add to Fields List``. Then redo this step with the following information:
 
 * ``Name`` : HZD500 . Source noise level during the day (D) at a frequency of 500 Hz
 * ``Type`` : Decimal number
@@ -252,7 +252,7 @@ In this bonus step, we will manage with the directivity. To do so, we will apply
 #. Get directivity
 #. Update the ``Source_Point`` table
 #. Import needed data into NoiseModelling
-#. Produce the noise map, taking into acount directivity parameters
+#. Produce the noise map, taking into account directivity parameters
 
 
 Directivity

@@ -1,16 +1,16 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Railway Emission from Traffic
 =============================
 
-Compute railway emission noise map from vehicule, traffic table AND section table.
+Compute railway emission lines sources from vehicle, traffic table AND section table.
 
 Overview
 --------
 
-➡️ Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details).
-✅ The output table is called LW_RAILWAY
+➡️ Compute railway emission lines sources from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details).
+✅ The output table is called LW_RAILWAY and will contain the columns pk_section, the_geom, dir_id, gs, hrail, cref
 
 Arguments
 ---------
@@ -24,7 +24,7 @@ Mandatory inputs
    
    * IDSECTION* : A section identifier (PRIMARY KEY) (INTEGER)
    
-   * NTRACK* : Number of tracks (INTEGER)
+   * NTRACK : Number of tracks (INTEGER). Optional: when the column is absent, two tracks are assumed. If present, it must be a positive integer; NULL is rejected.
    
    * TRACKSPD* : Maximum speed on the section (in km/h) (DOUBLE)
    
@@ -38,7 +38,7 @@ Mandatory inputs
    
    * BRIDGE : Bridge transfer function identifier, e.g. "EU3", empty for none (VARCHAR)
    
-   * TRACKSPD : Commercial speed on the section (in km/h) (DOUBLE)
+   * COMSPD : Commercial speed on the section (in km/h) (DOUBLE)
    
    * ISTUNNEL : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN)
 
@@ -50,7 +50,7 @@ Mandatory inputs
    
    * IDTRAFFIC* : A traffic identifier (PRIMARY KEY) (INTEGER)
    
-   * IDSECTION* : A section identifier, refering to RAIL_SECTIONS table (INTEGER)
+   * IDSECTION* : A section identifier, referring to RAIL_SECTIONS table (INTEGER)
    
    * TRAINTYPE* : Type of vehicle, listed in the Rail_Train_SNCF_2021 file (mainly for french SNCF) (STRING)
    
@@ -65,6 +65,11 @@ Optional inputs
 
 ``railwayEmissionDataFile`` — *Railway emission data file*
    URL of the railway emission data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
+
+   Type: ``String``
+
+``railwayPlatformDataFile`` — *Railway platform data file*
+   URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
 
    Type: ``String``
 

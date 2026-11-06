@@ -13,8 +13,6 @@ import org.h2.value.ValueBoolean;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPWrite;
-import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
@@ -22,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
@@ -61,21 +58,14 @@ public class IsoSurfaceJDBCTest {
     public void testIsoSurface() throws SQLException, IOException {
         GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("lden_geom.geojson").getFile());
         GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("triangles.geojson").getFile());
-        try(Statement st = connection.createStatement()) {
-            st.execute("ALTER TABLE LDEN_GEOM ALTER COLUMN IDRECEIVER INTEGER NOT NULL");
-            st.execute("ALTER TABLE LDEN_GEOM ADD PRIMARY KEY (IDRECEIVER)");
-            st.execute("ALTER TABLE TRIANGLES ALTER COLUMN PK INTEGER NOT NULL");
-            st.execute("ALTER TABLE TRIANGLES ADD PRIMARY KEY (PK)");
-            st.execute("CREATE INDEX ON TRIANGLES(CELL_ID)");
-        }
 
         long start = System.currentTimeMillis();
         IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, 2154);
         isoSurface.setPointTable("LDEN_GEOM");
         isoSurface.setPointTableField("LAEQ");
         isoSurface.setSmooth(true);
-        isoSurface.createTable(connection);
-        System.out.println("Contouring done in " + (System.currentTimeMillis() - start) + " ms");
+        isoSurface.createTable(connection, "IDRECEIVER");
+        LOGGER.info("Contouring done in {} ms", System.currentTimeMillis() - start);
 
         assertTrue(JDBCUtilities.tableExists(connection, "CONTOURING_NOISE_MAP"));
 
@@ -126,7 +116,7 @@ public class IsoSurfaceJDBCTest {
         isoSurface.setSmooth(false);
         isoSurface.setMergeTriangles(false);
         isoSurface.createTable(connection);
-        System.out.println("Contouring done in " + (System.currentTimeMillis() - start) + " ms");
+        LOGGER.info("Contouring done in {} ms", System.currentTimeMillis() - start);
 
         assertTrue(JDBCUtilities.tableExists(connection, "CONTOURING_NOISE_MAP"));
 
@@ -173,7 +163,7 @@ public class IsoSurfaceJDBCTest {
         isoSurface.setPointTableField("HEIGHT");
         isoSurface.setSmooth(false);
         isoSurface.createTable(connection);
-        System.out.println("Contouring done in " + (System.currentTimeMillis() - start) + " ms");
+        LOGGER.info("Contouring done in {} ms", System.currentTimeMillis() - start);
 
         assertTrue(JDBCUtilities.tableExists(connection, "CONTOURING_NOISE_MAP"));
 
@@ -194,8 +184,8 @@ public class IsoSurfaceJDBCTest {
             st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
             st.execute(getRunScriptRes("scene_with_landcover.sql"));
             DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
-            noisemap.setReceiverHasAbsoluteZCoordinates(false);
-            noisemap.setSourceHasAbsoluteZCoordinates(false);
+            noisemap.setReceiversZIsAltitude(false);
+            noisemap.setSourcesZIsAltitude(false);
             noisemap.setHeightField("HEIGHT");
             noisemap.initialize(connection);
 
@@ -211,6 +201,7 @@ public class IsoSurfaceJDBCTest {
 
     @Test
     public void testGenerateReceiversAndPeriodIsoCountours() throws SQLException {
+        Logger logger = LoggerFactory.getLogger(IsoSurfaceJDBCTest.class);
         try(Statement st = connection.createStatement()) {
             st.execute(String.format("CALL SHPREAD('%s', 'ROADS_TRAFF')", NoiseMapByReceiverMakerTest.class.getResource("roads_traff.shp").getFile()));
             st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("buildings.shp").getFile()));
@@ -250,7 +241,9 @@ public class IsoSurfaceJDBCTest {
             isoSurface.setSmooth(false); // faster
             isoSurface.setMergeTriangles(false); // faster
             isoSurface.setProgressVisitor(new RootProgressVisitor(1, true, 5));
+            long startTime = System.currentTimeMillis();
             isoSurface.createTable(connection, "IDRECEIVER");
+            logger.info("Iso surface created in {} ms", System.currentTimeMillis() - startTime);
 
             List<String> columnNames = JDBCUtilities.getColumnNames(connection, isoSurface.getOutputTable());
             assertTrue(columnNames.contains("PERIOD"));

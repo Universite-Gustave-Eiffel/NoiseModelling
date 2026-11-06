@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Enrich Landcover with rail
 ==========================
@@ -24,7 +24,7 @@ And four parameters:
 
 * Input SRID (inputSRID): SRID of the input tables (Optional)
 
-* Output suffix (outputsuffix): suffix applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied
+* Output suffix (outputsuffix): suffix applied at the end of the resulting table name (Optional). If not specified, "ENRICHED" is applied
 
 In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter railWidth, using the following formula:
 

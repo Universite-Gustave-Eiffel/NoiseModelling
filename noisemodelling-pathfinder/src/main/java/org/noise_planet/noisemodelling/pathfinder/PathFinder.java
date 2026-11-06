@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
+import org.apache.commons.math3.util.IntegerSequence;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
@@ -32,11 +33,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
@@ -99,7 +103,7 @@ public class PathFinder {
 
     /**
      * Computation stacks and timing are collected by this class in order
-     * to profile the execution of the simulation
+     * to profile the execution of the simulation.
      * @param profilerThread Instance of ProfilerThread
      */
     public void setProfilerThread(ProfilerThread profilerThread) {
@@ -119,39 +123,39 @@ public class PathFinder {
      * @param computeRaysOut Result output.
      */
     public void run(CutPlaneVisitorFactory computeRaysOut) {
-        ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
-        int endReceiverRange = 0;
-        //Launch execution of computation by batch
-        List<Future<Boolean>> tasks = new ArrayList<>();
-        ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
-        while (endReceiverRange < data.receivers.size()) {
-            //Break if the progress visitor is cancelled
-            if (cellProgress.isCanceled()) {
-                break;
-            }
-            int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
-            ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
-                    this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
-            if (threadCount != 1) {
-                tasks.add(threadManager.submitBlocking(batchThread));
-            } else {
-                try {
-                    batchThread.call();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        List<Future<Boolean>> tasks;
+        try (ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS)) {
+            // Create the list of receivers index to compute
+            ConcurrentLinkedDeque<Integer> receiverQueue = IntStream.range(0, data.receivers.size()).boxed().collect(Collectors.toCollection(ConcurrentLinkedDeque::new));
+            //Launch execution of computation by batch
+            tasks = new ArrayList<>();
+            ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
+            for (int threadId = 0; threadId < threadCount; threadId++) {
+                //Break if the progress visitor is canceled
+                if (cellProgress.isCanceled()) {
+                    break;
+                }
+                ThreadPathFinder batchThread = new ThreadPathFinder(receiverQueue,
+                        this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
+                if (threadCount != 1) {
+                    tasks.add(threadManager.submitBlocking(batchThread));
+                } else {
+                    try {
+                        batchThread.call();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
-            endReceiverRange = newEndReceiver;
-        }
-        //Once the execution ends, shutdown the thread manager and await termination
-        threadManager.shutdown();
-        try {
-            if(!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
-                LOGGER.warn("Timeout elapsed before termination.");
+            //Once the execution ends, shutdown the thread manager and await termination
+            threadManager.shutdown();
+            try {
+                if (!threadManager.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
+                    LOGGER.warn("Timeout elapsed before termination.");
+                }
+            } catch (InterruptedException ex) {
+                LOGGER.error(ex.getLocalizedMessage(), ex);
             }
-        } catch (InterruptedException ex) {
-            LOGGER.error(ex.getLocalizedMessage(), ex);
         }
         // Must raise an exception if one the thread raised an exception
         for (Future<Boolean> task : tasks) {
@@ -161,7 +165,6 @@ public class PathFinder {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
     /**
@@ -171,6 +174,16 @@ public class PathFinder {
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
     public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, CutPlaneVisitor dataOut, ProgressVisitor visitor) {
+
+        if(data.profileBuilder.hasDem()) {
+            // Check if the receiver has been positioned below the ground
+            double zGround = data.profileBuilder.getZGround(receiverPointInfo.position);
+            if (zGround > receiverPointInfo.position.z) {
+                LOGGER.warn("The receiver located at {} is below the ground level ({} m) and has been ignored",
+                        new WKTWriter(3).write(GEOMETRY_FACTORY.createPoint(receiverPointInfo.position)), zGround);
+                return;
+            }
+        }
 
         long start = 0;
         if(profilerThread != null) {
@@ -235,8 +248,8 @@ public class PathFinder {
 
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
-        AtomicInteger cutProfileCount = new AtomicInteger(0);
-        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+        dataOut.startReceiver(receiverPointInfo, sourceList);
+
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {
@@ -278,8 +291,7 @@ public class PathFinder {
         if(profilerThread != null &&
                 profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
             ReceiverStatsMetric receiverStatsMetric = profilerThread.getMetric(ReceiverStatsMetric.class);
-            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(),
-                    cutProfileCount.get(), sourceList.size(), processedSources.get());
+            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(), sourceList.size(), processedSources.get());
             // Save computation time for this receiver
             receiverStatsMetric.onEndComputation(new ReceiverStatsMetric.ReceiverComputationTime(receiverPointInfo.receiverIndex,
                     (int) TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS),
@@ -456,15 +468,15 @@ public class PathFinder {
     }
 
     /**
-     * Recover lost attributes of source and receiver that are lost when creating intermediate profiles
+     * Recover lost attributes of source and receiver that were lost when creating intermediate profiles
      * @param rcv Receiver information
      * @param src Source information
      * @param data Propagation data
      * @param cutPoints Cut points of the full profile
      */
     private CutProfile resetSourceReceiverAttributes(ReceiverPointInfo rcv, SourcePointInfo src, Scene data, List<CutPoint> cutPoints) {
-        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
-                (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
+        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.getFirst(),
+                (CutPointReceiver) cutPoints.getLast());
         mainProfile.insertCutPoint(false,
                 cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
@@ -515,13 +527,12 @@ public class PathFinder {
         }
 
         // Intersection test cache
-        Set<LineSegment> freeFieldSegments = new HashSet<>();
 
         List<Coordinate> input = new ArrayList<>();
 
-        Coordinate[] coordinates = new Coordinate[0];
-        int indexp1 = 0;
-        int indexp2 = 0;
+        Coordinate[] coordinates;
+        int indexp1;
+        int indexp2;
 
         input.add(p1);
         input.add(p2);
@@ -537,20 +548,11 @@ public class PathFinder {
 
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
-        int k;
-
         ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
         Geometry convexhull = convexHull.getConvexHull();
 
         coordinates = convexhull.getCoordinates();
         // for the length we do not count the return ray from receiver to source (closed polygon here)
-        double convexHullLength = Length.ofLine(
-                CoordinateArraySequenceFactory.instance()
-                        .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
-        if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
-                convexHullLength >= data.maxSrcDist) {
-            return new ArrayList<>();
-        }
 
         input.clear();
         input.addAll(Arrays.asList(coordinates));
@@ -591,12 +593,21 @@ public class PathFinder {
         }
 
         // restore coordinates order from source to receiver
+        Coordinate[] output;
         if (left) {
-            return Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
+            output = Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1);
         } else {
-            List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length));
-            Collections.reverse(inversePath);
-            return inversePath;
+            output = Arrays.copyOfRange(coordinates, indexp2, coordinates.length);
+            // reverse output
+            CoordinateArrays.reverse(output);
+        }
+
+        double convexHullLength = Length.ofLine(CoordinateArraySequenceFactory.instance().create( output ) );
+        if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
+                convexHullLength >= data.maxSrcDist) {
+            return new ArrayList<>();
+        } else {
+            return Arrays.asList(output);
         }
     }
 
@@ -711,6 +722,10 @@ public class PathFinder {
         for (MirrorReceiver receiverReflection : mirrorResults) {
             Wall seg = receiverReflection.getWall();
             List<MirrorReceiver> rayPath = new ArrayList<>();
+            // Set to true only when the full chain of reflections has a reflection point,
+            // the loop below stops early on degenerate geometry (for example when the source
+            // lies exactly on the wall, the reflection point is the source itself)
+            boolean completeReflectionChain = false;
             MirrorReceiver receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
@@ -749,6 +764,7 @@ public class PathFinder {
                 rayPath.add(reflResult);
                 if (receiverReflectionCursor
                         .getParentMirror() == null) { // Direct to the receiver
+                    completeReflectionChain = true;
                     break; // That was the last reflection
                 } else {
                     // There is another reflection
@@ -764,6 +780,12 @@ public class PathFinder {
                             destinationPt
                     );
                 }
+            }
+            if (!completeReflectionChain) {
+                // The reflection chain could not be completed, ignore this image receiver
+                LOGGER.debug("Ignoring incomplete reflection chain for source {} receiver {} on wall {} ({} reflection point(s) resolved)",
+                        src.position, rcv.position, seg.primaryKey, rayPath.size());
+                continue;
             }
             // Compute direct path between source and first reflection point, add profile to the data
             CutProfile segmentCutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),

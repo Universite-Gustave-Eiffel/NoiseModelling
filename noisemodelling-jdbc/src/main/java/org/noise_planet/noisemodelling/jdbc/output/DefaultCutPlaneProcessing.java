@@ -1,6 +1,7 @@
 package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.h2gis.api.ProgressVisitor;
+import org.noise_planet.noisemodelling.jdbc.IComputeRaysOutFactory;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
@@ -18,7 +19,7 @@ import java.sql.SQLException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
+public class DefaultCutPlaneProcessing implements IComputeRaysOutFactory {
     ResultsCache resultsCache = new ResultsCache();
     final NoiseMapDatabaseParameters noiseMapDatabaseParameters;
     NoiseMapWriter noiseMapWriter;
@@ -30,6 +31,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
     NoiseMapByReceiverMaker noiseMapByReceiverMaker;
     ThreadPool postProcessingThreadPool = new ThreadPool();
     Future<Boolean> noiseMapWriterFuture;
+    Future<?> profilerThreadFuture;
     PropagationModelCreator propagationModelCreator = new CnossosPropagationModelCreator();
 
     /**
@@ -64,6 +66,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
             profilerThread.addMetric(new ReceiverStatsMetric());
             profilerThread.setWriteInterval(noiseMapDatabaseParameters.CSVProfilerWriteInterval);
             profilerThread.setFlushInterval(noiseMapDatabaseParameters.CSVProfilerWriteInterval);
+            noiseMapByReceiverMaker.setProfilerThread(profilerThread);
         }
     }
 
@@ -76,7 +79,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
         exitWhenDone.set(false);
         if(profilerThread != null) {
             profilerThread.addMetric(new ProgressMetric(progressLogger));
-            postProcessingThreadPool.submit(profilerThread);
+            profilerThreadFuture = postProcessingThreadPool.submit(profilerThread);
         }
         try {
             noiseMapWriter.init();
@@ -96,6 +99,12 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
         try {
             if(noiseMapWriterFuture != null) {
                 noiseMapWriterFuture.get();
+            }
+            if(profilerThread != null) {
+                profilerThread.stop();
+                if(profilerThreadFuture != null) {
+                    profilerThreadFuture.get();
+                }
             }
         } catch (Exception e) {
             throw new SQLException(e);

@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Enrich DEM with lines
 =====================
@@ -20,7 +20,7 @@ And three optional parameters:
 
 * Source (source): Text indicating the source of the linestring layer. Can be useful to distinguish the points in the resulting DEM . If not specified, "LINESTRING" is applied
 
-* Output suffix (outputsuffix): suffix applied at the end of the resuling table name. If not specified, "ENRICHED" is applied
+* Output suffix (outputsuffix): suffix applied at the end of the resulting table name. If not specified, "ENRICHED" is applied
 
 Arguments
 ---------

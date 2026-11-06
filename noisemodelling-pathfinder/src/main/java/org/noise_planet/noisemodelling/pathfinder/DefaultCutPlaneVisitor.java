@@ -14,7 +14,6 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -67,8 +66,7 @@ public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorF
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
-                              AtomicInteger cutProfileCount) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
 
     }
 

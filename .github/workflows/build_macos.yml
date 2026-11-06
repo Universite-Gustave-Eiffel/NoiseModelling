@@ -46,9 +46,9 @@ jobs:
           path: |
             $HOME/.m2/
           key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-      # Setup the jdk
-      - name: Setup java
-        uses: actions/setup-java@v4
+      # Set up the jdk using version 25 of Adoptium Temurin
+      - name: Setup java 25 using Adoptium Temurin
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '25'

@@ -9,7 +9,6 @@
 
 package org.noise_planet.noisemodelling.pathfinder.path;
 
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -45,6 +44,8 @@ public class Scene {
     public List<Long> sourcesPk = new ArrayList<>();
     /** coordinate of receivers */
     public List<Coordinate> receivers = new ArrayList<>();
+    /** Optional maximum receiver-to-wall distance, per receiver primary key, used to ignore close reflections */
+    private final Map<Long, Double> receiversCloseReflectionWallDistance = new HashMap<>();
     /** Profile builder */
     public ProfileBuilder profileBuilder;
     /** Source Index */
@@ -74,17 +75,6 @@ public class Scene {
         this.profileBuilder = profileBuilder;
     }
 
-    public boolean isBodyBarrier() {
-        return bodyBarrier;
-    }
-
-    public void setBodyBarrier(boolean bodyBarrier) {
-        this.bodyBarrier = bodyBarrier;
-    }
-
-    /** bodyBarrier effet */
-    boolean bodyBarrier = false;
-
     /** Compute horizontal diffraction rays over vertical edges */
     public boolean computeHorizontalDiffraction = true;
 
@@ -95,10 +85,10 @@ public class Scene {
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
-    /** Maximum receiver-to-wall horizontal distance for the optional reflection cut profile filter */
-    private double closeReceiverReflectionWallDistance = 0;
+
     /** the maximum number of image receivers to generate per receiver */
     public int mirrorReceiverCapacity = MirrorReceiversCompute.DEFAULT_MIRROR_RECEIVER_CAPACITY;
+
 
     /**
      * Add the geometry of the source
@@ -143,6 +133,21 @@ public class Scene {
         receiversPk.add(pk);
     }
 
+    /**
+     * Add a receiver with an optional maximum receiver-to-wall distance below which reflection paths are ignored.
+     *
+     * @param pk Receiver primary key
+     * @param position Receiver position
+     * @param closeReflectionWallDistance Maximum receiver-to-wall distance in meters. A non-positive or non-finite
+     *                                    value disables the filter for this receiver.
+     */
+    public void addReceiver(long pk, Coordinate position, double closeReflectionWallDistance) {
+        addReceiver(pk, position);
+        if(Double.isFinite(closeReflectionWallDistance) && closeReflectionWallDistance > 0) {
+            receiversCloseReflectionWallDistance.put(pk, closeReflectionWallDistance);
+        }
+    }
+
     public void addReceiver(long pk, Coordinate position, SpatialResultSet rs) {
         addReceiver(pk, position);
     }
@@ -167,12 +172,12 @@ public class Scene {
         this.defaultGroundAttenuation = gS;
     }
 
-    public double getCloseReceiverReflectionWallDistance() {
-        return closeReceiverReflectionWallDistance;
-    }
-
-    public void setCloseReceiverReflectionWallDistance(double closeReceiverReflectionWallDistance) {
-        this.closeReceiverReflectionWallDistance = closeReceiverReflectionWallDistance;
+    /**
+     * @param receiverPk Receiver primary key
+     * @return Maximum receiver-to-wall distance in meters below which reflections are ignored, or 0 if disabled
+     */
+    public double getCloseReceiverReflectionWallDistance(long receiverPk) {
+        return receiversCloseReflectionWallDistance.getOrDefault(receiverPk, 0.0);
     }
 
     public void clearSources() {

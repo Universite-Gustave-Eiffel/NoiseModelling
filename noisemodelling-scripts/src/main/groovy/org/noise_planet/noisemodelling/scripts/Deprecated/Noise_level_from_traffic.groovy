@@ -70,12 +70,12 @@ inputs = [
                         '<li><b> HGV_D </b><b> HGV_E </b><b> HGV_N </b> :  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> WAV_D </b><b> WAV_E </b><b> WAV_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> WBV_D </b><b> WBV_E </b><b> WBV_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
-                        '<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
-                        '<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
+                        '<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>' +
                         '<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> :  Hourly ave' +
-                        'rage heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
-                        '<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
-                        '<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
+                        'rage heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)</li>' +
                         '<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>' +
                         '<li><b> TEMP_D </b><b> TEMP_E </b><b> TEMP_N </b> : Average day, evening, night temperature (default 20&#x2103;) (6-18h)(18-22h)(22-6h)(DOUBLE)</li>' +
                         '<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>' +
@@ -100,11 +100,11 @@ inputs = [
                         '<li><b> HGV </b>:  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
                         '<li><b> WAV </b>:  Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
                         '<li><b> WBV </b>:  Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
-                        '<li><b> LV_SPD </b> :  Hourly average light vehicle speed (DOUBLE)</li>' +
-                        '<li><b> MV_SPD </b> :  Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
-                        '<li><b> HGV_SPD </b> :  Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
-                        '<li><b> WAV_SPD </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
-                        '<li><b> WBV_SPD </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> LV_SPD </b> :  Hourly average light vehicle speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> MV_SPD </b> :  Hourly average medium heavy vehicles speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> HGV_SPD </b> :  Hourly average heavy duty vehicles speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> WAV_SPD </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (20 to 150 km/h -- DOUBLE)</li>' +
+                        '<li><b> WBV_SPD </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (20 to 150 km/h -- DOUBLE)</li>' +
                         '<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>' +
                         '<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>' +
                         '<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>' +
@@ -135,7 +135,7 @@ inputs = [
                 description: 'Name of the Atmospheric settings table </br> </br>' +
                         'The table must contain the following columns: </br> <ul>' +
                         '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
-                        '<li> <b> WINDROSE </b>: probability of occurrences of favourable propagation conditions (ARRAY(16)) </li> ' +
+                        '<li> <b> WINDROSE </b>: Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. <img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center"> or DutchD, DutchE, DutchN for Netherlands </li> ' +
                         '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
                         '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
                         '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
@@ -151,7 +151,8 @@ inputs = [
                 description: 'Name of the Receivers table </br> </br>' +
                         'The table must contain: </br> <ul>' +
                         '<li><b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY) </li> ' +
-                        '<li><b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> </ul>' +
+                        '<li><b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> ' +
+                        '<li><b> REFL_IGNOR </b> : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections. </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Blocks in the "Receivers" folder',
                 type       : String.class
         ],
@@ -205,14 +206,6 @@ inputs = [
                 description: 'Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters). </br> </br>' +
                              '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from traffic" width="95%" align="center">',
                 default    : 50, 
-                type: Double.class
-        ],
-        confMinWallReflDist: [
-                name       : 'Ignore close reflections',
-                title      : 'Ignore close reflections',
-                description: 'Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. ' +
-                        'Use <b>0</b> to keep all reflections.',
-                default: 0,
                 type: Double.class
         ],
         confThreadNumber        : [
@@ -420,15 +413,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     double max_ref_dist = input.getOrDefault("confMaxReflDist",50.0) as Double
 
-    double close_receiver_reflection_wall_distance = input.getOrDefault("confMinWallReflDist", 0.0) as Double
-    if (close_receiver_reflection_wall_distance < 0) {
-        throw new IllegalArgumentException("Error : confMinWallReflDist must be greater than or equal to 0.")
-    }
-    if (close_receiver_reflection_wall_distance > 2.0) {
-        logger.warn("confMinWallReflDist is set to {} m, which is unusually high. Many reflections may be ignored.",
-                close_receiver_reflection_wall_distance)
-    }
-
     double wall_alpha = input.getOrDefault("paramWallAlpha",0.1) as Double
 
     int n_thread = input.getOrDefault("confThreadNumber",0) as Integer
@@ -494,7 +478,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         parameters.setRaysTable(input['confRaysName'] as String)
         parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
         parameters.exportAttenuationMatrix = true
-        parameters.exportCnossosPathWithAttenuation = true
+        parameters.exportAttenuationOutput = true
         parameters.keepAbsorption = true
         parameters.setMaximumRaysOutputCount(maximumRaysToExport)
     }
@@ -510,12 +494,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     AttenuationParameters environmentalData = defaultTableLoader.defaultParameters
 
     if (input.containsKey('confFavourableOccurrencesDefault')) {
-        StringTokenizer tk = new StringTokenizer(input['confFavourableOccurrencesDefault'] as String, ',')
-        double[] favOccurrences = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]
-        for (int i = 0; i < favOccurrences.length; i++) {
-            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
-        }
-        environmentalData.setWindRose(favOccurrences)
+        AttenuationParameters.parseFavourableProbabilityString(input['confFavourableOccurrencesDefault'] as String, environmentalData)
     }
     double confHumidity = input.getOrDefault("confHumidity",70.0) as Double
     environmentalData.setHumidity(confHumidity)
@@ -540,7 +519,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
     pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
-    pointNoiseMap.setCloseReceiverReflectionWallDistance(close_receiver_reflection_wall_distance)
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 

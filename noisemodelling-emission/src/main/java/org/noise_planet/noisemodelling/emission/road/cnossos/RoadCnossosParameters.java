@@ -10,7 +10,12 @@
 
 package org.noise_planet.noisemodelling.emission.road.cnossos;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * RoadSource parameters for CNOSSOS method
@@ -46,12 +51,52 @@ public class RoadCnossosParameters {
     private double speedWav; // cat 4a vehicle speed  (in km/h)
     private double speedWbv; // cat 4b vehicle speed  (in km/h)
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoadCnossosParameters.class);
+    /**
+     * Minimum speed used by the CNOSSOS road emission formulas. Below this value the
+     * emission is computed as if the vehicle was driving at 20 km/h (CNOSSOS directive).
+     */
+    private static final double MINSPEED = 20.;
+    /**
+     * Heuristic upper bound, not a value from the CNOSSOS directive. It is used to avoid
+     * unrealistic emission values for out-of-range input speeds. This constant can be adjusted
+     * if a different sanity bound is preferred.
+     */
+    private static final double MAXSPEED = 150.;
+    private static final Set<Double> REPORTED_OUT_OF_RANGE_SPEEDS = ConcurrentHashMap.newKeySet();
+
     private int fileVersion = 2; // default coefficient version (1 = 2015, 2 = 2020)
 
     /**
      * Utility class
      */
     public RoadCnossosParameters() {
+        speedLv = MINSPEED;
+        speedMv = MINSPEED;
+        speedHgv = MINSPEED;
+        speedWav = MINSPEED;
+        speedWbv = MINSPEED;
+    }
+
+    /**
+     * Clamp a vehicle speed to the supported emission range.
+     * <p>
+     * Out-of-range values are reported once per distinct input value so that the user is
+     * aware that the input data has been corrected.
+     *
+     * @param speed speed in km/h
+     * @return speed clamped to [{@link #MINSPEED}; {@link #MAXSPEED}] km/h
+     */
+    private static double clampSpeed(double speed) {
+        double clampedSpeed = Math.max(MINSPEED, Math.min(speed, MAXSPEED));
+        if (Double.compare(speed, clampedSpeed) != 0
+                && REPORTED_OUT_OF_RANGE_SPEEDS.size() < 100
+                && REPORTED_OUT_OF_RANGE_SPEEDS.add(speed)) {
+            LOGGER.warn("Vehicle speed {} km/h is outside the supported range [{}, {}] km/h, using {} km/h. "
+                            + "Further occurrences of this value will not be logged.",
+                    speed, MINSPEED, MAXSPEED, clampedSpeed);
+        }
+        return clampedSpeed;
     }
 
     /**
@@ -118,11 +163,11 @@ public class RoadCnossosParameters {
         this.qStudRatio = Math.max(0, Math.min(1, Pm_stud));
         this.Junc_dist = Math.max(0, Junc_dist);
         this.Junc_type = Math.max(0, Math.min(2, Junc_type));
-        this.speedLv = lv_speed;
-        this.speedMv = mv_speed;
-        this.speedHgv = hgv_speed;
-        this.speedWav = wav_speed;
-        this.speedWbv = wbv_speed;
+        this.speedLv = clampSpeed(lv_speed);
+        this.speedMv = clampSpeed(mv_speed);
+        this.speedHgv = clampSpeed(hgv_speed);
+        this.speedWav = clampSpeed(wav_speed);
+        this.speedWbv = clampSpeed(wbv_speed);
     }
 
     /**
@@ -254,6 +299,7 @@ public class RoadCnossosParameters {
         } else {
             speedLv = speed_max;
         }
+        speedLv = clampSpeed(speedLv);
         speedHgv = getVPl(speedLv, speed_max, roadtype, roadSubType);
         speedMv = getVPl(speedLv, speed_max, roadtype, roadSubType);
         speedWav = getVPl(speedLv, speed_max, roadtype, roadSubType);
@@ -324,9 +370,6 @@ public class RoadCnossosParameters {
      * @return
      */
     public double getSpeedLv() throws IOException {
-        if (speedLv < 20) {
-            speedLv = 20;
-        }
         return speedLv;
     }
 
@@ -336,9 +379,6 @@ public class RoadCnossosParameters {
      * @return
      */
     public double getSpeedMv() throws IOException {
-        if (speedMv < 20) {
-            speedMv = 20;
-        }
         return speedMv;
     }
 
@@ -348,9 +388,6 @@ public class RoadCnossosParameters {
      * @return
      */
     public double getSpeedHgv() throws IOException {
-        if (speedHgv < 20) {
-            speedHgv = 20;
-        }
         return speedHgv;
     }
 
@@ -360,9 +397,6 @@ public class RoadCnossosParameters {
      * @return
      */
     public double getSpeedWav() throws IOException {
-        if (speedWav < 20) {
-            speedWav = 20;
-        }
         return speedWav;
     }
 
@@ -372,9 +406,6 @@ public class RoadCnossosParameters {
      * @return
      */
     public double getSpeedWbv() throws IOException {
-        if (speedWbv < 20) {
-            speedWbv = 20;
-        }
         return speedWbv;
     }
 

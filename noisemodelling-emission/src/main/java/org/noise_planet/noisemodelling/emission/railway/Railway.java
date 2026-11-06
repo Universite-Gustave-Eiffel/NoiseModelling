@@ -17,9 +17,6 @@ import org.noise_planet.noisemodelling.emission.utils.UriUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -37,6 +34,12 @@ import java.util.Map;
  */
 
 public class Railway {
+    /**
+     * Sentinel speed (km/h) used when no speed limit is known. It is high enough not to
+     * constrain real railway traffic, while avoiding {@code infinity} in downstream maths.
+     */
+    public static final double NO_SPEED_LIMIT = 999.;
+
     private JsonNode railWayData;
     private JsonNode vehicleData;
     private JsonNode trainsetData;
@@ -63,7 +66,7 @@ public class Railway {
      * @return the InputStream corresponding to the resource
      * @throws IOException if the resource cannot be found or accessed
      */
-    private static InputStream getStreamFromResourceString(String resource) throws IOException {
+    public static InputStream getStreamFromResourceString(String resource) throws IOException {
         if (UriUtils.isValidUri(resource)) {
             return UriUtils.openSafeStream(resource);
         } else {
@@ -90,6 +93,15 @@ public class Railway {
         try (InputStream stream = getStreamFromResourceString(railwayResource)) {
             this.railWayData = parse(stream);
         }
+    }
+
+    public JsonNode fetchNode(JsonNode node, String key) {
+        JsonNode result = node.get(key);
+        if(result == null) {
+            throw new IllegalArgumentException(String.format("Key '%s' not found, must be one of:\n -%s", key,
+                    String.join("\n -", iteratorToIterable(node.fieldNames()))));
+        }
+        return result;
     }
 
     public JsonNode getVehicleNode(String typeVehicle) {

@@ -34,14 +34,7 @@ public class RailwayTrackParameters {
     private int nTrack;
     private boolean isTunnel;
 
-    public RailwayTrackParameters() {
-
-        setSpeedTrack(speedTrack);
-        setSpeedCommercial(speedCommercial);
-        setIsTunnel(isTunnel);
-        setNTrack(nTrack);
-
-    }
+    public RailwayTrackParameters() {}
 
     public boolean getIsTunnel() {
         return isTunnel;
@@ -56,6 +49,7 @@ public class RailwayTrackParameters {
     }
 
     public void setNTrack(int nTrack) {
+        if (nTrack <= 0)  throw new IllegalArgumentException("The number of tracks is less than one on one section.");
         this.nTrack = nTrack;
     }
 
@@ -65,7 +59,8 @@ public class RailwayTrackParameters {
     }
 
     public void setSpeedTrack(double speedTrack) {
-        this.speedTrack = speedTrack;
+        if (speedTrack <= 0.)  throw new IllegalArgumentException("The track speed is zero or less on one section.");
+        this.speedTrack = Math.min(speedTrack, Railway.NO_SPEED_LIMIT);
     }
 
 
@@ -74,6 +69,7 @@ public class RailwayTrackParameters {
     }
 
     public void setSpeedCommercial(double speedCommercial) {
-        this.speedCommercial = speedCommercial;
+        if (speedCommercial <= 0.)  throw new IllegalArgumentException("The commercial speed is zero or less on one section.");
+        this.speedCommercial = Math.min(speedCommercial, Railway.NO_SPEED_LIMIT);
     }
 }

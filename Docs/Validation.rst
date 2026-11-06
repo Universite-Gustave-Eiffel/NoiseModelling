@@ -4,7 +4,7 @@ Validation
 Acoustic model validation
 ---------------------------
 
-Please refer to `CNOSSOS-EU`_ papers, or other scientific papers, which are independant from NoiseModelling.
+Please refer to `CNOSSOS-EU`_ papers, or other scientific papers, which are independent from NoiseModelling.
 
 Some limits are given in the CNOSSOS-EU documents below:
 
@@ -14,7 +14,7 @@ Some limits are given in the CNOSSOS-EU documents below:
 
     * Height receivers must be > 2m
     * Propagation distance must be < 800 m
-    * Downward‐refraction/ homogeneous are taken into acount
+    * Downward‐refraction/ homogeneous are taken into account
     * 63 Hz to 4 000 Hz – center band
     * Breakdown of the infrastructures into point sources
     * Does not apply to propagation scenarios above a water body (lake, wide river, etc.).

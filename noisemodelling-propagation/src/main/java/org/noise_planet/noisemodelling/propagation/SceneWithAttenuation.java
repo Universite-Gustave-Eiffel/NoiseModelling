@@ -34,6 +34,27 @@ public class SceneWithAttenuation extends Scene {
      */
     public Map<Long, Double> sourceGs = new HashMap<>();
 
+    /**
+     * Link between sources PK and hRail (rail platform height).
+     * Used in body barrier calculation for train noise propagation.
+     */
+    public Map<Long, Double> sourceHRail = new HashMap<>();
+
+    /**
+     * Link between sources PK and Cref (vehicle body reflection coefficient).
+     * 0 = no body barrier (road sources or open freight), 1 = fully reflecting body.
+     * Used in body barrier calculation.
+     */
+    public Map<Long, Double> sourceCref = new HashMap<>();
+
+    /**
+     * Maximum number of reflections between train body and barrier (body barrier interaction).
+     * Default is 3 as recommended by NMPB guide. Set to higher values (e.g. 10) for convergence studies.
+     */
+    public int bodyBarrierMaxReflectionOrder = 3;
+
+    public static final String HRAIL_DATABASE_FIELD = "HRAIL";
+    public static final String CREF_DATABASE_FIELD = "CREF";
 
     /**
      * If {@link #cnossosParametersPerPeriod} is empty, attenuation visitor will use this default settings and output
@@ -62,13 +83,21 @@ public class SceneWithAttenuation extends Scene {
 
     /**
      * Retrieves the ground speed of the noise source at the specified index.
-     * @param srcIndex
+     * @param srcIndex Source index
      * @return the ground speed of the noise source at the specified index.
      */
     public double getSourceGs(int srcIndex){
-        return sourceGs.get(sourcesPk.get(srcIndex));
+        return sourceGs.getOrDefault(sourcesPk.get(srcIndex), SceneWithAttenuation.DEFAULT_GS);
     }
 
+    /**
+     * Retrieves the ground speed of the noise source at the specified index.
+     * @param srcPrimaryKey Source primary key
+     * @return the ground speed of the noise source at the specified index.
+     */
+    public double getSourceGs(long srcPrimaryKey){
+        return sourceGs.getOrDefault(srcPrimaryKey, SceneWithAttenuation.DEFAULT_GS);
+    }
     /**
      * Add geometry with additional attributes
      * @param pk Unique source identifier
@@ -142,6 +171,16 @@ public class SceneWithAttenuation extends Scene {
         if(sourceFieldNames.containsKey(GS_DATABASE_FIELD)) {
             sourceGs.put(pk, rs.getDouble(gsField));
         }
+
+        int hRailField = JDBCUtilities.getFieldIndex(rs.getMetaData(), HRAIL_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(HRAIL_DATABASE_FIELD)) {
+            sourceHRail.put(pk, rs.getDouble(hRailField));
+        }
+
+        int crefField = JDBCUtilities.getFieldIndex(rs.getMetaData(), CREF_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(CREF_DATABASE_FIELD)) {
+            sourceCref.put(pk, rs.getDouble(crefField));
+        }
     }
 
     /**
@@ -183,6 +222,8 @@ public class SceneWithAttenuation extends Scene {
         super.clearSources();
         sourceEmissionAttenuation.clear();
         sourceGs.clear();
+        sourceHRail.clear();
         directionAttributes.clear();
+        sourceCref.clear();
     }
 }

@@ -44,6 +44,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
+import java.sql.Statement
 import java.io.FileNotFoundException
 
 title = 'Import traffic data from Matsim simulation output folder'
@@ -279,7 +281,7 @@ static def exec(Connection connection, Map input) {
         );''')
     }
 
-    PreparedStatement roadStatement = connection.prepareStatement("INSERT INTO " + outTableName + " (LINK_ID, OSM_ID, THE_GEOM) VALUES (?, ?, ST_UpdateZ(ST_GeomFromText(?, " + SRID + "),0.05))")
+    PreparedStatement roadStatement = connection.prepareStatement("INSERT INTO " + outTableName + " (LINK_ID, OSM_ID, THE_GEOM) VALUES (?, ?, ST_UpdateZ(ST_GeomFromText(?, " + SRID + "),0.05))", Statement.RETURN_GENERATED_KEYS)
     PreparedStatement lwStatement = connection.prepareStatement("INSERT INTO " + lwTableName + " (IDSOURCE, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, PERIOD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     PreparedStatement trafficStatement;
     if (exportTraffic) {
@@ -374,9 +376,12 @@ static def exec(Connection connection, Map input) {
         roadStatement.setString(2, linkStatStruct.getOsmId())
         roadStatement.setString(3, geomString)
         roadStatement.execute()
+        ResultSet roadKeys = roadStatement.getGeneratedKeys()
+        roadKeys.next()
+        int roadPk = roadKeys.getInt(1)
         for (int timeBin = timeBinMin; timeBin < timeBinMax; timeBin += timeBinSize) {
             int index = 1
-            lwStatement.setString(index, linkId)
+            lwStatement.setInt(index, roadPk)
             List<Double> levels = linkStatStruct.getSourceLevels(timeBin)
             for (Double level : levels) {
                 index++
@@ -390,7 +395,7 @@ static def exec(Connection connection, Map input) {
         if (exportTraffic) {
             for (int timeBin = timeBinMin; timeBin < timeBinMax; timeBin += timeBinSize) {
                 int index = 1
-                trafficStatement.setString(index, linkId)
+                trafficStatement.setInt(index, roadPk)
                 Trip.Type[] types = [Trip.Type.LV, Trip.Type.MV, Trip.Type.HV, Trip.Type.WAV, Trip.Type.WBV]
                 for (Trip.Type type in types) {
                     int count = linkStatStruct.getVehicleCount(type, timeBin)
@@ -417,7 +422,7 @@ static def exec(Connection connection, Map input) {
                     String vehicleId = person_contrib.vehicleId.toString()
                     List<Double> contributions = person_contrib.contributions
                     int index = 1
-                    contribStatement.setString(index, linkId)
+                    contribStatement.setInt(index, roadPk)
                     index++
                     contribStatement.setString(index, personId)
                     index++

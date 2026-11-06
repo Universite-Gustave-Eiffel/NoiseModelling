@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Noise level from traffic
 ========================
@@ -44,6 +44,8 @@ Mandatory inputs
    
    *  THE_GEOM  : the 3D geometry of the sources (POINT, MULTIPOINT)
    
+   *  REFL_IGNOR  : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
+
    💡 This table can be generated from the WPS Blocks in the "Receivers" folder
 
    Type: ``String``
@@ -63,15 +65,15 @@ Mandatory inputs
    
    *  WBV_D  WBV_E  WBV_N  :  Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)
    
-   *  LV_SPD_D  LV_SPD_E LV_SPD_N  :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  LV_SPD_D  LV_SPD_E LV_SPD_N  :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  MV_SPD_D  MV_SPD_E MV_SPD_N  :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  MV_SPD_D  MV_SPD_E MV_SPD_N  :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  HGV_SPD_D  HGV_SPD_E  HGV_SPD_N  :  Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  HGV_SPD_D  HGV_SPD_E  HGV_SPD_N  :  Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  WAV_SPD_D  WAV_SPD_E  WAV_SPD_N  :  Hourly average mopeds, tricycles or quads ≤ 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  WAV_SPD_D  WAV_SPD_E  WAV_SPD_N  :  Hourly average mopeds, tricycles or quads ≤ 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
-   *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (20 to 150 km/h -- DOUBLE)
    
    *  PVMT  :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)
    
@@ -171,13 +173,6 @@ Optional inputs
 
    Default: ``150``
 
-``confMinWallReflDist`` — *Ignore close reflections*
-   Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
-
-   Type: ``Double``
-
-   Default: ``0``
-
 ``confRaysName`` — *Export scene*
    Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml)  You can set a table name here in order to save all the rays computed by NoiseModelling.  The number of rays has been limited in this script in order to avoid memory exception.  🛠
 
@@ -239,7 +234,13 @@ Optional inputs
    
    *   PERIOD : time period (VARCHAR PRIMARY KEY)
    
-   *   WINDROSE : probability of occurrences of favourable propagation conditions (ARRAY(16))
+   *   WINDROSE : Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   
+   .. figure:: acoustics_parameters_confFavorableOccurrences.png
+      :align: center
+      :alt: Noise level from source
+   
+   or DutchD, DutchE, DutchN for Netherlands
    
    *   TEMPERATURE : Temperature in celsius (FLOAT)
    
@@ -270,15 +271,15 @@ Optional inputs
    
    *  WBV :  Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)
    
-   *  LV_SPD  :  Hourly average light vehicle speed (DOUBLE)
+   *  LV_SPD  :  Hourly average light vehicle speed (20 to 150 km/h -- DOUBLE)
    
-   *  MV_SPD  :  Hourly average medium heavy vehicles speed (DOUBLE)
+   *  MV_SPD  :  Hourly average medium heavy vehicles speed (20 to 150 km/h -- DOUBLE)
    
-   *  HGV_SPD  :  Hourly average heavy duty vehicles speed (DOUBLE)
+   *  HGV_SPD  :  Hourly average heavy duty vehicles speed (20 to 150 km/h -- DOUBLE)
    
-   *  WAV_SPD  :  Hourly average mopeds, tricycles or quads ≤ 50 cc speed (DOUBLE)
+   *  WAV_SPD  :  Hourly average mopeds, tricycles or quads ≤ 50 cc speed (20 to 150 km/h -- DOUBLE)
    
-   *  WBV_SPD  :  Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)
+   *  WBV_SPD  :  Hourly average motorcycles, tricycles or quads > 50 cc speed (20 to 150 km/h -- DOUBLE)
    
    *  PVMT  :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)
    

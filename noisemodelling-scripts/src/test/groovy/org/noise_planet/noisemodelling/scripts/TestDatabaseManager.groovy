@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.MultiPoint
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Clean_Database
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Copy_Table_with_Select
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Drop_a_Table
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Execute_Query
@@ -84,6 +85,34 @@ class TestDatabaseManager extends JdbcTestCase {
                 ["areYouSure": true ])
 
         assertEquals("The table(s) RECEIVERS was/were dropped.", res)
+    }
+
+    @Test
+    void testCopyTableSelect_ID() {
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+
+        String res = new Copy_Table_with_Select().exec(connection,
+                ["tableName": "receivers",
+                 "copyID": "679,652"])
+        assertEquals("[outputTable:receivers_SELECT]", res)
+
+        Sql sql = new Sql(connection)
+        int cpt = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS_SELECT")[0] as Integer
+        assertEquals(2, cpt)
+    }
+
+    @Test
+    void testCopyTableSelect_WKT() {
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("receivers.shp").getPath())
+
+        String res = new Copy_Table_with_Select().exec(connection,
+                ["tableName": "receivers",
+                 "wktString": "POLYGON ((223919.4 6758246.0, 224033.1 6758251.6, 224000.5 6758341.0, 223919.4 6758246.0))"])
+        assertEquals("[outputTable:receivers_SELECT]", res)
+
+        Sql sql = new Sql(connection)
+        int cpt = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS_SELECT")[0] as Integer
+        assertEquals(3, cpt)
     }
 
     @Test

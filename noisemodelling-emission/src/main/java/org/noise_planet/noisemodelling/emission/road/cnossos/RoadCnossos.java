@@ -31,6 +31,7 @@ import static org.noise_planet.noisemodelling.emission.utils.Utils.*;
 public class RoadCnossos {
     private static JsonNode RoadCnossos_2015 = parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2015.json")); // old coefficients in 2015 amendments
     private static JsonNode cnossosData2020 =parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2020.json")); // new coefficients in 2020 amendments
+    private static JsonNode cnossosDataNL = parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_NL.json")); // Dutch coefficients
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -43,14 +44,15 @@ public class RoadCnossos {
 
     /**
      * Get the CNOSSOS coefficients from a specific file version.
-     * @param fileVersion 1=RailwayCnossosEU_2020.json; other = RailwayCnossosSNCF_2021.json
+     * @param fileVersion 1=RoadCnossos_2015.json; 528=cnossosDataNL.json, other = cnossosData2020.json
+     *                    Country specific codes following standard in ISO 3166-1-numeric
      * @return
      */
     public static JsonNode getCnossosData(int fileVersion) {
-        if (fileVersion == 1) {
-            return RoadCnossos_2015; // old coefficients in 2015 amendments
-        } else {
-            return cnossosData2020; // new coefficients in 2020 amendments
+        switch (fileVersion) {
+            case 1: return RoadCnossos_2015; // old coefficients in 2015 amendments
+            case 528: return cnossosDataNL; // Dutch specific coefficients
+            default: return cnossosData2020; // new coefficients in 2020 amendments
         }
     }
 
@@ -395,9 +397,9 @@ public class RoadCnossos {
 
         // In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
         if (twoWay && roadCnossosParameters.getSlopePercentage() != 0) {
-            lvRoadLvl = lvRoadLvl - getDeltaSlope(roadCnossosParameters, "1", sign) + getDeltaSlope(roadCnossosParameters, "1", -sign);
-            medRoadLvl = medRoadLvl - getDeltaSlope(roadCnossosParameters, "2", sign) + getDeltaSlope(roadCnossosParameters, "2", -sign);
-            hgvRoadLvl = hgvRoadLvl - getDeltaSlope(roadCnossosParameters, "3", sign) + getDeltaSlope(roadCnossosParameters, "3", -sign);
+            lvMotorLvl = lvMotorLvl - getDeltaSlope(roadCnossosParameters, "1", sign) + getDeltaSlope(roadCnossosParameters, "1", -sign);
+            medMotorLvl = medMotorLvl - getDeltaSlope(roadCnossosParameters, "2", sign) + getDeltaSlope(roadCnossosParameters, "2", -sign);
+            hgvMotorLvl = hgvMotorLvl - getDeltaSlope(roadCnossosParameters, "3", sign) + getDeltaSlope(roadCnossosParameters, "3", -sign);
             double lvCompound_InverseSlope = sumDbValues(lvRoadLvl, lvMotorLvl);
             double medCompound_InverseSlope = sumDbValues(medRoadLvl, medMotorLvl);
             double hgvCompound_InverseSlope = sumDbValues(hgvRoadLvl, hgvMotorLvl);

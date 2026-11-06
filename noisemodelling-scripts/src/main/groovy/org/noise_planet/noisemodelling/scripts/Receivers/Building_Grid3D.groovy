@@ -193,7 +193,7 @@ def exec(Connection connection, Map input) {
     }
     // create line of receivers
     sql.execute("CREATE TABLE tmp_receivers_lines as SELECT " + buildingPk + " as pk_building, " +
-                "ST_SimplifyPreserveTopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom, HEIGHT " +
+                "ST_SimplifyPreserveTopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall)), 0.05) the_geom, HEIGHT " +
                 "FROM " + building_table_name + filter_geom_query, [fenceGeom : fenceGeom, distance_wall: distance])
     sql.execute("CREATE SPATIAL INDEX ON tmp_receivers_lines(the_geom)")
 

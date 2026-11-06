@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.GeometryTableUtilities;
@@ -24,21 +25,19 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
+import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -147,10 +146,11 @@ public class SceneWithEmissionTest {
         return spectrum;
     }
 
-    private static AttenuationParameters createPeriodParameters(SceneWithEmission scene) {
+    private static AttenuationParameters createPeriodParameters(SceneWithEmission scene, FavourableProbability favourableProbability) {
         AttenuationParameters parameters = new AttenuationParameters(scene.defaultCnossosParameters);
         parameters.setHumidity(HUMIDITY);
         parameters.setTemperature(TEMPERATURE);
+        parameters.setWindRose(favourableProbability);
         return parameters;
     }
 
@@ -184,10 +184,10 @@ public class SceneWithEmissionTest {
         return counts;
     }
 
-    private static Map<String, Integer> countSourcePeriodRays(Collection<CnossosPath> cnossosPaths) {
+    private static Map<String, Integer> countSourcePeriodRays(Collection<AttenuationOutput> attenuationOutputs) {
         Map<String, Integer> counts = new HashMap<>();
-        for (CnossosPath cnossosPath : cnossosPaths) {
-            String key = cnossosPath.getTimePeriod() + "#" + cnossosPath.getCutProfile().getSource().sourcePk;
+        for (AttenuationOutput attenuationOutput : attenuationOutputs) {
+            String key = attenuationOutput.getTimePeriod() + "#" + attenuationOutput.getCutProfile().getSource().sourcePk;
             counts.merge(key, 1, Integer::sum);
         }
         return counts;
@@ -201,8 +201,8 @@ public class SceneWithEmissionTest {
         assertEquals(baselineReceiverKeys, optimizedReceiverKeys,
                 "Optimized run should keep the same source-period receiver contributions as baseline");
 
-        Map<String, Integer> baselineRayKeys = countSourcePeriodRays(baseline.resultsCache.cnossosPaths);
-        Map<String, Integer> optimizedRayKeys = countSourcePeriodRays(optimized.resultsCache.cnossosPaths);
+        Map<String, Integer> baselineRayKeys = countSourcePeriodRays(baseline.resultsCache.attenuationOutputs);
+        Map<String, Integer> optimizedRayKeys = countSourcePeriodRays(optimized.resultsCache.attenuationOutputs);
         assertEquals(baselineRayKeys, optimizedRayKeys,
                 "Optimized run should keep the same source-period ray contributions as baseline");
 
@@ -252,11 +252,12 @@ public class SceneWithEmissionTest {
             noiseMap.getNoiseMapDatabaseParameters().setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
             noiseMap.getNoiseMapDatabaseParameters().setRaysTable("RAYS");
             noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationMatrix(true);
-            noiseMap.getNoiseMapDatabaseParameters().setExportCnossosPathWithAttenuation(true);
+            noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationOutput(true);
             noiseMap.getNoiseMapDatabaseParameters().keepAbsorption = true;
 
             DefaultTableLoader defaultTableLoader = (DefaultTableLoader) noiseMap.getPropagationProcessDataFactory();
-            defaultTableLoader.defaultParameters.setWindRose(new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]);
+            // Set homogeneous propagation conditions
+            defaultTableLoader.defaultParameters.setWindRose(new DiscreteFavourableProbability(new double[DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length]));
 
             noiseMap.run(connection, new EmptyProgressVisitor());
 
@@ -328,6 +329,66 @@ public class SceneWithEmissionTest {
                 }
                 // Some sources should be skipped or maxDbError not doing its job
                 assertNotEquals( allSourcesPk.size(), ignoreFarSourcesPk.size());
+            }
+        }
+    }
+
+    /**
+     * Test optimisation feature {@link NoiseMapDatabaseParameters#setMaximumError(double)}
+     * when sources do not emit in the same periods. Close sources emit only in period PA,
+     * far sources only in period PB. The pruning must not stop looking for sources while
+     * period PB still expects significant power from the far sources.
+     */
+    @Test
+    public void testIgnoreNonSignificantSourcesDisjointPeriods() throws Exception {
+        final double maxError = 0.5;
+        try (Connection connection =
+                     JDBCUtilities.wrapConnection(
+                             H2GISDBFactory.createSpatialDataBase(
+                                     "testDisjointPeriods", true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE BUILDINGS(THE_GEOM GEOMETRY, HEIGHT DOUBLE)");
+                st.execute("CREATE TABLE SOURCES_GEOM(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+                st.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR NOT NULL, IDSOURCE INT NOT NULL," +
+                        " HZ63 REAL, HZ125 REAL, HZ250 REAL, HZ500 REAL," +
+                        " HZ1000 REAL, HZ2000 REAL, HZ4000 REAL, HZ8000 REAL)");
+                st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+                st.execute("INSERT INTO RECEIVERS VALUES(1, ST_GeomFromText('POINT Z(700000 6600000 1.5)', 2154))");
+                int sourceCount = 40;
+                for (int i = 0; i < sourceCount; i++) {
+                    double angle = 2 * Math.PI * i / sourceCount;
+                    // ring of close sources, emitting only in period PA
+                    st.execute(String.format(Locale.ROOT,
+                            "INSERT INTO SOURCES_GEOM VALUES(%d, ST_GeomFromText('POINT Z(%.2f %.2f 0.5)', 2154))",
+                            i, 700000 + 100 * Math.cos(angle), 6600000 + 100 * Math.sin(angle)));
+                    st.execute("INSERT INTO SOURCES_EMISSION VALUES('PA', " + i +
+                            ", 95, 95, 95, 95, 95, 95, 95, 95)");
+                    // ring of far sources, emitting only in period PB
+                    st.execute(String.format(Locale.ROOT,
+                            "INSERT INTO SOURCES_GEOM VALUES(%d, ST_GeomFromText('POINT Z(%.2f %.2f 0.5)', 2154))",
+                            sourceCount + i, 700000 + 600 * Math.cos(angle), 6600000 + 600 * Math.sin(angle)));
+                    st.execute("INSERT INTO SOURCES_EMISSION VALUES('PB', " + (sourceCount + i) +
+                            ", 95, 95, 95, 95, 95, 95, 95, 95)");
+                }
+            }
+
+            testIgnoreNonSignificantSourcesParam(connection, 0., "BUILDINGS", "SOURCES_GEOM",
+                    "RECEIVERS", "SOURCES_EMISSION");
+            Map<String, Double> allSourcesReceiverLevel = fetchReceiverLevel(connection);
+            testIgnoreNonSignificantSourcesParam(connection, maxError, "BUILDINGS", "SOURCES_GEOM",
+                    "RECEIVERS", "SOURCES_EMISSION");
+            Map<String, Double> someSourcesReceiverLevel = fetchReceiverLevel(connection);
+
+            // The remaining power budget of the pruning is an estimate, so the level error
+            // can be a little over maxError. Twice maxError still catches a period cut too early.
+            for (Map.Entry<String, Double> entry : allSourcesReceiverLevel.entrySet()) {
+                String period = entry.getKey();
+                double levelAllSources = wToDb(entry.getValue());
+                assertTrue(someSourcesReceiverLevel.containsKey(period),
+                        "No level found for period " + period);
+                double levelLimitedSources = wToDb(someSourcesReceiverLevel.get(period));
+                assertEquals(levelAllSources, levelLimitedSources, maxError * 2,
+                        "Wrong level for period " + period);
             }
         }
     }
@@ -464,7 +525,7 @@ public class SceneWithEmissionTest {
             //Actual values
             // number of propagation rays between two walls = reflectionOrder * 4 + 2
             // number of cutProfile between two walls = reflectionOrder * 2 + 1
-            assertEquals(i * 2 + 1, propDataOut.cutProfileCount.get());
+            assertEquals(i * 2 + 1, propDataOut.resultsCache.cutProfileCount.get());
 
             double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumDbArray(propDataOut.resultsCache.receiverLevels.pop().levels);
             if(i == 0) {
@@ -540,8 +601,8 @@ public class SceneWithEmissionTest {
         scene.maxSrcDist = 500;
         scene.defaultCnossosParameters.setHumidity(HUMIDITY);
         scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
-        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene));
-        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene));
+        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene, new DiscreteFavourableProbability()));
+        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene, new DiscreteFavourableProbability(0)));
 
         scene.addSource(1L, factory.createPoint(new Coordinate(5, 0, 0.05)));
         scene.addSourceEmission(1L, "T0", createFlatSpectrum(builder, 120.0));
@@ -591,8 +652,8 @@ public class SceneWithEmissionTest {
         scene.maxRefDist = 500;
         scene.defaultCnossosParameters.setHumidity(HUMIDITY);
         scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
-        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene));
-        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene));
+        scene.cnossosParametersPerPeriod.put("T0", createPeriodParameters(scene, new DiscreteFavourableProbability()));
+        scene.cnossosParametersPerPeriod.put("T1", createPeriodParameters(scene, new DiscreteFavourableProbability(0)));
 
         scene.addSource(1L, factory.createPoint(new Coordinate(2.5, 8, 0.1)));
         scene.addSourceEmission(1L, "T0", createFlatSpectrum(profileBuilder, 120.0));
@@ -604,13 +665,64 @@ public class SceneWithEmissionTest {
         scene.addSourceEmission(3L, "T1", createFlatSpectrum(profileBuilder, 112.0));
 
         AttenuationOutputMultiThread baseline = runSceneWithMaximumError(scene, 0.0);
-        assertTrue(baseline.resultsCache.cnossosPaths.stream().anyMatch(cnossosPath ->
-                        cnossosPath.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
+        assertTrue(baseline.resultsCache.attenuationOutputs.stream().anyMatch(attenuationOutput ->
+                        attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
                 "Baseline scene should include at least one reflection path");
 
         AttenuationOutputMultiThread optimized = runSceneWithMaximumError(scene, maxError);
 
         assertOutputsEquivalentWithinMaximumError(baseline, optimized, maxError);
+    }
+
+    @Test
+    public void testReceiverReflectionIgnoreFilterInSingleThreadOutput() {
+        GeometryFactory factory = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(0.0, -2.5, 5.0),
+                        new Coordinate(1.0, -2.5, 5.0),
+                        new Coordinate(1.0, 2.5, 5.0),
+                        new Coordinate(0.0, 2.5, 5.0)
+                })
+                .finishFeeding();
+
+        SceneWithEmission scene = new SceneWithEmission(profileBuilder);
+        scene.addSource(1L, factory.createPoint(new Coordinate(11.49, 0.0, 2.0)));
+        scene.addReceiver(1L, new Coordinate(1.49, 0.0, 2.0), 0.5);
+        scene.addReceiver(2L, new Coordinate(1.49, 1.0, 2.0), 0.0);
+        scene.defaultGroundAttenuation = 0.0;
+        scene.reflexionOrder = 1;
+        scene.maxSrcDist = 50.0;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(false);
+        scene.defaultCnossosParameters.setHumidity(HUMIDITY);
+        scene.defaultCnossosParameters.setTemperature(TEMPERATURE);
+
+        AttenuationOutputMultiThread output = new AttenuationOutputMultiThread(scene);
+        output.noiseMapDatabaseParameters.setExportRaysMethod(
+                NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
+        output.noiseMapDatabaseParameters.setExportAttenuationMatrix(true);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(output);
+
+        Set<Long> receiversWithReflection = new HashSet<>();
+        Set<Long> receiversWithDirectPath = new HashSet<>();
+        for (AttenuationOutput attenuationOutput : output.resultsCache.attenuationOutputs) {
+            long receiverPk = attenuationOutput.getCutProfile().getReceiver().receiverPk;
+            if (attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION) {
+                receiversWithReflection.add(receiverPk);
+            } else if (attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT) {
+                receiversWithDirectPath.add(receiverPk);
+            }
+        }
+        assertFalse(receiversWithReflection.contains(1L),
+                "The JDBC single-thread output should ignore the reflection path for receiver 1.");
+        assertTrue(receiversWithReflection.contains(2L),
+                "The JDBC single-thread output should keep the reflection path for receiver 2.");
+        assertEquals(Set.of(1L, 2L), receiversWithDirectPath,
+                "Direct paths should be kept for both receivers.");
     }
 
     @Test
@@ -750,6 +862,81 @@ public class SceneWithEmissionTest {
             assertEquals(dBToW(100.0), sceneWithEmission.wjSources.get(1L).get(0).emission[0], 1e-6,
                     "First frequency band should have correct LW value converted to W");
         }
+    }
+
+    private static CutProfile loadCutProfile(Reader reader) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(reader, CutProfile.class);
+    }
+
+    /**
+     * Regression test, check if all rays are well exported in the rays table
+     * @throws Exception
+     */
+    @Test
+    public void testExportRaysReflections() throws Exception {
+            try (Connection connection =
+                         JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase("testExportRaysReflections", true, ""))) {
+                try (Statement st = connection.createStatement()) {
+                    st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')",
+                            SceneWithEmissionTest.class.getResource("dynamicConfMaxErrorTest/buldings_test.shp").getFile()));
+                    st.execute(String.format("CALL SHPREAD('%s', 'SOURCES')",
+                            SceneWithEmissionTest.class.getResource("dynamicConfMaxErrorTest/sources_test.shp").getFile()));
+                    st.execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154)) AS SELECT 1 pk, ST_GeomFromText('POINTZ(673246.410 6579258.839 4)', 2154) the_geom");
+                    splitDynamicSourcesPeriod(connection, "SOURCES", "PK", "PERIOD",
+                            "SOURCES_GEOM", "SOURCES_EMISSION");
+                    st.execute("UPDATE SOURCES_GEOM SET THE_GEOM = ST_UpdateZ(THE_GEOM, 0.05)");
+                }
+
+                NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES_GEOM", "RECEIVERS");
+                noiseMap.setGridDim(1);
+                noiseMap.setThreadCount(1);
+                noiseMap.setHeightField("HEIGHT");
+                noiseMap.setSourcesEmissionTableName("SOURCES_EMISSION");
+                noiseMap.setMaximumPropagationDistance(100);
+                noiseMap.setMaximumReflectionDistance(50);
+                noiseMap.setSoundReflectionOrder(1);
+                noiseMap.setComputeHorizontalDiffraction(false);
+                noiseMap.setComputeVerticalDiffraction(false);
+                noiseMap.getNoiseMapDatabaseParameters().setMaximumError(0.0);
+                noiseMap.getNoiseMapDatabaseParameters().setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
+                noiseMap.getNoiseMapDatabaseParameters().setRaysTable("RAYS");
+                noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationMatrix(true);
+                noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationOutput(true);
+                noiseMap.getNoiseMapDatabaseParameters().keepAbsorption = true;
+
+                DefaultTableLoader defaultTableLoader = (DefaultTableLoader) noiseMap.getPropagationProcessDataFactory();
+                // Set homogeneous propagation conditions
+                defaultTableLoader.defaultParameters.setWindRose(new DiscreteFavourableProbability(new double[DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length]));
+
+                noiseMap.run(connection, new EmptyProgressVisitor());
+
+                assertTrue(JDBCUtilities.tableExists(connection, "RAYS"));
+
+                Set<Integer> sourceIds = new HashSet<>();
+                Set<String> profileTypes = new HashSet<>();
+                Set<String> periods = new HashSet<>();
+                try(Statement st = connection.createStatement();
+                        ResultSet rs = st.executeQuery("SELECT IDSOURCE, PATH FROM RAYS")) {
+                    while (rs.next()) {
+                        sourceIds.add(rs.getInt("IDSOURCE"));
+                        String jsonPath = rs.getString("PATH");
+                        AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(jsonPath);
+                        CutProfile.PROFILE_TYPE profileType = attenuationOutput.cutProfile.profileType;
+                        profileTypes.add(profileType.name());
+                        periods.add(attenuationOutput.getTimePeriod());
+                    }
+                }
+                assertTrue(sourceIds.contains(1));
+                assertTrue(sourceIds.contains(2));
+                assertTrue(sourceIds.contains(3));
+                assertTrue(profileTypes.contains(CutProfile.PROFILE_TYPE.DIRECT.name()));
+                assertTrue(profileTypes.contains(CutProfile.PROFILE_TYPE.REFLECTION.name()));
+                assertTrue(periods.contains("42"));
+                assertTrue(periods.contains("43"));
+                assertTrue(periods.contains("44"));
+
+            }
     }
 }
 

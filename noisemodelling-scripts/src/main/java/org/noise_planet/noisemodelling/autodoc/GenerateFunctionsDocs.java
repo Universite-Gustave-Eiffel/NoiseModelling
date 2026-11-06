@@ -48,7 +48,7 @@ public class GenerateFunctionsDocs {
     private static final String AUTO_GENERATED_HEADER =
             ".. DO NOT UPDATE THIS FILE!!\n" +
             ".. This document has been automatically generated with " +
-            "noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java\n\n";
+            "noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java\n\n";
 
     // Compiled patterns — reused across all calls
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("<img\\b([^>]*)>", Pattern.CASE_INSENSITIVE);
@@ -440,7 +440,12 @@ public class GenerateFunctionsDocs {
             sb.append("\n   Type: ``").append(p.type.getSimpleName()).append("``\n");
         }
         if (p.defaultValue != null) {
-            sb.append("\n   Default: ``").append(p.defaultValue).append("``\n");
+            String defaultValue = p.defaultValue.toString();
+            if (defaultValue.isEmpty()) {
+                sb.append("\n   Default: (empty string)\n");
+            } else {
+                sb.append("\n   Default: ``").append(defaultValue).append("``\n");
+            }
         }
         if (!p.allowedValues.isEmpty()) {
             sb.append("\n   Allowed values: ``");

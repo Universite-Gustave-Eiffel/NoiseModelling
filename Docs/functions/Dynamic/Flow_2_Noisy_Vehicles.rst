@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Flow 2 Noisy Vehicles
 =====================
@@ -55,7 +55,7 @@ Optional inputs
 ``timestep``
    Number of iterations. Timestep in sec.
 
-   Type: ``Integer``
+   Type: ``Double``
 
    Default: ``1``
 

@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateFunctionsDocs.java
 
 Noise Map Difference
 ====================
@@ -44,7 +44,7 @@ Mandatory inputs
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``invert`` — *Invert the substraction ?*
+``invert`` — *Invert the subtraction ?*
    Invert the substraction?
    
    * False (default) : Primary map - Second map
