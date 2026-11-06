@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
@@ -254,6 +255,23 @@ class TestGeometricTools extends JdbcTestCase {
         assertThrows(IllegalArgumentException.class, () -> new Enrich_DEM_with_road().exec(connection, input))
     }
 
+    @Test
+    void testEnrichDEMRoadsWithoutPosSol() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        sql.execute("INSERT INTO DEM VALUES (ST_GeomFromText('POINT Z(0 0 10)', 2154)), (ST_GeomFromText('POINT Z(100 100 10)', 2154))")
+        sql.execute("CREATE TABLE ORO(THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
+        sql.execute("CREATE TABLE HYDRO(THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
+        sql.execute("CREATE TABLE RAILS(THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE)")
+        sql.execute("CREATE TABLE ROADS(THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE)")
+        sql.execute("INSERT INTO ROADS VALUES (ST_GeomFromText('LINESTRING Z(0 50 10, 100 50 10)', 2154), 6)")
+
+        new Enrich_DEM().exec(connection, ["inputDEM": "DEM", "inputOro": "ORO", "inputHydro": "HYDRO",
+                "inputRoad": "ROADS", "roadWidth": "WIDTH", "inputRail": "RAILS", "railWidth": "WIDTH",
+                "outputSuffixe": "ENRICHED"])
+
+        assertTrue((sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED WHERE SOURCE = 'ROA'")[0] as Integer) > 0)
+    }
 
     @Test
     void testExportKML(@TempDir File tempDir) {

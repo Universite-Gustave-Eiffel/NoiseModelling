@@ -347,12 +347,12 @@ def exec(Connection connection, Map input) {
 
     def import_roads = """
     ------------
-    -- Import roads (that are on the floor --> POS_SOL=0)
+    -- Import roads
     -- Road width is precalculated into WIDTH column. When largeur < 3, then 3m
 
     DROP TABLE IF EXISTS dem_roads;
     CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
-        FROM $inputRoad WHERE POS_SOL = '0' AND ST_CoordDim(THE_GEOM) = 3;
+        FROM $inputRoad WHERE ST_CoordDim(THE_GEOM) = 3;
     CREATE SPATIAL INDEX ON dem_roads(THE_GEOM);
     ALTER TABLE dem_roads ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_roads add primary key(PK_LINE);
