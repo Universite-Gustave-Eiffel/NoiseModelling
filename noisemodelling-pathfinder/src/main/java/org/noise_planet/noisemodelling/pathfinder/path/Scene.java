@@ -86,6 +86,9 @@ public class Scene {
     /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
 
+    /** the maximum number of image receivers to generate per receiver */
+    public int mirrorReceiverCapacity = MirrorReceiversCompute.DEFAULT_MIRROR_RECEIVER_CAPACITY;
+
 
     /**
      * Add the geometry of the source

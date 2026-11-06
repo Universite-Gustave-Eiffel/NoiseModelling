@@ -16,7 +16,10 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.prep.PreparedGeometry;
+import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
@@ -32,8 +35,8 @@ import java.util.List;
 public class MirrorReceiversCompute {
     private static final double DEFAULT_CIRCLE_POINT_ANGLE = Math.PI / 24;
     STRtree mirrorReceiverTree;
-    public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = 50000;
-    private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
+    public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = Integer.MAX_VALUE;
+    final private int mirrorReceiverCapacity;
     private final Coordinate receiverCoordinate;
     private final List<Wall> buildWalls;
     private final double maximumDistanceFromWall;
@@ -87,21 +90,59 @@ public class MirrorReceiversCompute {
             return factory.createPolygon();
         }
     }
+
+
     /**
-     * Generate all image receivers from the provided list of walls
-     * @param buildWalls
-     * @param receiverCoordinates
-     * @param reflectionOrder
+     * Constructs a mirror receiver computation instance using default mirror receiver capacity.
+     *
+     * @param buildWalls list of walls that may act as reflective surfaces
+     * @param receiverCoordinates the coordinates of the receiver for which image receivers are generated
+     * @param reflectionOrder the maximum number of reflections to consider when generating image receivers
+     * @param maximumPropagationDistance Maximum distance between image receiver and source point
+     * @param maximumDistanceFromWall the maximum perpendicular distance from a wall for an image receiver to be considered valid
      */
     public MirrorReceiversCompute(List<Wall> buildWalls, Coordinate receiverCoordinates,
                                   int reflectionOrder, double maximumPropagationDistance,
                                   double maximumDistanceFromWall) {
+        this(buildWalls, receiverCoordinates, reflectionOrder, maximumPropagationDistance, maximumDistanceFromWall,
+                DEFAULT_MIRROR_RECEIVER_CAPACITY);
+    }
+
+
+    /**
+     * Constructs a mirror receiver computation instance with a specified mirror receiver capacity.
+     *
+     * @param buildWalls list of walls that may act as reflective surfaces
+     * @param receiverCoordinates the coordinates of the receiver for which image receivers are generated
+     * @param reflectionOrder the maximum number of reflections to consider when generating image receivers
+     * @param maximumPropagationDistance Maximum distance between image receiver and source point
+     * @param maximumDistanceFromWall the maximum perpendicular distance from a wall for an image receiver to be considered valid
+     * @param mirrorReceiverCapacity the maximum number of image receivers to generate per receiver
+     */
+    public MirrorReceiversCompute(List<Wall> buildWalls, Coordinate receiverCoordinates,
+                                  int reflectionOrder, double maximumPropagationDistance,
+                                  double maximumDistanceFromWall, int mirrorReceiverCapacity) {
         GeometryFactory gf = new GeometryFactory();
         this.receiverCoordinate = receiverCoordinates;
         this.buildWalls = buildWalls;
         this.maximumDistanceFromWall = maximumDistanceFromWall;
         this.maximumPropagationDistance = maximumPropagationDistance;
+        this.mirrorReceiverCapacity = mirrorReceiverCapacity;
         mirrorReceiverTree = new STRtree();
+        // Create the geometry of each wall once, and index them, instead of creating a new
+        // geometry for every parent image x wall combination in the loop below
+        List<LineString> wallGeometries = new ArrayList<>(buildWalls.size());
+        for (Wall wall : buildWalls) {
+            wallGeometries.add(wall.getLineSegment().toGeometry(gf));
+        }
+        STRtree wallsTree = null;
+        if (reflectionOrder > 1) {
+            wallsTree = new STRtree();
+            for (int idWall = 0; idWall < buildWalls.size(); idWall++) {
+                wallsTree.insert(wallGeometries.get(idWall).getEnvelopeInternal(), idWall);
+            }
+            wallsTree.build();
+        }
         ArrayList<MirrorReceiver> parentsToProcess = new ArrayList<>();
         for(int currentDepth = 0; currentDepth < reflectionOrder; currentDepth++) {
             if(currentDepth == 0) {
@@ -109,11 +150,22 @@ public class MirrorReceiversCompute {
             }
             ArrayList<MirrorReceiver> nextParentsToProcess = new ArrayList<>();
             for(MirrorReceiver parent : parentsToProcess) {
-                for (Wall wall : buildWalls) {
+                // For the first depth every wall can create an image. For the next depths only
+                // the walls under the visibility cone of the parent image can, so ask the wall
+                // index instead of testing every wall
+                List<?> wallCandidates = null;
+                PreparedGeometry parentCone = null;
+                if (parent != null) {
+                    wallCandidates = wallsTree.query(parent.getImageReceiverVisibilityCone().getEnvelopeInternal());
+                    parentCone = PreparedGeometryFactory.prepare(parent.getImageReceiverVisibilityCone());
+                }
+                int candidateCount = parent == null ? buildWalls.size() : wallCandidates.size();
+                for (int idCandidate = 0; idCandidate < candidateCount; idCandidate++) {
+                    int wallIndex = parent == null ? idCandidate : (Integer) wallCandidates.get(idCandidate);
+                    Wall wall = buildWalls.get(wallIndex);
                     if(parent != null) {
                         // check if the wall is visible from the previous image receiver
-                        if(!parent.getImageReceiverVisibilityCone().intersects(
-                                wall.getLineSegment().toGeometry(new GeometryFactory()))) {
+                        if(!parentCone.intersects(wallGeometries.get(wallIndex))) {
                             continue; // this wall is out of the bound of the receiver visibility
                         }
                     }
@@ -173,12 +225,11 @@ public class MirrorReceiversCompute {
                 wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
     }
 
+    /**
+     * @return the maximum number of image receivers to generate per receiver
+     */
     public int getMirrorReceiverCapacity() {
         return mirrorReceiverCapacity;
-    }
-
-    public void setMirrorReceiverCapacity(int mirrorReceiverCapacity) {
-        this.mirrorReceiverCapacity = mirrorReceiverCapacity;
     }
 
     public void exportVisibility(StringBuilder sb, double maxPropagationDistance,
