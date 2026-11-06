@@ -420,7 +420,10 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
-     * Sets the maximum number of image receivers to generate per receiver.
+     * Sets the maximum number of image receivers to generate per receiver. The default is
+     * {@link MirrorReceiversCompute#DEFAULT_MIRROR_RECEIVER_CAPACITY} ({@link Integer#MAX_VALUE}),
+     * which effectively imposes no limit. Call this method before starting a noise-map computation
+     * to apply a smaller limit, for example {@code setMirrorReceiverCapacity(100)}.
      * @param mirrorReceiverCapacity the maximum number of image receivers to generate per receiver
      */
     public void setMirrorReceiverCapacity(int mirrorReceiverCapacity) {

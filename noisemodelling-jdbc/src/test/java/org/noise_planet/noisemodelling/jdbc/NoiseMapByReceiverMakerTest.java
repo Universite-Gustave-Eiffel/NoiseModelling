@@ -30,9 +30,9 @@ import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
@@ -101,6 +101,53 @@ public class NoiseMapByReceiverMakerTest {
                 () -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
         assertTrue(exception.getMessage().contains("DEM"), exception.getMessage());
         assertTrue(exception.getMessage().contains("without Z ordinate"), exception.getMessage());
+    }
+
+    @Test
+    public void testMirrorReceiverCapacity() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON), HEIGHT DOUBLE)");
+            st.execute("INSERT INTO BUILDINGS VALUES"
+                    + "(1, 'POLYGON ((5 -10, 5 10, 10 10, 10 -10, 5 -10))', 10),"
+                    + "(2, 'POLYGON ((12 -10, 12 10, 17 10, 17 -10, 12 -10))', 10)");
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(2, 0, 1)),
+                    91, new Orientation(0, 0, 0), 0));
+            st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ))");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, 'POINTZ (0 0 1.6)')");
+        }
+
+        int capacity = 1;
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker =
+                new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapByReceiverMaker.setFrequencyFieldPrepend("HZ");
+        noiseMapByReceiverMaker.setSoundReflectionOrder(2);
+        noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
+        noiseMapByReceiverMaker.setMirrorReceiverCapacity(capacity);
+        noiseMapByReceiverMaker.setHeightField("HEIGHT");
+        noiseMapByReceiverMaker.initialize(connection);
+
+        CellIndex cellIndex = noiseMapByReceiverMaker.searchPopulatedCells(connection).keySet().iterator().next();
+        SceneWithEmission scene = noiseMapByReceiverMaker.prepareCell(connection, cellIndex, new HashSet<>());
+        assertEquals(capacity, scene.mirrorReceiverCapacity);
+
+        Coordinate receiver = scene.receivers.get(0);
+        Coordinate source = scene.sourceGeometries.get(0).getCoordinate();
+        Envelope receiverEnvelope = new Envelope(receiver);
+        receiverEnvelope.expandBy(scene.maxSrcDist);
+        List<Wall> walls = scene.profileBuilder.getWallsIn(receiverEnvelope);
+
+        MirrorReceiversCompute limitedImageGenerator = new MirrorReceiversCompute(
+                walls, receiver, scene.reflexionOrder, scene.maxSrcDist, scene.maxRefDist,
+                scene.mirrorReceiverCapacity);
+        MirrorReceiversCompute unlimitedImageGenerator = new MirrorReceiversCompute(
+                walls, receiver, scene.reflexionOrder, scene.maxSrcDist, scene.maxRefDist);
+
+        int limitedImageCount = limitedImageGenerator.findCloseMirrorReceivers(source).size();
+        int unlimitedImageCount = unlimitedImageGenerator.findCloseMirrorReceivers(source).size();
+        assertEquals(capacity, limitedImageCount);
+        assertTrue(unlimitedImageCount > limitedImageCount,
+                "The uncapped scene should generate additional image receivers");
     }
 
     @Test
