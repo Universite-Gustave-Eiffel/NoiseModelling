@@ -235,7 +235,7 @@ def exec(Connection connection, input) {
     if ('outputsuffix' in input) {
         outputsuffix = input["outputsuffix"] as String
     }
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputsuffix"] as String
+    String enrichedDEM = inputDEM + "_" + outputsuffix
 
     // print to command window
     logger.info('List of the input parameters:')

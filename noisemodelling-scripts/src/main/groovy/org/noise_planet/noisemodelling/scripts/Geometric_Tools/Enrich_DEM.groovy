@@ -284,7 +284,7 @@ def exec(Connection connection, Map input) {
     if ('outputSuffixe' in input) {
         outputSuffixe = input["outputSuffixe"] as String
     }
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputSuffixe"] as String
+    String enrichedDEM = inputDEM + "_" + outputSuffixe
 
 
     // print to command window

@@ -209,7 +209,7 @@ def exec(Connection connection, input) {
         outputsuffix = input["outputsuffix"] as String
     }
 
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputsuffix"] as String
+    String enrichedDEM = inputDEM + "_" + outputsuffix
 
     
     // print to command window
