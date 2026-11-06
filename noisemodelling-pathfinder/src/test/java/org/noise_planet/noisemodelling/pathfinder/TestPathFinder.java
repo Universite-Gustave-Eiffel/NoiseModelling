@@ -25,7 +25,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.splitLineStringIntoPoints;
@@ -129,6 +131,39 @@ public class TestPathFinder {
             assertNotNull(pt);
         }
         assertEquals(7, pts.size());
+    }
+
+    /**
+     * Test regression on https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues/684
+     * The point sources of a line source must not move when only the receiver height changes
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceSplitIndependentOfReceiverHeight() throws ParseException {
+        String line = "LINESTRING (0 0 0.05, 200 0 0.05)";
+        assertEquals(computeLineSourcePoints(line, 100, 50, 4), computeLineSourcePoints(line, 100, 50, 40));
+        // the nearest segment changes with the receiver height if it is chosen with the 3D distance
+        line = "LINESTRING (-100 10 0, 100 10 0, 100 20 40, -100 20 40)";
+        assertEquals(computeLineSourcePoints(line, 0, 0, 4), computeLineSourcePoints(line, 0, 0, 40));
+    }
+
+    private static Set<Coordinate> computeLineSourcePoints(String line, double receiverX, double receiverY,
+                                                           double receiverHeight) throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addSource(new WKTReader().read(line))
+                .addReceiver(receiverX, receiverY, receiverHeight)
+                .build();
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        // the points are compared regardless of their order, which follows their 3D distance to the receiver
+        Set<Coordinate> sourcePoints = new HashSet<>();
+        for (CutProfile cutProfile : propDataOut.cutProfiles) {
+            sourcePoints.add(cutProfile.getSource().getCoordinate());
+        }
+        return sourcePoints;
     }
 
     /**
