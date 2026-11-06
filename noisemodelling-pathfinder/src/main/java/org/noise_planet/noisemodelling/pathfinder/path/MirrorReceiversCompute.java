@@ -225,12 +225,11 @@ public class MirrorReceiversCompute {
                 wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
     }
 
+    /**
+     * @return the maximum number of image receivers to generate per receiver
+     */
     public int getMirrorReceiverCapacity() {
         return mirrorReceiverCapacity;
-    }
-
-    public void setMirrorReceiverCapacity(int mirrorReceiverCapacity) {
-        this.mirrorReceiverCapacity = mirrorReceiverCapacity;
     }
 
     public void exportVisibility(StringBuilder sb, double maxPropagationDistance,
