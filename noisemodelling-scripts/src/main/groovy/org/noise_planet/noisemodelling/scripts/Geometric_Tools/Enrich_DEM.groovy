@@ -365,7 +365,7 @@ def exec(Connection connection, Map input) {
     -- Import railways (that are on the floor --> POS_SOL=0)
 
     DROP TABLE IF EXISTS dem_rail;    
-    CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, $railWidth as WIDTH FROM $inputRail WHERE ST_CoordDim(THE_GEOM) = 3;
+    CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, CAST($railWidth AS DOUBLE PRECISION) as WIDTH FROM $inputRail WHERE ST_CoordDim(THE_GEOM) = 3;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
     ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
@@ -428,8 +428,8 @@ def exec(Connection connection, Map input) {
     ------------
     -- Insert rail platform into $enrichedDEM
 
-    -- Remove DEM points that are less than "WIDTH/2" far FROM rails
-    DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_rail b WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, 20) && b.THE_GEOM AND ST_DISTANCE(DEM_WITHOUT_PTLINE.THE_GEOM, b.THE_GEOM)< ((b.WIDTH/2) + 5)  LIMIT 1) ;
+    -- Remove DEM points that are less than "WIDTH/2" + 5 m far FROM rails
+    DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_rail b WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, (SELECT MAX(WIDTH) / 2 + 5 FROM dem_rail)) && b.THE_GEOM AND ST_DISTANCE(DEM_WITHOUT_PTLINE.THE_GEOM, b.THE_GEOM)< ((b.WIDTH/2) + 5)  LIMIT 1) ;
     
     -- Create buffer points from rails and copy the elevation from the rails to the point
     DROP TABLE IF EXISTS BUFFERED_D2, BUFFERED_D3, BUFFERED_D4;
