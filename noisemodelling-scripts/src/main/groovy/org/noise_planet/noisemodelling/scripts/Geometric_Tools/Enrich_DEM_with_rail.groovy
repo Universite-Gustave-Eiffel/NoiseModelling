@@ -147,6 +147,20 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
     }
 }
 
+/**
+ * Stop the script when lines of the table have no Z value: the DEM points created along a line take
+ * their altitude from the line, so the DEM can only be enriched with 3D lines.
+ * @param sql connection to the database
+ * @param lineTable name of the table of lines (roads or railways)
+ */
+static void checkLinesHaveZ(Sql sql, String lineTable) {
+    int linesWithoutZ = sql.firstRow("SELECT COUNT(*) FROM " + lineTable + " WHERE ST_CoordDim(THE_GEOM) < 3")[0] as Integer
+    if (linesWithoutZ > 0) {
+        throw new IllegalArgumentException("Error : " + linesWithoutZ + " lines of the table " + lineTable
+                + " have no Z value. The DEM can only be enriched with 3D lines.")
+    }
+}
+
 
 def exec(Connection connection, input) {
 
@@ -237,6 +251,7 @@ def exec(Connection connection, input) {
     logger.info('Start enrich the DEM')
 
     def sql = new Sql(connection)
+    checkLinesHaveZ(sql, inputRail)
 
     def import_dem = """
     ------------
@@ -253,7 +268,7 @@ def exec(Connection connection, input) {
     -- Import railways (that are on the floor --> POS_SOL=0)
 
     DROP TABLE IF EXISTS dem_rail;    
-    CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, $railWidth as WIDTH FROM $inputRail WHERE st_zmin(THE_GEOM) > 0;
+    CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, $railWidth as WIDTH FROM $inputRail WHERE ST_CoordDim(THE_GEOM) = 3;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
     ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);

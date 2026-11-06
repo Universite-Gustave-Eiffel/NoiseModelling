@@ -32,6 +32,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
@@ -229,6 +230,28 @@ class TestGeometricTools extends JdbcTestCase {
         def countAfter = sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED")[0] as Integer
 
         assertTrue(countBefore < countAfter)
+    }
+
+    @Test
+    void testEnrichRoadLineZ() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        for (int i = 0; i <= 10; i++) {
+            for (int j = 0; j <= 10; j++) {
+                sql.execute("INSERT INTO DEM VALUES (ST_SetSRID(ST_MakePoint(" + (i * 10) + ", " + (j * 10) + ", -2), 2154))")
+            }
+        }
+        sql.execute("CREATE TABLE ROADS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(GEOMETRY, 2154), WIDTH DOUBLE)")
+        def input = ["inputDEM": "DEM", "inputRoad": "ROADS", "roadWidth": "WIDTH"]
+
+        // A road below sea level is added to the DEM
+        sql.execute("INSERT INTO ROADS VALUES (1, ST_GeomFromText('LINESTRING Z(0 50 -3, 100 50 -3)', 2154), 6)")
+        new Enrich_DEM_with_road().exec(connection, input)
+        assertTrue((sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED WHERE SOURCE = 'ROA'")[0] as Integer) > 0)
+
+        // A road without Z stops the script with an explicit message
+        sql.execute("UPDATE ROADS SET THE_GEOM = ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154)")
+        assertThrows(IllegalArgumentException.class, () -> new Enrich_DEM_with_road().exec(connection, input))
     }
 
 
