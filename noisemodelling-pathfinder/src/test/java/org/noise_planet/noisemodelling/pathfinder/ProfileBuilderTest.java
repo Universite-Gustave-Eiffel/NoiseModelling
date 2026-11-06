@@ -405,4 +405,26 @@ public class ProfileBuilderTest {
 
 
     }
+
+    /**
+     * A smooth hill sampled on a fine grid must stay in the cut profile: each DEM point is close to the chord of
+     * its raw neighbours, but the hill as a whole rises 10 m above the source and the receiver ground.
+     */
+    @Test
+    public void testSmoothFineDemKeepsHill() {
+        for (double step : new double[]{1, 2, 5}) {
+            ProfileBuilder profileBuilder = new ProfileBuilder();
+            for (double x = 0; x <= 200 + 1e-9; x += step) {
+                for (double y = 0; y <= 20 + 1e-9; y += step) {
+                    profileBuilder.addTopographicPoint(new Coordinate(x, y, 10 - 0.001 * (x - 100) * (x - 100)));
+                }
+            }
+            profileBuilder.finishFeeding();
+            Coordinate source = new Coordinate(0.5, 10.3, 0.05 + profileBuilder.getZGround(new Coordinate(0.5, 10.3)));
+            Coordinate receiver = new Coordinate(199.5, 10.3, 4 + profileBuilder.getZGround(new Coordinate(199.5, 10.3)));
+            CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0, false);
+            double maxZGround = cutProfile.cutPoints.stream().mapToDouble(cutPoint -> cutPoint.zGround).max().orElseThrow();
+            assertEquals(10.0, maxZGround, 0.1, "DEM step " + step + " m");
+        }
+    }
 }
