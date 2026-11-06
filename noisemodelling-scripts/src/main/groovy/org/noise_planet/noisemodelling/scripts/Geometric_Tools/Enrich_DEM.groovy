@@ -187,7 +187,7 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
  * Stop the script when lines of the table have no Z value: the DEM points created along a line take
  * their altitude from the line, so the DEM can only be enriched with 3D lines.
  * @param sql connection to the database
- * @param lineTable name of the table of lines (roads or railways)
+ * @param lineTable name of the table of lines (orography, hydrography, roads or railways)
  */
 static void checkLinesHaveZ(Sql sql, String lineTable) {
     int linesWithoutZ = sql.firstRow("SELECT COUNT(*) FROM " + lineTable + " WHERE ST_CoordDim(THE_GEOM) < 3")[0] as Integer
@@ -306,6 +306,8 @@ def exec(Connection connection, Map input) {
     logger.info('Start enrich the DEM')
 
     def sql = new Sql(connection)
+    checkLinesHaveZ(sql, inputOro)
+    checkLinesHaveZ(sql, inputHydro)
     checkLinesHaveZ(sql, inputRoad)
     checkLinesHaveZ(sql, inputRail)
 

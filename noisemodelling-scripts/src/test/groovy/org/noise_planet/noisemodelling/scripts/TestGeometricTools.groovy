@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_lines
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_rail
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
@@ -254,6 +255,18 @@ class TestGeometricTools extends JdbcTestCase {
         // A road without Z stops the script with an explicit message
         sql.execute("UPDATE ROADS SET THE_GEOM = ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154)")
         assertThrows(IllegalArgumentException.class, () -> new Enrich_DEM_with_road().exec(connection, input))
+    }
+
+    @Test
+    void testEnrichLinesWithoutZ() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        sql.execute("INSERT INTO DEM VALUES (ST_GeomFromText('POINT Z(0 0 10)', 2154)), (ST_GeomFromText('POINT Z(100 100 10)', 2154))")
+        sql.execute("CREATE TABLE LINES(THE_GEOM GEOMETRY(LINESTRING, 2154))")
+        sql.execute("INSERT INTO LINES VALUES (ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154))")
+
+        // Without the check, points with no Z were written into the DEM without error
+        assertThrows(IllegalArgumentException.class, () -> new Enrich_DEM_with_lines().exec(connection, ["inputDEM": "DEM", "inputLine": "LINES"]))
     }
 
     @Test
