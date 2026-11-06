@@ -351,7 +351,7 @@ def exec(Connection connection, Map input) {
     -- Road width is precalculated into WIDTH column. When largeur < 3, then 3m
 
     DROP TABLE IF EXISTS dem_roads;
-    CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
+    CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth>3 THEN $roadWidth/2.0 ELSE 1.5 END) as WIDTH 
         FROM $inputRoad WHERE ST_CoordDim(THE_GEOM) = 3;
     CREATE SPATIAL INDEX ON dem_roads(THE_GEOM);
     ALTER TABLE dem_roads ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
@@ -408,9 +408,9 @@ def exec(Connection connection, Map input) {
 
     DROP TABLE DEM_WITHOUT_PTLINE IF EXISTS;
     CREATE TABLE DEM_WITHOUT_PTLINE(THE_GEOM geometry(POINTZ, $srid), source varchar) AS SELECT st_setsrid(THE_GEOM, $srid), SOURCE FROM dem_to_enrich;
-    -- Remove DEM points that are less than $roadWidth far FROM roads
+    -- Remove DEM points that are less than the road half-width + 5 m far FROM roads
     DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_roads b 
-        WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, 20) && b.THE_GEOM 
+        WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, (SELECT MAX(WIDTH) + 5 FROM dem_roads)) && b.THE_GEOM 
         AND ST_DISTANCE(DEM_WITHOUT_PTLINE.THE_GEOM, b.THE_GEOM)< b.WIDTH+5 LIMIT 1) ;
     
     -- Create buffer points from roads and copy the elevation from the roads to the point

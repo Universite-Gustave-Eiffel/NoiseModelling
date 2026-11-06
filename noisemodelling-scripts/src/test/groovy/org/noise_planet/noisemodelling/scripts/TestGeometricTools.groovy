@@ -274,6 +274,27 @@ class TestGeometricTools extends JdbcTestCase {
     }
 
     @Test
+    void testEnrichRoadFullWidth() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        for (int i = 0; i <= 20; i++) {
+            for (int j = 0; j <= 20; j++) {
+                sql.execute("INSERT INTO DEM VALUES (ST_SetSRID(ST_MakePoint(" + (i * 5) + ", " + (j * 5) + ", 10), 2154))")
+            }
+        }
+        // Integer width of 41 m: half-width 20.5 m, DEM points removed up to 25.5 m from the road axis
+        sql.execute("CREATE TABLE ROADS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH INTEGER)")
+        sql.execute("INSERT INTO ROADS VALUES (1, ST_GeomFromText('LINESTRING Z(0 50 10, 100 50 10)', 2154), 41)")
+
+        new Enrich_DEM_with_road().exec(connection, ["inputDEM": "DEM", "inputRoad": "ROADS", "roadWidth": "WIDTH"])
+
+        String distanceToRoad = "ST_Distance(D.THE_GEOM, ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154))"
+        assertEquals(20.5, sql.firstRow("SELECT MAX(" + distanceToRoad + ") FROM DEM_ENRICHED D WHERE SOURCE = 'ROA'")[0] as Double, 1e-6)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED D WHERE SOURCE = 'DEM' AND " + distanceToRoad + " < 25.5")[0] as Integer)
+    }
+
+
+    @Test
     void testExportKML(@TempDir File tempDir) {
 
         new Import_File().exec(connection,
