@@ -190,8 +190,10 @@ public class IsoSurfaceJDBCTest {
             noisemap.initialize(connection);
 
             AtomicInteger pk = new AtomicInteger(0);
-            for(int i=0; i < noisemap.getGridDim(); i++) {
-                for(int j=0; j < noisemap.getGridDim(); j++) {
+            int dimX = noisemap.getGridDimX();
+            int dimY = noisemap.getGridDimY();
+            for (int i = 0; i < dimX; i++) {
+                for (int j = 0; j < dimY; j++) {
                     noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
                 }
             }
@@ -312,7 +314,7 @@ public class IsoSurfaceJDBCTest {
 
         DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES");
 
-        delaunayReceiversMaker.setMaximumPropagationDistance(5000);
+        delaunayReceiversMaker.setGridDim(1);
         delaunayReceiversMaker.setMaximumArea(500);
         delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
 

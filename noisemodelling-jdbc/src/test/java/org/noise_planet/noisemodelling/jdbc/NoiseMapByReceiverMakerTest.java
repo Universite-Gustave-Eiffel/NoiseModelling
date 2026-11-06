@@ -128,7 +128,7 @@ public class NoiseMapByReceiverMakerTest {
         noiseMapByReceiverMaker.initialize(connection);
 
         CellIndex cellIndex = noiseMapByReceiverMaker.searchPopulatedCells(connection).keySet().iterator().next();
-        SceneWithEmission scene = noiseMapByReceiverMaker.prepareCell(connection, cellIndex, new HashSet<>());
+        SceneWithEmission scene = noiseMapByReceiverMaker.prepareCell(connection, cellIndex, new HashSet<>(), -1, -1);
         assertEquals(capacity, scene.mirrorReceiverCapacity);
 
         Coordinate receiver = scene.receivers.get(0);
@@ -288,8 +288,10 @@ public class NoiseMapByReceiverMakerTest {
             Map<CellIndex, Integer> populatedCells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
             double expectedMaxArea = Math.pow(noiseMapByReceiverMaker.getGroundSurfaceSplitSideLength(), 2);
             assertFalse(populatedCells.isEmpty());
+            int currentCell = 0;
+            int totalCells = populatedCells.size();
             for (Map.Entry<CellIndex, Integer> indexIntegerEntry : populatedCells.entrySet()) {
-                SceneWithEmission scene = noiseMapByReceiverMaker.prepareCell(connection, indexIntegerEntry.getKey(), processedReceivers);
+                SceneWithEmission scene = noiseMapByReceiverMaker.prepareCell(connection, indexIntegerEntry.getKey(), processedReceivers, currentCell, totalCells);
                 assertFalse(scene.profileBuilder.getGroundEffects().isEmpty());
                 for(GroundAbsorption soil : scene.profileBuilder.getGroundEffects()) {
                     assertTrue(soil.getGeometry().getArea() < expectedMaxArea);

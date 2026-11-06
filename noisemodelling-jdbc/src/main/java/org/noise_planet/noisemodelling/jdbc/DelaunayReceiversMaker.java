@@ -7,7 +7,6 @@
  * Contact: contact@noise-planet.org
  */
 
-
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
@@ -21,16 +20,16 @@ import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
-import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
+import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tinfour.common.Vertex;
 
 import java.io.IOException;
 import java.sql.*;
@@ -40,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 
 /**
- * Create input receivers built from Delaunay for contructing a NoiseMap rendering.
+ * Create input receivers built from Delaunay for constructing a NoiseMap rendering.
  * SQL syntax is compatible with H2 and PostGIS.
  * @author Nicolas Fortin
  * @author SU Qi
@@ -101,33 +100,35 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     public void run(Connection connection, String verticesTableName, String triangleTableName, ProgressVisitor progressVisitor) throws SQLException {
         initialize(connection);
         AtomicInteger pk = new AtomicInteger(0);
-        ProgressVisitor progressVisitorNM = progressVisitor.subProcess(getGridDim() * getGridDim());
-        for(int i=0; i < getGridDim() && !progressVisitorNM.isCanceled(); i++) {
-            for(int j=0; j < getGridDim() && !progressVisitorNM.isCanceled(); j++) {
 
-                if(!Double.isNaN(minimalSourceGeometriesDistanceToComputeCell) && !sourcesTableName.isEmpty()) {
-                    // Check if there is a source near fence
-                    Envelope cellEnvelope = getCellEnv(mainEnvelope, i,
-                            j, getCellWidth(), getCellHeight());
-                    if(!hasSourcesNearEnvelope(connection, cellEnvelope, minimalSourceGeometriesDistanceToComputeCell)) {
+        int dimX = getGridDimX();
+        int dimY = getGridDimY();
+        int totalCells = dimX * dimY;
+        ProgressVisitor progressVisitorNM = progressVisitor.subProcess(totalCells);
+
+        for (int i = 0; i < dimX && !progressVisitorNM.isCanceled(); i++) {
+            for (int j = 0; j < dimY && !progressVisitorNM.isCanceled(); j++) {
+                int ij = i * dimY + j + 1;
+                CellIndex cellIndex = new CellIndex(i, j);
+                Envelope cellEnvelope = getCellEnv(cellIndex);
+
+                if (!Double.isNaN(minimalSourceGeometriesDistanceToComputeCell) && !sourcesTableName.isEmpty()) {
+                    if (!hasSourcesNearEnvelope(connection, cellEnvelope, minimalSourceGeometriesDistanceToComputeCell)) {
                         if (verbose) {
-                            int ij = i * gridDim + j + 1;
-                            logger.info("Skip processing of cell {} / {} no source near cell", ij, gridDim * gridDim);
+                            logger.info("Skip processing of cell {} / {} - no source near cell", ij, totalCells);
                         }
                         progressVisitorNM.endStep();
                         continue;
                     }
                 }
+
                 try {
                     if (verbose) {
-                        int ij = i * gridDim + j + 1;
-                        logger.info("Processing of cell {} / {}", ij, gridDim * gridDim);
+                        logger.info("Processing of cell {} / {}", ij, totalCells);
                     }
-                    generateReceivers(connection, i, j, verticesTableName,
-                            triangleTableName, pk);
-                    if(verbose) {
-                        int ij = i * gridDim + j + 1;
-                        logger.info("End processing of cell {} / {}", ij, gridDim * gridDim);
+                    generateReceivers(connection, cellIndex, i * dimY + j, verticesTableName, triangleTableName, pk);
+                    if (verbose) {
+                        logger.info("End processing of cell {} / {}", ij, totalCells);
                     }
                     progressVisitorNM.endStep();
                 } catch (IOException | LayerDelaunayError ex) {
@@ -180,16 +181,14 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param delaunayTool
      * @throws LayerDelaunayError
      */
-    private void explodeAndAddPolygon(Geometry intersectedGeometry,
-                                      LayerDelaunay delaunayTool)
-            throws LayerDelaunayError {
+    private void explodeAndAddPolygon(Geometry intersectedGeometry, LayerDelaunay delaunayTool) throws LayerDelaunayError {
         if (intersectedGeometry instanceof GeometryCollection) {
             for (int j = 0; j < intersectedGeometry.getNumGeometries(); j++) {
                 Geometry subGeom = intersectedGeometry.getGeometryN(j);
                 explodeAndAddPolygon(subGeom, delaunayTool);
             }
-        } else if(intersectedGeometry instanceof Polygon && !intersectedGeometry.isEmpty()){
-            delaunayTool.addPolygon((Polygon)intersectedGeometry, constraintId.getAndAdd(1));
+        } else if (intersectedGeometry instanceof Polygon && !intersectedGeometry.isEmpty()) {
+            delaunayTool.addPolygon((Polygon) intersectedGeometry, constraintId.getAndAdd(1));
         }
     }
 
@@ -200,13 +199,12 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @return the merged and buffered geometry.
      */
     private Geometry merge(LinkedList<Geometry> toUnite, double bufferSize) {
-        Geometry geoArray[] = new Geometry[toUnite.size()];
+        Geometry[] geoArray = new Geometry[toUnite.size()];
         toUnite.toArray(geoArray);
-        GeometryCollection polygonCollection = geometryFactory
-                .createGeometryCollection(geoArray);
+        GeometryCollection polygonCollection = geometryFactory.createGeometryCollection(geoArray);
         BufferOp bufferOp = new BufferOp(polygonCollection,
                 new BufferParameters(BufferParameters.DEFAULT_QUADRANT_SEGMENTS, BufferParameters.CAP_SQUARE,
-                BufferParameters.JOIN_MITRE, BufferParameters.DEFAULT_MITRE_LIMIT));
+                        BufferParameters.JOIN_MITRE, BufferParameters.DEFAULT_MITRE_LIMIT));
         return bufferOp.getResultGeometry(bufferSize);
     }
 
@@ -230,64 +228,55 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         if (!(linearRing instanceof Polygon)) {
             return;
         }
-        Polygon boundingBox = (Polygon)linearRing;
+        Polygon boundingBox = (Polygon) linearRing;
         LinkedList<Geometry> toUnite = new LinkedList<>();
         Envelope fetchBox = new Envelope(boundingBoxFilter);
         fetchBox.expandBy(buildingBuffer);
         Geometry fetchGeometry = geometryFactory.toGeometry(fetchBox);
-        for(Building building : buildings) {
-            if(building.getGeometry().distance(fetchGeometry) < buildingBuffer) {
+        for (Building building : buildings) {
+            if (building.getGeometry().distance(fetchGeometry) < buildingBuffer) {
                 toUnite.add(building.getGeometry());
             }
         }
-        // Reduce small artifacts to avoid, shortest geometry to be
-        // over-triangulated
+
         LinkedList<Geometry> toUniteFinal = new LinkedList<>();
         if (!toUnite.isEmpty()) {
             Geometry bufferBuildings = merge(toUnite, buildingBuffer);
             bufferBuildings = TopologyPreservingSimplifier.simplify(bufferBuildings, geometrySimplificationDistance);
-            if(bufferBuildings.getNumPoints() > 3) {
-                // Densify buildings to follow triangle area constraint
+            if (bufferBuildings.getNumPoints() > 3) {
                 if (maximumArea > 1) {
                     double triangleSide = (2 * Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
                     bufferBuildings = Densifier.densify(bufferBuildings, triangleSide);
                 }
-                toUniteFinal.add(bufferBuildings); // Add buildingsTableName to triangulation
+                toUniteFinal.add(bufferBuildings);
             }
         }
         Geometry geom1 = geometryFactory.createPolygon();
         Geometry geom2 = geometryFactory.createPolygon();
         try {
-            // Merge roads
             if (minRecDist > 0.01) {
-                LinkedList<Geometry> toUniteRoads = new LinkedList<Geometry>(delaunaySegments);
+                LinkedList<Geometry> toUniteRoads = new LinkedList<>(delaunaySegments);
                 if (!toUniteRoads.isEmpty()) {
-                    // Build Polygons buffer from roads lines
                     Geometry bufferRoads = merge(toUniteRoads, minRecDist / 2);
-                    // Remove small artifacts due to multiple buffer crosses
                     bufferRoads = TopologyPreservingSimplifier.simplify(bufferRoads, geometrySimplificationDistance);
-                    // Densify roads to follow triangle area constraint
-                    if(maximumArea > 1) {
-                        double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+                    if (maximumArea > 1) {
+                        double triangleSide = (2 * Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
                         bufferRoads = Densifier.densify(bufferRoads, triangleSide);
                     }
-                    toUniteFinal.add(bufferRoads); // Merge roads with minRecDist m
+                    toUniteFinal.add(bufferRoads);
                 }
             }
-            Geometry union = merge(toUniteFinal, 0.); // Merge roads and buildingsTableName
-            // together
-            // Remove geometries out of the bounding box
+            Geometry union = merge(toUniteFinal, 0.);
             geom1 = union;
             geom2 = boundingBox;
             union = union.intersection(boundingBox);
             explodeAndAddPolygon(union, delaunayTool);
         } catch (TopologyException ex) {
             WKTWriter wktWriter = new WKTWriter(3);
-            logger.error(String.format("Error with input geometries\n%s\n%s",wktWriter.write(geom1),wktWriter.write(geom2)), ex);
+            logger.error(String.format("Error with input geometries\n%s\n%s", wktWriter.write(geom1), wktWriter.write(geom2)), ex);
             throw ex;
         }
     }
-
 
     /**
      * Delaunay triangulation of Sub-Domain
@@ -301,68 +290,48 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param maximumArea Maximum area of triangles
      * @throws LayerDelaunayError if an error occurs during the Delaunay triangulation process.
      */
-    public void computeDelaunay(LayerDelaunay cellMesh,
-                                Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist, Collection<Geometry> sources,
-                                double minRecDist, double maximumArea, double buildingBuffer, List<Building> buildings)
-            throws LayerDelaunayError {
+    public void computeDelaunay(LayerDelaunay cellMesh, Envelope cellEnvelope, double maxSrcDist,
+                                Collection<Geometry> sources, double minRecDist, double maximumArea,
+                                double buildingBuffer, List<Building> buildings) throws LayerDelaunayError {
+        Geometry cellEnvelopeGeometry = geometryFactory.toGeometry(cellEnvelope);
+        Envelope expandedCellEnvelope = new Envelope(cellEnvelope);
+        expandedCellEnvelope.expandBy(maxSrcDist);
 
-        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI, cellJ,
-                getCellWidth(), getCellHeight());
-        Geometry cellEnvelopeGeometry = new GeometryFactory().toGeometry(cellEnvelope);
-
-        Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
-        expandedCellEnvelop.expandBy(maxSrcDist);
-
-        // Build delaunay triangulation from buildings inside the extended
-        // bounding box
-
-        // /////////////////////////////////////////////////
-        // Add roads into delaunay tool
         LinkedList<LineString> delaunaySegments = new LinkedList<>();
         if (minRecDist > 0.1) {
             for (Geometry sourceGeometry : sources) {
                 Envelope ptEnv = sourceGeometry.getEnvelopeInternal();
-                if (ptEnv.intersects(expandedCellEnvelop)) {
+                if (ptEnv.intersects(expandedCellEnvelope)) {
                     if (sourceGeometry instanceof Point) {
-                        // Add point source in rendering
-                        cellMesh.addPolygon((Polygon)cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist)), 1);
-                    } else {
-                        if (sourceGeometry instanceof LineString) {
-                            delaunaySegments.add((LineString) (sourceGeometry));
-                        } else if (sourceGeometry instanceof MultiLineString) {
-                            int nbLineString = sourceGeometry.getNumGeometries();
-                            for (int idLineString = 0; idLineString < nbLineString; idLineString++) {
-                                delaunaySegments.add((LineString) (sourceGeometry
-                                        .getGeometryN(idLineString)));
-                            }
+                        cellMesh.addPolygon((Polygon) cellEnvelopeGeometry.intersection(sourceGeometry.buffer(minRecDist)), 1);
+                    } else if (sourceGeometry instanceof LineString) {
+                        delaunaySegments.add((LineString) sourceGeometry);
+                    } else if (sourceGeometry instanceof MultiLineString) {
+                        int nbLineString = sourceGeometry.getNumGeometries();
+                        for (int idLineString = 0; idLineString < nbLineString; idLineString++) {
+                            delaunaySegments.add((LineString) sourceGeometry.getGeometryN(idLineString));
                         }
                     }
                 }
             }
         }
 
-        feedDelaunay(buildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments,
-                minRecDist, buildingBuffer);
+        feedDelaunay(buildings, cellMesh, cellEnvelope, maxSrcDist, delaunaySegments, minRecDist, buildingBuffer);
 
-        // Process delaunay
         cellMesh.setRetrieveNeighbors(false);
-        // Add cell envelope
+        Polygon polygon;
         if (maximumArea > 1) {
-            double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
-            Polygon polygon = (Polygon)Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
-            Coordinate[] points = polygon.getExteriorRing().getCoordinates();
-            for(Coordinate point : points) {
-                cellMesh.addVertex(point);
-            }
+            double triangleSide = (2 * Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
+            polygon = (Polygon) Densifier.densify(geometryFactory.toGeometry(cellEnvelope), triangleSide);
         } else {
-            Polygon polygon = (Polygon) new GeometryFactory().toGeometry(cellEnvelope);
-            Coordinate[] points = polygon.getExteriorRing().getCoordinates();
-            for(Coordinate point : points) {
-                cellMesh.addVertex(point);
-            }
+            polygon = (Polygon) geometryFactory.toGeometry(cellEnvelope);
+        }
+        for (Coordinate point : polygon.getExteriorRing().getCoordinates()) {
+            cellMesh.addVertex(point);
         }
         cellMesh.processDelaunay();
     }
+
 
     /**
      * Retrieves the computation envelope based on data stored in the database tables.
@@ -374,10 +343,11 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     public Envelope getComputationEnvelope(Connection connection) throws SQLException {
         Envelope computationEnvelope = new Envelope();
         DBTypes dbTypes = DBUtils.getDBType(connection);
-        if(!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {
-            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
+        if (!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection,
+                    TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
         }
-        if(!buildingTableParameters.buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingTableParameters.buildingsTableName) > 0) {
+        if (!buildingTableParameters.buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingTableParameters.buildingsTableName) > 0) {
             computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection,
                     TableLocation.parse(buildingTableParameters.buildingsTableName, dbTypes)).getEnvelopeInternal());
         }
@@ -388,6 +358,13 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         return epsilon;
     }
 
+    /**
+     * @param epsilon Merge points that are closer that this epsilon value
+     */
+    public void setEpsilon(double epsilon) {
+        this.epsilon = epsilon;
+    }
+
     public double getGeometrySimplificationDistance() {
         return geometrySimplificationDistance;
     }
@@ -396,76 +373,157 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         this.geometrySimplificationDistance = geometrySimplificationDistance;
     }
 
+    /**
+     * Generate receiver points and triangle tables for the current cell.
+     */
+    public void generateReceivers(Connection connection, CellIndex cellIndex, int cellId,
+                                  String receiverTableName, String trianglesTableName, AtomicInteger receiverPK)
+            throws SQLException, LayerDelaunayError, IOException {
+
+        Envelope cellEnvelope = getCellEnv(cellIndex);
+
+        List<Geometry> sourceDelaunayGeometries = new LinkedList<>();
+        if (!sourcesTableName.isEmpty() && roadWidth > 0) {
+            fetchCellSource(connection, cellEnvelope, true, sourceDelaunayGeometries);
+        }
+
+        List<Building> buildings = new LinkedList<>();
+        List<Wall> walls = new LinkedList<>();
+        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters, cellEnvelope, buildings, walls,
+                new ProfileBuilder(), geometryFactory);
+
+        LayerTinfour cellMesh = new LayerTinfour();
+        cellMesh.setVerbose(verbose);
+        cellMesh.setEpsilon(epsilon);
+        cellMesh.setDumpFolder(exceptionDumpFolder);
+        cellMesh.setMaxArea(maximumArea > 1 ? maximumArea : 0);
+
+        try {
+            computeDelaunay(cellMesh, cellEnvelope, maximumPropagationDistance, sourceDelaunayGeometries,
+                    roadWidth, maximumArea, buildingBuffer, buildings);
+        } catch (LayerDelaunayError err) {
+            throw new SQLException(err.getLocalizedMessage(), err);
+        }
+        sourceDelaunayGeometries.clear();
+
+        List<Coordinate> vertices = new ArrayList<>(cellMesh.getVertices().size());
+        for (Coordinate vertex : cellMesh.getVertices()) {
+            Coordinate translatedVertex = new Coordinate(vertex);
+            translatedVertex.setOrdinate(2, receiverHeight);
+            vertices.add(translatedVertex);
+        }
+        List<Triangle> triangles = cellMesh.getTriangles();
+        receiversCount += vertices.size();
+
+        generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
+                triangles, cellId, exportTrianglesGeometries);
+    }
+
+    /**
+     * Backward-compatible delegation for generateReceivers.
+     */
+    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName,
+                                  String trianglesTableName, AtomicInteger receiverPK)
+            throws SQLException, LayerDelaunayError, IOException {
+        int minCol = (int) Math.floor(mainEnvelope.getMinX() / getCellWidth());
+        int minRow = (int) Math.floor(mainEnvelope.getMinY() / getCellHeight());
+        CellIndex cellIndex = new CellIndex(minCol + cellI, minRow + cellJ);
+        int cellId = cellI * getGridDimY() + cellJ;
+        generateReceivers(connection, cellIndex, cellId, receiverTableName, trianglesTableName, receiverPK);
+    }
+
+    /**
+     * Insert vertices and triangles into the database.
+     */
+    public static void generateResultTable(Connection connection, String receiverTableName, String trianglesTableName,
+                                           AtomicInteger receiverPK, List<Coordinate> vertices,
+                                           GeometryFactory geometryFactory, List<Triangle> triangles, int cellId,
+                                           boolean exportTrianglesGeometries) throws SQLException {
+        int srid = geometryFactory.getSRID();
+        if (!JDBCUtilities.tableExists(connection, receiverTableName)) {
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE " + TableLocation.parse(receiverTableName) +
+                        "(pk serial NOT NULL, the_geom geometry(POINTZ, " + srid + ") not null, PRIMARY KEY (PK))");
+            }
+        }
+        if (!JDBCUtilities.tableExists(connection, trianglesTableName)) {
+            try (Statement st = connection.createStatement()) {
+                if (exportTrianglesGeometries) {
+                    st.execute("CREATE TABLE " + TableLocation.parse(trianglesTableName) +
+                            "(pk serial NOT NULL, the_geom geometry(POLYGONZ, " + srid + ") , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
+                } else {
+                    st.execute("CREATE TABLE " + TableLocation.parse(trianglesTableName) +
+                            "(pk serial NOT NULL, PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
+                }
+            }
+        }
+
+        int receiverPkOffset = receiverPK.get();
+        // Insert vertices
+        try (PreparedStatement ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(receiverTableName) + " VALUES (?, ?);")) {
+            int batchSize = 0;
+            for (Coordinate v : vertices) {
+                ps.setInt(1, receiverPK.getAndAdd(1));
+                ps.setObject(2, geometryFactory.createPoint(v));
+                ps.addBatch();
+                batchSize++;
+                if (batchSize >= BATCH_MAX_SIZE) {
+                    ps.executeBatch();
+                    ps.clearBatch();
+                    batchSize = 0;
+                }
+            }
+            if (batchSize > 0) {
+                ps.executeBatch();
+            }
+        }
+
+        // Insert triangles
+        String insertTrianglesSql = exportTrianglesGeometries
+                ? "INSERT INTO " + TableLocation.parse(trianglesTableName) + "(the_geom, PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?, ?);"
+                : "INSERT INTO " + TableLocation.parse(trianglesTableName) + "(PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?);";
+
+        try (PreparedStatement ps = connection.prepareStatement(insertTrianglesSql)) {
+            int batchSize = 0;
+            for (Triangle t : triangles) {
+                int rowIndex = 1;
+                if (exportTrianglesGeometries) {
+                    ps.setObject(rowIndex++, geometryFactory.createPolygon(new Coordinate[]{
+                            vertices.get(t.getA()), vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
+                }
+                ps.setInt(rowIndex++, t.getA() + receiverPkOffset);
+                ps.setInt(rowIndex++, t.getC() + receiverPkOffset);
+                ps.setInt(rowIndex++, t.getB() + receiverPkOffset);
+                ps.setInt(rowIndex, cellId);
+                ps.addBatch();
+                batchSize++;
+                if (batchSize >= BATCH_MAX_SIZE) {
+                    ps.executeBatch();
+                    ps.clearBatch();
+                    batchSize = 0;
+                }
+            }
+            if (batchSize > 0) {
+                ps.executeBatch();
+            }
+        }
+    }
+
+    /**
+     * Backward-compatible delegation for generateResultTable.
+     */
     public static void generateResultTable(Connection connection, String receiverTableName, String trianglesTableName,
                                            AtomicInteger receiverPK, List<Coordinate> vertices,
                                            GeometryFactory geometryFactory, List<Triangle> triangles, int cellI,
                                            int cellJ, int gridDim, boolean exportTrianglesGeometries) throws SQLException {
-
-        int srid = geometryFactory.getSRID();
-        if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
-            Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+TableLocation.parse(receiverTableName)+"(pk serial NOT NULL, the_geom geometry(POINTZ, "+srid+") not null, PRIMARY KEY (PK))");
-        }
-        if(!JDBCUtilities.tableExists(connection, trianglesTableName)) {
-            Statement st = connection.createStatement();
-            if(exportTrianglesGeometries) {
-                st.execute("CREATE TABLE " + TableLocation.parse(trianglesTableName) + "(pk serial NOT NULL, the_geom geometry(POLYGONZ, "+srid+") , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
-            } else {
-                st.execute("CREATE TABLE " + TableLocation.parse(trianglesTableName) + "(pk serial NOT NULL, PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
-            }
-        }
-        int receiverPkOffset = receiverPK.get();
-        // Add vertices to receivers
-        PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ?);");
-        int batchSize = 0;
-        for(Coordinate v : vertices) {
-            ps.setInt(1, receiverPK.getAndAdd(1));
-            ps.setObject(2, geometryFactory.createPoint(v));
-            ps.addBatch();
-            batchSize++;
-            if (batchSize >= BATCH_MAX_SIZE) {
-                ps.executeBatch();
-                ps.clearBatch();
-                batchSize = 0;
-            }
-        }
-        if (batchSize > 0) {
-            ps.executeBatch();
-        }
-        // Add triangles
-        if(exportTrianglesGeometries) {
-            ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(trianglesTableName) + "(the_geom, PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?, ?);");
-        } else {
-            ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(trianglesTableName) + "(PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?);");
-        }
-        batchSize = 0;
-        for(Triangle t : triangles) {
-            int rowIndex = 1;
-            if(exportTrianglesGeometries) {
-                ps.setObject(rowIndex++, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
-                        vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
-            }
-            ps.setInt(rowIndex++, t.getA() + receiverPkOffset);
-            ps.setInt(rowIndex++, t.getC() + receiverPkOffset);
-            ps.setInt(rowIndex++, t.getB() + receiverPkOffset);
-            ps.setInt(rowIndex, cellI * gridDim + cellJ);
-            ps.addBatch();
-            batchSize++;
-            if (batchSize >= BATCH_MAX_SIZE) {
-                ps.executeBatch();
-                ps.clearBatch();
-                batchSize = 0;
-            }
-        }
-        if (batchSize > 0) {
-            ps.executeBatch();
-        }
+        generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
+                triangles, cellI * gridDim + cellJ, exportTrianglesGeometries);
     }
 
     public static void filterReceiversFarAwayFromSources(Connection connection, String receiverTableName, String trianglesTableName, String sourcesTableName, double minimalSourceGeometriesDistanceToComputeCell) {
         // Delete triangles far away from the sources
         Logger logger = LoggerFactory.getLogger(Thread.currentThread().getName());
-        try(PreparedStatement ps = connection.prepareStatement("""
+        try (PreparedStatement ps = connection.prepareStatement("""
                 DELETE FROM %s t
                 WHERE EXISTS (
                     SELECT 1\s
@@ -515,15 +573,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     }
 
     /**
-     * @param epsilon Merge points that are closer that this epsilon value
-     */
-    public void setEpsilon(double epsilon) {
-        this.epsilon = epsilon;
-    }
-
-
-
-    /**
      * Fetch source geometries and power
      * @param connection Active connection
      * @param fetchEnvelope Fetch envelope
@@ -538,7 +587,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
         List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
         if (geomFields.isEmpty()) {
-            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
+            throw new SQLException(String.format("The table %s does not exist or does not contain a geometry field", sourceTableIdentifier));
         }
         String sourceGeomName = geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
@@ -574,81 +623,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                 }
             }
         }
-    }
-
-    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName,
-                                  String trianglesTableName, AtomicInteger receiverPK)
-            throws SQLException, LayerDelaunayError, IOException {
-        // Compute the first pass delaunay mesh
-        // The first pass doesn't take account of additional
-        // vertices of neighbor cells at the borders
-        // then, there are discontinuities in iso surfaces at each
-        // border of cell
-        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
-                cellJ, getCellWidth(), getCellHeight());
-        // Fetch all source located in expandedCellEnvelop
-
-        List<Geometry> sourceDelaunayGeometries = new LinkedList<>();
-
-        if(!sourcesTableName.isEmpty() && roadWidth > 0) {
-            fetchCellSource(connection, cellEnvelope, true, sourceDelaunayGeometries);
-        }
-
-        List<Building> buildings = new LinkedList<>();
-        List<Wall> walls = new LinkedList<>();
-        Envelope expandedCell = new Envelope(cellEnvelope);
-        expandedCell.expandBy(buildingBuffer);
-        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters, cellEnvelope, buildings, walls,
-                new ProfileBuilder(), geometryFactory);
-
-        LayerTinfour cellMesh = new LayerTinfour();
-        cellMesh.setVerbose(verbose);
-        cellMesh.setEpsilon(epsilon);
-        cellMesh.setDumpFolder(exceptionDumpFolder);
-        cellMesh.setMaxArea(maximumArea > 1 ? maximumArea : 0);
-
-        try {
-            computeDelaunay(cellMesh, mainEnvelope, cellI,
-                    cellJ,
-                    maximumPropagationDistance, sourceDelaunayGeometries, roadWidth, maximumArea, buildingBuffer, buildings);
-        } catch (LayerDelaunayError err) {
-            throw new SQLException(err.getLocalizedMessage(), err);
-        }
-        sourceDelaunayGeometries.clear();
-        // Make a structure to keep the following information
-        // Triangle list with 3 vertices(int), and 3 neighbor
-        // triangle ID
-        // Vertices list
-
-        // The evaluation of sound level must be done where the
-        // following vertices are
-        List<Coordinate> vertices = new ArrayList<>(cellMesh.getVertices().size());
-        for(Coordinate vertex : cellMesh.getVertices()) {
-            Coordinate translatedVertex = new Coordinate(vertex);
-            double z = receiverHeight;
-            translatedVertex.setOrdinate(2, z);
-            vertices.add(translatedVertex);
-        }
-        List<Triangle> triangles = cellMesh.getTriangles();
-
-        receiversCount += vertices.size();
-
-        generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
-                triangles, cellI, cellJ, gridDim, exportTrianglesGeometries);
-    }
-
-    /**
-     * Update the map with coordinate instance, it is already inserted return the old value
-     * @param uniqueVertices Map of vertices
-     * @param vertex Vertex to add
-     * @return Vertex index
-     */
-    private static Integer updateMap(Map<Coordinate, Integer> uniqueVertices, Coordinate vertex) {
-        Integer indexA = uniqueVertices.putIfAbsent(vertex, uniqueVertices.size());
-        if(indexA == null) {
-            indexA = uniqueVertices.size() - 1;
-        }
-        return indexA;
     }
 
     public double getRoadWidth() {
@@ -699,7 +673,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
         List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
         if (geomFields.isEmpty()) {
-            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
+            throw new SQLException(String.format("The table %s does not exist or does not contain a geometry field", sourceTableIdentifier));
         }
         String sourceGeomName = TableLocation.quoteIdentifier(geomFields.get(0));
         boolean hasSource = false;

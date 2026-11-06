@@ -22,6 +22,7 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.propagation.DutchFavourableProbabilityFactory
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.*
 import org.slf4j.Logger
@@ -365,5 +366,60 @@ class TestNoiseModelling extends JdbcTestCase {
                 "${NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME} b WHERE a.IDRECEIVER = b.IDRECEIVER AND a.PERIOD = b.PERIOD")[0] as Double
 
         assertEquals(0, diffMax, 1.0)
+    }
+
+
+
+    /**
+     * Check noise level stay the same with the receivers extent reduced to one receiver
+     */
+    @Test
+    void testMinimalEnvelopeReceivers() {
+
+        def parameters = ["tableBuilding"             : "BUILDINGS",
+                          "tableSources"              : "LW_ROADS",
+                          "tableReceivers"            : "RECEIVERS",
+                          "confReflOrder"             : 0,
+                          "confDiffVertical"          : false,
+                          "confDiffHorizontal"        : true,
+                          confMaxSrcDist : 150]
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+        new Set_Height().exec(connection, [tableName: "RECEIVERS", height: 4, ])
+
+        Sql sql = new Sql(connection)
+
+        new Noise_level_from_source().exec(connection,
+                parameters)
+
+        sql.execute("ALTER TABLE ${NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME} RENAME TO " +
+                "REFERENCE_RECEIVERS;" as String)
+
+        // Now keep only one receiver
+
+        sql.execute("DELETE FROM RECEIVERS WHERE PK <> 419" as String)
+
+        new Noise_level_from_source().exec(connection, parameters)
+
+        // Check if changing line space ratio does not change the noise level much
+        def diffMax = sql.firstRow("SELECT AVG(ABS(a.LAEQ - b.LAEQ)) diffres FROM REFERENCE_RECEIVERS a," +
+                "${NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME} b WHERE a.IDRECEIVER = b.IDRECEIVER AND a.PERIOD = b.PERIOD")[0] as Double
+
+        assertEquals(0, diffMax, 0.01)
     }
 }

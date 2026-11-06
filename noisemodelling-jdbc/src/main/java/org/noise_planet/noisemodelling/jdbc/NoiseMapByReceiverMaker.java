@@ -17,7 +17,6 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
@@ -30,7 +29,6 @@ import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
-import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +38,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -90,7 +89,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * This table must contain a source identifier column named IDSOURCE, a **PERIOD** VARCHAR field,
      * and emission spectrum in dB(A).
      * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
-     * @return Source emission table name*
+     * @return Source emission table name
      */
     public String getSourcesEmissionTableName() {
         return sceneDatabaseInputSettings.getSourcesEmissionTableName();
@@ -217,15 +216,21 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @throws IOException IO exception instance
      */
     public SceneWithEmission prepareCell(Connection connection, CellIndex cellIndex,
-                                         Set<Long> skipReceivers) throws SQLException, IOException {
+                                         Set<Long> skipReceivers, int currentCellIndex, int totalCells) throws SQLException, IOException {
 
         Envelope cellEnvelope = getCellEnv(cellIndex);
 
-        if(verbose) {
-            int ij = cellIndex.getLatitudeIndex() * gridDim + cellIndex.getLongitudeIndex() + 1;
+        if (verbose) {
             WKTWriter roundWKTWriter = new WKTWriter();
             roundWKTWriter.setPrecisionModel(new PrecisionModel(1.0));
-            logger.info("Begin processing of cell {}/{} Compute domain is:\n {}", ij, gridDim * gridDim,
+            String cellProgress = (currentCellIndex > 0 && totalCells > 0)
+                    ? String.format("%d/%d ", currentCellIndex, totalCells)
+                    : "";
+
+            logger.info("Begin processing of cell {}(col={}, row={}) Compute domain is:\n {}",
+                    cellProgress,
+                    cellIndex.getLongitudeIndex(),
+                    cellIndex.getLatitudeIndex(),
                     roundWKTWriter.write(geometryFactory.toGeometry(cellEnvelope)));
         }
 
@@ -247,45 +252,50 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
-     * Fetch all receivers and compute cells that contains receivers
+     * Fetch all receivers and compute cells that contain receivers using modulo current metric projection CRS.
      * @param connection JDBC Connection
      * @return Cell index with number of receivers
      * @throws SQLException SQL exception instance
      */
     public Map<CellIndex, Integer> searchPopulatedCells(Connection connection) throws SQLException {
-        if(mainEnvelope == null) {
+        if (mainEnvelope == null || mainEnvelope.isNull()) {
             throw new IllegalStateException("Call initialize before calling searchPopulatedCells");
         }
+
+        List<String> geometryFields = GeometryTableUtilities.getGeometryColumnNames(
+                connection, TableLocation.parse(receiverTableName));
+        if (geometryFields.isEmpty()) {
+            throw new SQLException("The table " + receiverTableName + " does not contain a Geometry field");
+        }
+
+        String geometryField = geometryFields.get(0);
+        String sql = "SELECT " + geometryField + " FROM " + receiverTableName;
+
         Map<CellIndex, Integer> cellIndices = new HashMap<>();
-        List<String> geometryFields = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(receiverTableName));
-        String geometryField;
-        if(geometryFields.isEmpty()) {
-            throw new SQLException("The table "+receiverTableName+" does not contain a Geometry field, then the extent " +
-                    "cannot be computed");
-        }
-        logger.info("Collect all receivers in order to localize populated cells");
-        geometryField = geometryFields.get(0);
-        ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
-        // Construct RTree with cells envelopes
-        STRtree rtree = new STRtree();
-        for(int i = 0; i < gridDim; i++) {
-            for(int j = 0; j < gridDim; j++) {
-                Envelope refEnv = getCellEnv(mainEnvelope, i,
-                        j, getCellWidth(), getCellHeight());
-                rtree.insert(refEnv, new CellIndex(j, i));
-            }
-        }
-        // Iterate over receivers and look for intersecting cells
-        try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
+        double minX = mainEnvelope.getMinX();
+        double minY = mainEnvelope.getMinY();
+        double cWidth = getCellWidth();
+        double cHeight = getCellHeight();
+        int dimX = getGridDimX();
+        int dimY = getGridDimY();
+
+        try (Statement st = connection.createStatement();
+             ResultSet rs = st.executeQuery(sql);
+             SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
+
             while (srs.next()) {
-                Geometry pt = srs.getGeometry();
-                if(pt != null && !pt.isEmpty()) {
-                    Coordinate ptCoord = pt.getCoordinate();
-                    List queryResult = rtree.query(new Envelope(ptCoord));
-                    for(Object o : queryResult) {
-                        if(o instanceof CellIndex) {
-                            cellIndices.merge((CellIndex) o, 1, Integer::sum);
-                        }
+                Geometry geom = srs.getGeometry();
+                if (geom != null && !geom.isEmpty()) {
+                    Coordinate coord = geom.getCoordinate();
+                    int col = (int) Math.floor((coord.x - minX) / cWidth);
+                    int row = (int) Math.floor((coord.y - minY) / cHeight);
+
+                    // Clamp edge points to the last cell
+                    if (col >= dimX) col = dimX - 1;
+                    if (row >= dimY) row = dimY - 1;
+
+                    if (col >= 0 && row >= 0) {
+                        cellIndices.merge(new CellIndex(col, row), 1, Integer::sum);
                     }
                 }
             }
@@ -303,15 +313,16 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @throws SQLException Sql exception instance
      */
     public CutPlaneVisitorFactory evaluateCell(Connection connection, CellIndex cellIndex,
-                                        ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers);
+                                               ProgressVisitor progression, Set<Long> skipReceivers,
+                                               int currentCellIndex, int totalCells) throws SQLException, IOException {
+        SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers, currentCellIndex, totalCells);
 
         File sceneExportFolder = getNoiseMapDatabaseParameters().getSceneExportFolder();
-        if(sceneExportFolder != null) {
+        if (sceneExportFolder != null) {
             exportScene(cellIndex, sceneExportFolder, scene);
         }
 
-        if(verbose) {
+        if (verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
                     scene.receivers.size(), scene.sourceGeometries.size(),
                     scene.profileBuilder.getBuildingCount()));
@@ -321,11 +332,11 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
 
         PathFinder computeRays = new PathFinder(scene, progression);
 
-        if(profilerThread != null) {
+        if (profilerThread != null) {
             computeRays.setProfilerThread(profilerThread);
         }
 
-        if(threadCount > 0) {
+        if (threadCount > 0) {
             computeRays.setThreadCount(threadCount);
         }
 
@@ -342,22 +353,21 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @throws IOException io issues
      */
     public void exportScene(CellIndex cellIndex, File sceneExportFolder, Scene scene) throws IOException {
-        // Export the scene as KML
-        if(sceneExportFolder.exists()) {
+        if (sceneExportFolder.exists()) {
             File kmlFile = new File(sceneExportFolder,
-                    String.format(Locale.ROOT, exportKmlName, cellIndex.getLatitudeIndex(),
-                            cellIndex.getLongitudeIndex()));
+                    String.format(Locale.ROOT, exportKmlName, cellIndex.getLongitudeIndex(),
+                            cellIndex.getLatitudeIndex()));
             logger.info("Exporting scene to KML file {}", kmlFile.getAbsolutePath());
-            try(FileOutputStream fileOutputStream = new FileOutputStream(kmlFile)) {
+            try (FileOutputStream fileOutputStream = new FileOutputStream(kmlFile)) {
                 try {
                     KMLDocument.exportProfileBuilderData(fileOutputStream, scene,
                             geometryFactory.getSRID());
                 } catch (IOException ex) {
-                    logger.warn("Error while creating the KML file {}, skipping it", sceneExportFolder.getAbsolutePath(), ex);
+                    logger.warn("Error while creating the KML file {}, skipping it", kmlFile.getAbsolutePath(), ex);
                 }
             }
         } else {
-            logger.warn("Scene export folder {} does not exists, skip writing files", sceneExportFolder.getAbsolutePath());
+            logger.warn("Scene export folder {} does not exist, skip writing files", sceneExportFolder.getAbsolutePath());
         }
     }
 
@@ -391,16 +401,17 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
 
         // Fetch cell identifiers with receivers
         Map<CellIndex, Integer> cells = searchPopulatedCells(connection);
-        ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+        int totalCells = cells.size();
+        ProgressVisitor progressVisitor = progressLogger.subProcess(totalCells);
 
         try {
             computeRaysOutFactory.start(progressVisitor);
+            int currentCell = 0;
             for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
-                // Run ray propagation
+                currentCell++;
                 try {
-                    evaluateCell(connection, cellIndex, progressVisitor, receivers);
-                    if(progressLogger.isCanceled()) {
-                        // Computation has been canceled, exit the loop
+                    evaluateCell(connection, cellIndex, progressVisitor, receivers, currentCell, totalCells);
+                    if (progressLogger.isCanceled()) {
                         break;
                     }
                 } catch (IOException ex) {
