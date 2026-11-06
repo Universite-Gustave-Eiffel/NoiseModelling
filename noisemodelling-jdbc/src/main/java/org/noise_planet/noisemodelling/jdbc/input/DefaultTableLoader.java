@@ -305,6 +305,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.setBodyBarrier(noiseMapByReceiverMaker.isBodyBarrier());
         scene.maxRefDist = maximumReflectionDistance;
         scene.maxSrcDist = maximumPropagationDistance;
+        scene.mirrorReceiverCapacity = noiseMapByReceiverMaker.getMirrorReceiverCapacity();
         scene.setCloseReceiverReflectionWallDistance(noiseMapByReceiverMaker.getCloseReceiverReflectionWallDistance());
         scene.lineSourceSpacingRatio = noiseMapByReceiverMaker.getSceneInputSettings().getLineSourceSpacingRatio();
         scene.setComputeVerticalDiffraction(noiseMapByReceiverMaker.isComputeVerticalDiffraction());

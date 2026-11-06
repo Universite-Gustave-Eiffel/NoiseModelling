@@ -255,7 +255,7 @@ public class PathFinder {
             List<Wall> buildWalls = getReflectionWalls(receiverPointInfo.getCoordinates(), sourceList,
                     receiverPropagationEnvelope);
             receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiverPointInfo.position, data.reflexionOrder,
-                    data.maxSrcDist, data.maxRefDist);
+                    data.maxSrcDist, data.maxRefDist, data.mirrorReceiverCapacity);
             if(profilerThread != null) {
                 reflectionPreprocessTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startReflectionPreprocess,
                         TimeUnit.NANOSECONDS);

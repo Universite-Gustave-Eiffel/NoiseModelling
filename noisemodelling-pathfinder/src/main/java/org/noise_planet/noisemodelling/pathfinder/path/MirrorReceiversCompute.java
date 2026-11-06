@@ -36,7 +36,7 @@ public class MirrorReceiversCompute {
     private static final double DEFAULT_CIRCLE_POINT_ANGLE = Math.PI / 24;
     STRtree mirrorReceiverTree;
     public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = Integer.MAX_VALUE;
-    private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
+    final private int mirrorReceiverCapacity;
     private final Coordinate receiverCoordinate;
     private final List<Wall> buildWalls;
     private final double maximumDistanceFromWall;
@@ -90,20 +90,44 @@ public class MirrorReceiversCompute {
             return factory.createPolygon();
         }
     }
+
+
     /**
-     * Generate all image receivers from the provided list of walls
-     * @param buildWalls
-     * @param receiverCoordinates
-     * @param reflectionOrder
+     * Constructs a mirror receiver computation instance using default mirror receiver capacity.
+     *
+     * @param buildWalls list of walls that may act as reflective surfaces
+     * @param receiverCoordinates the coordinates of the receiver for which image receivers are generated
+     * @param reflectionOrder the maximum number of reflections to consider when generating image receivers
+     * @param maximumPropagationDistance Maximum distance between image receiver and source point
+     * @param maximumDistanceFromWall the maximum perpendicular distance from a wall for an image receiver to be considered valid
      */
     public MirrorReceiversCompute(List<Wall> buildWalls, Coordinate receiverCoordinates,
                                   int reflectionOrder, double maximumPropagationDistance,
                                   double maximumDistanceFromWall) {
+        this(buildWalls, receiverCoordinates, reflectionOrder, maximumPropagationDistance, maximumDistanceFromWall,
+                DEFAULT_MIRROR_RECEIVER_CAPACITY);
+    }
+
+
+    /**
+     * Constructs a mirror receiver computation instance with a specified mirror receiver capacity.
+     *
+     * @param buildWalls list of walls that may act as reflective surfaces
+     * @param receiverCoordinates the coordinates of the receiver for which image receivers are generated
+     * @param reflectionOrder the maximum number of reflections to consider when generating image receivers
+     * @param maximumPropagationDistance Maximum distance between image receiver and source point
+     * @param maximumDistanceFromWall the maximum perpendicular distance from a wall for an image receiver to be considered valid
+     * @param mirrorReceiverCapacity the maximum number of image receivers to generate per receiver
+     */
+    public MirrorReceiversCompute(List<Wall> buildWalls, Coordinate receiverCoordinates,
+                                  int reflectionOrder, double maximumPropagationDistance,
+                                  double maximumDistanceFromWall, int mirrorReceiverCapacity) {
         GeometryFactory gf = new GeometryFactory();
         this.receiverCoordinate = receiverCoordinates;
         this.buildWalls = buildWalls;
         this.maximumDistanceFromWall = maximumDistanceFromWall;
         this.maximumPropagationDistance = maximumPropagationDistance;
+        this.mirrorReceiverCapacity = mirrorReceiverCapacity;
         mirrorReceiverTree = new STRtree();
         // Create the geometry of each wall once, and index them, instead of creating a new
         // geometry for every parent image x wall combination in the loop below

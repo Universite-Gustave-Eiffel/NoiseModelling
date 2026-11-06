@@ -525,4 +525,6 @@ public class NoiseMapByReceiverMakerTest {
             assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(1).getPointList().get(1).type);
         }
     }
+
+
 }

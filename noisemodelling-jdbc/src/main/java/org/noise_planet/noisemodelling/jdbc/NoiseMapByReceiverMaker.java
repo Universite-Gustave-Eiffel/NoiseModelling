@@ -26,6 +26,7 @@ import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
@@ -61,6 +62,8 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     public String exportKmlName = "cell_%d_%d.kml";
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
+    /** the maximum number of image receivers to generate per receiver */
+    private int mirrorReceiverCapacity = MirrorReceiversCompute.DEFAULT_MIRROR_RECEIVER_CAPACITY;
 
     /**
      * Constructor for NoiseMapByReceiverMaker object.
@@ -414,6 +417,21 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         } finally {
             computeRaysOutFactory.stop();
         }
+    }
+
+    /**
+     * @return Maximum number of image receivers to generate
+     */
+    public int getMirrorReceiverCapacity() {
+        return mirrorReceiverCapacity;
+    }
+
+    /**
+     * Sets the maximum number of image receivers to generate per receiver.
+     * @param mirrorReceiverCapacity the maximum number of image receivers to generate per receiver
+     */
+    public void setMirrorReceiverCapacity(int mirrorReceiverCapacity) {
+        this.mirrorReceiverCapacity = mirrorReceiverCapacity;
     }
 
     /**

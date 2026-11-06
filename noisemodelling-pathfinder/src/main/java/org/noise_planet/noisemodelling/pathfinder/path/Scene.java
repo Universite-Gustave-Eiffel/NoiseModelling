@@ -97,7 +97,8 @@ public class Scene {
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
     /** Maximum receiver-to-wall horizontal distance for the optional reflection cut profile filter */
     private double closeReceiverReflectionWallDistance = 0;
-
+    /** the maximum number of image receivers to generate per receiver */
+    public int mirrorReceiverCapacity = MirrorReceiversCompute.DEFAULT_MIRROR_RECEIVER_CAPACITY;
 
     /**
      * Add the geometry of the source
