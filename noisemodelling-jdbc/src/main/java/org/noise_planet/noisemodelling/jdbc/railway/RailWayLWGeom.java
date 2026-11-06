@@ -47,7 +47,6 @@ public class RailWayLWGeom {
 
     /**
      * Constructs a new RailWayLWGeom object by copying the attributes of another RailWayLWGeom object.
-     *  * <p>
      * @param other
      */
     public RailWayLWGeom(RailWayLWGeom other) {

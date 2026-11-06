@@ -282,9 +282,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * Delaunay triangulation of Sub-Domain
      *
      * @param cellMesh Final mesh target
-     * @param mainEnvelope Global envelope
-     * @param cellI I cell index
-     * @param cellJ J cell index
+     * @param cellEnvelope Global envelope
      * @param maxSrcDist Maximum propagation distance
      * @param minRecDist Minimal distance receiver-source
      * @param maximumArea Maximum area of triangles
