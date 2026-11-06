@@ -423,9 +423,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName,
                                   String trianglesTableName, AtomicInteger receiverPK)
             throws SQLException, LayerDelaunayError, IOException {
-        int minCol = (int) Math.floor(mainEnvelope.getMinX() / getCellWidth());
-        int minRow = (int) Math.floor(mainEnvelope.getMinY() / getCellHeight());
-        CellIndex cellIndex = new CellIndex(minCol + cellI, minRow + cellJ);
+        CellIndex cellIndex = new CellIndex(cellI, cellJ);
         int cellId = cellI * getGridDimY() + cellJ;
         generateReceivers(connection, cellIndex, cellId, receiverTableName, trianglesTableName, receiverPK);
     }
