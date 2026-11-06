@@ -494,6 +494,7 @@ public class CnossosPathBuilder {
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
+                points.sort((p1, p2) -> Double.compare(p1.coordinate.x, p2.coordinate.x));
             }
             return cnossosPath;
         }
