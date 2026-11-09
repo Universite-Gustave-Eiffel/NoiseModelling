@@ -45,10 +45,14 @@ public class GenerateReferenceDeviation {
     private static final String CHECKED = "☑";
     private static final String UNCHECKED = "□";
     private static final String REPORT_HEADER =
-            "Conformity to ISO 17534-1:2015\n" +
-                    "==============================\n" +
+            "Conformity to ISO/TR 17534-4:2020\n" +
+                    "=================================\n" +
                     ".. DO NOT UPDATE THIS FILE!!\n" +
-                    ".. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
+                    ".. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateReferenceDeviation.java\n" +
+                    "\n" +
+                    "The test cases (TC01 to TC28) and reference values used below come from ISO/TR 17534-4:2020,\n" +
+                    "which provides recommendations for a quality-assured implementation of Directive (EU) 2015/996\n" +
+                    "(CNOSSOS-EU) in software according to ISO 17534-1:2015.\n" +
                     "\n" +
                     "Clarifications on the ISO Standard\n" +
                     "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" +
