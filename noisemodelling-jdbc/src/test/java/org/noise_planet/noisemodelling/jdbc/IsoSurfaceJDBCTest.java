@@ -291,7 +291,7 @@ public class IsoSurfaceJDBCTest {
         }
         // Less populated square cells than the total grid cells
         assertNotEquals(maximumCells, rowCount);
-
+        assertNotEquals(0, rowCount);
     }
 
 

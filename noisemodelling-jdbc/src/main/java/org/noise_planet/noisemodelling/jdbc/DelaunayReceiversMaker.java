@@ -16,6 +16,7 @@ import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
@@ -161,6 +162,11 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                     throw new SQLException(ex);
                 }
             }
+        }
+        // Process non-skipped cell
+        if (verbose && skippedCount > 0) {
+            // Flush any pending skipped cells
+            logSkippedRange(firstSkippedCellIdentifier, lastSkippedCellIdentifier, totalCells);
         }
         try(Statement s = connection.createStatement()) {
             // Create index on pk_1, pk_2, pk_3
@@ -694,10 +700,25 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             boolean[] validVertex = new boolean[vertices.size()];
             Arrays.fill(validVertex, true);
 
+            // Index buildings to avoid O(V * B) complexity
+            STRtree buildingIndex = new STRtree();
+            for (Building building : buildings) {
+                Geometry bGeom = building.getGeometry();
+                if (bGeom != null && !bGeom.isEmpty()) {
+                    Envelope env = bGeom.getEnvelopeInternal();
+                    env.expandBy(buildingBuffer);
+                    buildingIndex.insert(env, building);
+                }
+            }
+            buildingIndex.build();
+
             for (int idx = 0; idx < vertices.size(); idx++) {
                 Coordinate v = vertices.get(idx);
                 Point pt = geometryFactory.createPoint(v);
-                for (Building building : buildings) {
+                
+                // Query index for nearby buildings only
+                List<Building> candidates = buildingIndex.query(new Envelope(v));
+                for (Building building : candidates) {
                     Geometry bGeom = building.getGeometry();
                     if (bGeom != null && !bGeom.isEmpty()) {
                         if (bGeom.intersects(pt) || bGeom.distance(pt) < buildingBuffer - 1e-5) {

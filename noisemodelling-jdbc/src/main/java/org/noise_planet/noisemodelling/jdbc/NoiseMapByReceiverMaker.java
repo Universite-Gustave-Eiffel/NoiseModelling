@@ -291,6 +291,10 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     private CellIndex getCellIndexFromCoordinate(Coordinate ptCoord) {
+        if (!subDivideCell) {
+            return new CellIndex(0, 0);
+        }
+
         // Calculate cell indices using the cell width and height directly
         // Following the same approach as GridMapMaker's grid computation
         
