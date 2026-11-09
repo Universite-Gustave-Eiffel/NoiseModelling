@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -222,10 +223,9 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         Envelope cellEnvelope = getCellEnv(cellIndex);
 
         if(verbose) {
-            int ij = cellIndex.getLatitudeIndex() * gridDim + cellIndex.getLongitudeIndex() + 1;
             WKTWriter roundWKTWriter = new WKTWriter();
             roundWKTWriter.setPrecisionModel(new PrecisionModel(1.0));
-            logger.info("Begin processing of cell {}/{} Compute domain is:\n {}", ij, gridDim * gridDim,
+            logger.info("Begin processing of cell {} Compute domain is:\n {}", getCellIdentifier(cellIndex.getLongitudeIndex(), cellIndex.getLatitudeIndex()),
                     roundWKTWriter.write(geometryFactory.toGeometry(cellEnvelope)));
         }
 
@@ -245,7 +245,6 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         envelopeInternal.expandBy(maximumPropagationDistance);
         return envelopeInternal;
     }
-
     /**
      * Fetch all receivers and compute cells that contains receivers
      * @param connection JDBC Connection
@@ -253,44 +252,56 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @throws SQLException SQL exception instance
      */
     public Map<CellIndex, Integer> searchPopulatedCells(Connection connection) throws SQLException {
-        if(mainEnvelope == null) {
+        if (mainEnvelope == null || mainEnvelope.isNull()) {
             throw new IllegalStateException("Call initialize before calling searchPopulatedCells");
         }
-        Map<CellIndex, Integer> cellIndices = new HashMap<>();
+
         List<String> geometryFields = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(receiverTableName));
-        String geometryField;
-        if(geometryFields.isEmpty()) {
-            throw new SQLException("The table "+receiverTableName+" does not contain a Geometry field, then the extent " +
-                    "cannot be computed");
+        if (geometryFields.isEmpty()) {
+            throw new SQLException("The table " + receiverTableName + " does not contain a Geometry field, then the extent cannot be computed");
         }
+
         logger.info("Collect all receivers in order to localize populated cells");
-        geometryField = geometryFields.get(0);
-        ResultSet rs = connection.createStatement().executeQuery("SELECT " + geometryField + " FROM " + receiverTableName);
-        // Construct RTree with cells envelopes
-        STRtree rtree = new STRtree();
-        for(int i = 0; i < gridDim; i++) {
-            for(int j = 0; j < gridDim; j++) {
-                Envelope refEnv = getCellEnv(mainEnvelope, i,
-                        j, getCellWidth(), getCellHeight());
-                rtree.insert(refEnv, new CellIndex(j, i));
-            }
-        }
-        // Iterate over receivers and look for intersecting cells
-        try (SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
-            while (srs.next()) {
-                Geometry pt = srs.getGeometry();
-                if(pt != null && !pt.isEmpty()) {
-                    Coordinate ptCoord = pt.getCoordinate();
-                    List queryResult = rtree.query(new Envelope(ptCoord));
-                    for(Object o : queryResult) {
-                        if(o instanceof CellIndex) {
-                            cellIndices.merge((CellIndex) o, 1, Integer::sum);
+        String geometryField = geometryFields.get(0);
+
+        Map<CellIndex, Integer> cellIndices = new HashMap<>();
+
+        String query = "SELECT " + geometryField + " FROM " + receiverTableName;
+        try (Statement stmt = connection.createStatement()) {
+            stmt.setFetchSize(1000);
+
+            try (ResultSet rs = stmt.executeQuery(query);
+                 SpatialResultSet srs = rs.unwrap(SpatialResultSet.class)) {
+
+                while (srs.next()) {
+                    Geometry pt = srs.getGeometry();
+                    if (pt != null && !pt.isEmpty()) {
+                        Coordinate ptCoord = pt.getCoordinate();
+                        if (ptCoord != null) {
+                            CellIndex cellIndex = getCellIndexFromCoordinate(ptCoord);
+                            assert cellIndex != null;
+                            cellIndices.merge(cellIndex, 1, Integer::sum);
                         }
                     }
                 }
             }
         }
+
         return cellIndices;
+    }
+
+    private CellIndex getCellIndexFromCoordinate(Coordinate ptCoord) {
+        // Calculate cell indices using the cell width and height directly
+        // Following the same approach as GridMapMaker's grid computation
+        
+        double cellWidth = getCellWidth();
+        double cellHeight = getCellHeight();
+        
+        // Compute cell indices using the standard grid division
+        int i = (int) Math.floor(ptCoord.x / cellWidth);
+        int j = (int) Math.floor(ptCoord.y / cellHeight);
+
+        return new CellIndex(i, j);
     }
 
     /**
@@ -345,8 +356,8 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         // Export the scene as KML
         if(sceneExportFolder.exists()) {
             File kmlFile = new File(sceneExportFolder,
-                    String.format(Locale.ROOT, exportKmlName, cellIndex.getLatitudeIndex(),
-                            cellIndex.getLongitudeIndex()));
+                    String.format(Locale.ROOT, exportKmlName, cellIndex.getLongitudeIndex(),
+                            cellIndex.getLatitudeIndex()));
             logger.info("Exporting scene to KML file {}", kmlFile.getAbsolutePath());
             try(FileOutputStream fileOutputStream = new FileOutputStream(kmlFile)) {
                 try {

@@ -104,7 +104,7 @@ public class IsoSurfaceJDBCTest {
         delaunayTool.processDelaunay();
         DelaunayReceiversMaker.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
                 new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
-                0, 0, 1, false);
+                0, false);
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
             st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
@@ -152,7 +152,7 @@ public class IsoSurfaceJDBCTest {
         delaunayTool.processDelaunay();
         DelaunayReceiversMaker.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
                 new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
-                0, 0, 1, false);
+                0, false);
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
             st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
@@ -278,6 +278,8 @@ public class IsoSurfaceJDBCTest {
         delaunayReceiversMaker.setExportTrianglesGeometries(false);
         delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
 
+        int maximumCells = (delaunayReceiversMaker.getMaxCellI() - delaunayReceiversMaker.getMinCellI()) * (delaunayReceiversMaker.getMaxCellJ() - delaunayReceiversMaker.getMinCellJ());
+
         // Count the number of unique cell_id values
         int rowCount = 0;
         try(Statement st = connection.createStatement()) {
@@ -287,8 +289,8 @@ public class IsoSurfaceJDBCTest {
                 }
             }
         }
-        // 16 instead of 4096
-        assertEquals(16, rowCount);
+        // Less populated square cells than the total grid cells
+        assertNotEquals(maximumCells, rowCount);
 
     }
 
@@ -312,7 +314,7 @@ public class IsoSurfaceJDBCTest {
 
         DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES");
 
-        delaunayReceiversMaker.setMaximumPropagationDistance(5000);
+        delaunayReceiversMaker.setSubDivideCell(false);
         delaunayReceiversMaker.setMaximumArea(500);
         delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
 

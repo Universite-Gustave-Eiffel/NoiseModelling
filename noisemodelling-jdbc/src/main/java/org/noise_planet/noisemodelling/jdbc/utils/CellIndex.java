@@ -12,7 +12,9 @@ package org.noise_planet.noisemodelling.jdbc.utils;
 
 import java.util.Objects;
 
-
+/**
+ * Computation Cell data class
+ */
 public class CellIndex implements Comparable<CellIndex> {
     int longitudeIndex;
     int latitudeIndex;
@@ -32,6 +34,14 @@ public class CellIndex implements Comparable<CellIndex> {
     }
 
     public int getLatitudeIndex() {
+        return latitudeIndex;
+    }
+
+    public int getCellI() {
+        return longitudeIndex;
+    }
+
+    public int getCellJ() {
         return latitudeIndex;
     }
 
