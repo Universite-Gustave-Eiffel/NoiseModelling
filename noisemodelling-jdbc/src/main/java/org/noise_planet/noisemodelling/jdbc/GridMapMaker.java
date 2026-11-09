@@ -58,7 +58,6 @@ public abstract class GridMapMaker {
     protected GeometryFactory geometryFactory;
 
     protected boolean subDivideCell = true;
-    protected int gridDim = 0;
     protected Envelope mainEnvelope = new Envelope();
 
     public GridMapMaker(String buildingsTableName, String sourcesTableName) {
@@ -99,28 +98,21 @@ public abstract class GridMapMaker {
         if (!subDivideCell) {
             return new Envelope(mainEnvelope);
         }
-        return getCellEnv(mainEnvelope, cellIndex.getLongitudeIndex(),
+        return getCellEnv(cellIndex.getLongitudeIndex(),
                 cellIndex.getLatitudeIndex(), getCellWidth(), getCellHeight());
     }
 
     /**
      * Compute the envelope corresponding to parameters
      *
-     * @param mainEnvelope Global envelope
      * @param cellI        X / longitude cell index
      * @param cellJ        Y / latitude cell index
      * @param cellWidth    Cell width in meters
      * @param cellHeight   Cell height in meters
      * @return Envelope of the cell
      */
-    public static Envelope getCellEnv(Envelope mainEnvelope, int cellI, int cellJ, double cellWidth,
+    public static Envelope getCellEnv(int cellI, int cellJ, double cellWidth,
                                       double cellHeight) {
-        if (mainEnvelope != null && !mainEnvelope.isNull() &&
-                Math.abs(cellWidth - mainEnvelope.getWidth()) < 1e-5 &&
-                Math.abs(cellHeight - mainEnvelope.getHeight()) < 1e-5 &&
-                cellI == 0 && cellJ == 0) {
-            return new Envelope(mainEnvelope);
-        }
         return new Envelope(cellI * cellWidth,
                 (cellI + 1) * cellWidth,
                 cellJ * cellHeight,
@@ -237,8 +229,12 @@ public abstract class GridMapMaker {
         return Math.max(getMaxCellI() - getMinCellI() + 1, getMaxCellJ() - getMinCellJ() + 1);
     }
 
+    /**
+     * Use setSubDivideCell instead
+     * @param gridDim 1 to disable domain cell splitting
+     */
+    @Deprecated
     public void setGridDim(int gridDim) {
-        this.gridDim = gridDim;
         if (gridDim == 1) {
             this.subDivideCell = false;
         } else if (gridDim > 1) {

@@ -343,6 +343,9 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             throws LayerDelaunayError {
 
         Envelope cellEnvelope = getCellEnv(new CellIndex(cellI, cellJ));
+        if (mainEnvelope != null && !mainEnvelope.isNull()) {
+            cellEnvelope.intersection(mainEnvelope);
+        }
         Geometry cellEnvelopeGeometry = new GeometryFactory().toGeometry(cellEnvelope);
 
         Envelope expandedCellEnvelop = new Envelope(cellEnvelope);

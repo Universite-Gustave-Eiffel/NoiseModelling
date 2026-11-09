@@ -211,7 +211,7 @@ public class IsoSurfaceJDBCTest {
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
             delaunayReceiversMaker.setMaximumArea(0);
-            delaunayReceiversMaker.setGridDim(1);
+            delaunayReceiversMaker.setSubDivideCell(false);
             delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
@@ -222,7 +222,7 @@ public class IsoSurfaceJDBCTest {
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
-            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSubDivideCell(false);
 
             noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
 

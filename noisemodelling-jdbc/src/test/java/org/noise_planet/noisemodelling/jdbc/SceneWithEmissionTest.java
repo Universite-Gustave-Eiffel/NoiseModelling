@@ -85,7 +85,7 @@ public class SceneWithEmissionTest {
         noiseMap.setHeightField("HEIGHT");
 
 
-        noiseMap.setGridDim(1);
+        noiseMap.setSubDivideCell(false);
 
         noiseMap.run(connection, new EmptyProgressVisitor());
 
@@ -238,7 +238,7 @@ public class SceneWithEmissionTest {
                     "SOURCES_GEOM", "SOURCES_EMISSION");
 
             NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES_GEOM", "RECEIVERS");
-            noiseMap.setGridDim(1);
+            noiseMap.setSubDivideCell(false);
             noiseMap.setThreadCount(1);
             noiseMap.setHeightField("HEIGHT");
             noiseMap.setSourcesEmissionTableName("SOURCES_EMISSION");
@@ -851,7 +851,7 @@ public class SceneWithEmissionTest {
             // Insert dummy data
             connection.createStatement().execute(Utils.getRunScriptRes("testGeometryWithLWFields.sql"));
             NoiseMapByReceiverMaker maker = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES", "RECEIVERS");
-            maker.setGridDim(1);
+            maker.setSubDivideCell(false);
             maker.initialize(connection);
             assertEquals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW, maker.getSceneInputSettings().getInputMode(),
                     "Scene input structure should be correctly identified as having LW in geometry table");
@@ -889,7 +889,7 @@ public class SceneWithEmissionTest {
                 }
 
                 NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES_GEOM", "RECEIVERS");
-                noiseMap.setGridDim(1);
+                noiseMap.setSubDivideCell(false);
                 noiseMap.setThreadCount(1);
                 noiseMap.setHeightField("HEIGHT");
                 noiseMap.setSourcesEmissionTableName("SOURCES_EMISSION");
