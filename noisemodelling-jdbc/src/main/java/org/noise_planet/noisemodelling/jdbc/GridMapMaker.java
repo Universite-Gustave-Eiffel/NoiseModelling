@@ -230,19 +230,6 @@ public abstract class GridMapMaker {
     }
 
     /**
-     * Use setSubDivideCell instead
-     * @param gridDim 1 to disable domain cell splitting
-     */
-    @Deprecated
-    public void setGridDim(int gridDim) {
-        if (gridDim == 1) {
-            this.subDivideCell = false;
-        } else if (gridDim > 1) {
-            this.subDivideCell = true;
-        }
-    }
-
-    /**
      * This table must contain a POLYGON column, where Z values are wall bottom position relative to sea level.
      * It may also contain a height field (0-N] average building height from the ground.
      * @return Table name that contains buildings

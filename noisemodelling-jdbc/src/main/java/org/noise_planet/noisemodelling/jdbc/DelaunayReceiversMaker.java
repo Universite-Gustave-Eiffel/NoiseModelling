@@ -350,14 +350,17 @@ public class DelaunayReceiversMaker extends GridMapMaker {
 
         Envelope cellEnvelope = getCellEnv(new CellIndex(cellI, cellJ));
         if (mainEnvelope != null && !mainEnvelope.isNull()) {
-            cellEnvelope.intersection(mainEnvelope);
+            cellEnvelope = cellEnvelope.intersection(mainEnvelope);
+            if(cellEnvelope.isNull()) {
+                return;
+            }
         }
         Geometry cellEnvelopeGeometry = new GeometryFactory().toGeometry(cellEnvelope);
 
         Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
         expandedCellEnvelop.expandBy(maxSrcDist);
 
-        // Build delaunay triangulation from buildings inside the extended
+        // Build Delaunay triangulation from buildings inside the extended
         // bounding box
 
         // /////////////////////////////////////////////////
@@ -505,15 +508,15 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         try(PreparedStatement ps = connection.prepareStatement(query)) {
             int batchSize = 0;
             for (Triangle t : triangles) {
-                int rowIndex = 1;
+                int columnIndex = 1;
                 if (exportTrianglesGeometries) {
-                    ps.setObject(rowIndex++, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
+                    ps.setObject(columnIndex++, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
                             vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
                 }
-                ps.setInt(rowIndex++, t.getA() + receiverPkOffset);
-                ps.setInt(rowIndex++, t.getC() + receiverPkOffset);
-                ps.setInt(rowIndex++, t.getB() + receiverPkOffset);
-                ps.setInt(rowIndex, cellIndex);
+                ps.setInt(columnIndex++, t.getA() + receiverPkOffset);
+                ps.setInt(columnIndex++, t.getC() + receiverPkOffset);
+                ps.setInt(columnIndex++, t.getB() + receiverPkOffset);
+                ps.setInt(columnIndex, cellIndex);
                 ps.addBatch();
                 batchSize++;
                 if (batchSize >= BATCH_MAX_SIZE) {
@@ -695,61 +698,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             vertices.add(translatedVertex);
         }
         List<Triangle> triangles = cellMesh.getTriangles();
-
-        if (!buildings.isEmpty()) {
-            boolean[] validVertex = new boolean[vertices.size()];
-            Arrays.fill(validVertex, true);
-
-            // Index buildings to avoid O(V * B) complexity
-            STRtree buildingIndex = new STRtree();
-            for (Building building : buildings) {
-                Geometry bGeom = building.getGeometry();
-                if (bGeom != null && !bGeom.isEmpty()) {
-                    Envelope env = bGeom.getEnvelopeInternal();
-                    env.expandBy(buildingBuffer);
-                    buildingIndex.insert(env, building);
-                }
-            }
-            buildingIndex.build();
-
-            for (int idx = 0; idx < vertices.size(); idx++) {
-                Coordinate v = vertices.get(idx);
-                Point pt = geometryFactory.createPoint(v);
-                
-                // Query index for nearby buildings only
-                List<Building> candidates = buildingIndex.query(new Envelope(v));
-                for (Building building : candidates) {
-                    Geometry bGeom = building.getGeometry();
-                    if (bGeom != null && !bGeom.isEmpty()) {
-                        if (bGeom.intersects(pt) || bGeom.distance(pt) < buildingBuffer - 1e-5) {
-                            validVertex[idx] = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            int[] remap = new int[vertices.size()];
-            List<Coordinate> filteredVertices = new ArrayList<>();
-            for (int idx = 0; idx < vertices.size(); idx++) {
-                if (validVertex[idx]) {
-                    remap[idx] = filteredVertices.size();
-                    filteredVertices.add(vertices.get(idx));
-                } else {
-                    remap[idx] = -1;
-                }
-            }
-
-            List<Triangle> filteredTriangles = new ArrayList<>();
-            for (Triangle t : triangles) {
-                if (validVertex[t.getA()] && validVertex[t.getB()] && validVertex[t.getC()]) {
-                    filteredTriangles.add(new Triangle(remap[t.getA()], remap[t.getB()], remap[t.getC()]));
-                }
-            }
-
-            vertices = filteredVertices;
-            triangles = filteredTriangles;
-        }
 
         receiversCount += vertices.size();
 
