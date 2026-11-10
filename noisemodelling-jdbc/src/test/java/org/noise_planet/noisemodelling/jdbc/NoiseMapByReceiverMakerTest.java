@@ -180,7 +180,7 @@ public class NoiseMapByReceiverMakerTest {
 
         NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES", "RECEIVERS");
         noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
-        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.setSubDivideCell(false);
         noiseMapByReceiverMaker.initialize(connection);
 
         SceneWithEmission scene = noiseMapByReceiverMaker.getTableLoader().create(connection,
@@ -202,7 +202,7 @@ public class NoiseMapByReceiverMakerTest {
 
         NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES", "RECEIVERS");
         noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
-        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.setSubDivideCell(false);
         noiseMapByReceiverMaker.initialize(connection);
 
         SceneWithEmission scene = noiseMapByReceiverMaker.getTableLoader().create(connection,
@@ -226,7 +226,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
             noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSubDivideCell(false);
             noiseMapByReceiverMaker.initialize(connection);
 
             NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
@@ -254,7 +254,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
             noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSubDivideCell(false);
             noiseMapByReceiverMaker.initialize(connection);
 
             NoiseMapByReceiverMaker.TableLoader tableLoader = noiseMapByReceiverMaker.getPropagationProcessDataFactory();
@@ -597,7 +597,7 @@ public class NoiseMapByReceiverMakerTest {
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
             delaunayReceiversMaker.setMaximumArea(0);
-            delaunayReceiversMaker.setGridDim(1);
+            delaunayReceiversMaker.setSubDivideCell(false);
             delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
@@ -609,7 +609,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
-            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSubDivideCell(false);
             noiseMapByReceiverMaker.setSourcesEmissionTableName("SOURCES_EMISSION");
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
 
@@ -643,7 +643,7 @@ public class NoiseMapByReceiverMakerTest {
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES_GEOM");
             delaunayReceiversMaker.setMaximumArea(0);
-            delaunayReceiversMaker.setGridDim(1);
+            delaunayReceiversMaker.setSubDivideCell(false);
             delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
@@ -655,7 +655,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
-            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSubDivideCell(false);
             noiseMapByReceiverMaker.setSourcesEmissionTableName("SOURCES_EMISSION");
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
 
@@ -1055,7 +1055,7 @@ public class NoiseMapByReceiverMakerTest {
 
         noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
         noiseMapByReceiverMaker.setMaximumPropagationDistance(150);
-        noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.setSubDivideCell(false);
         noiseMapByReceiverMaker.setThreadCount(1);
 
         // Use train directivity functions instead of discrete directivity

@@ -29,6 +29,8 @@ public abstract class GridMapMaker {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
+    protected static final double MIN_CELL_DIMENSION = 300.0;
+
     protected DefaultTableLoader.BuildingTableParameters buildingTableParameters = new DefaultTableLoader.BuildingTableParameters();
     protected final String sourcesTableName;
     protected String soilTableName = "";
@@ -55,11 +57,7 @@ public abstract class GridMapMaker {
     protected boolean computeVerticalDiffraction = true;
     protected GeometryFactory geometryFactory;
 
-    // Initialised attributes
-    /**
-     *  Side computation cell count (same on X and Y)
-     */
-    protected int gridDim = 0;
+    protected boolean subDivideCell = true;
     protected Envelope mainEnvelope = new Envelope();
 
     public GridMapMaker(String buildingsTableName, String sourcesTableName) {
@@ -83,31 +81,62 @@ public abstract class GridMapMaker {
         this.verbose = verbose;
     }
 
+    public boolean isSubDivideCell() {
+        return subDivideCell;
+    }
+
+    public void setSubDivideCell(boolean subDivideCell) {
+        this.subDivideCell = subDivideCell;
+    }
+
     /**
      * Compute the envelope corresponding to parameters
      * @param cellIndex Cell location
      * @return Envelope of the cell
      */
     public Envelope getCellEnv(CellIndex cellIndex) {
-        return  getCellEnv(mainEnvelope, cellIndex.getLatitudeIndex(),
-                cellIndex.getLongitudeIndex(), getCellWidth(), getCellHeight());
+        if (!subDivideCell) {
+            return new Envelope(mainEnvelope);
+        }
+        return getCellEnv(cellIndex.getLongitudeIndex(),
+                cellIndex.getLatitudeIndex(), getCellWidth(), getCellHeight());
     }
+
     /**
-     * Compute the envelope corresping to parameters
+     * Compute the envelope corresponding to parameters
      *
-     * @param mainEnvelope Global envelope
-     * @param cellI        I cell index
-     * @param cellJ        J cell index
-     * @param cellWidth    Cell width meter
-     * @param cellHeight   Cell height meter
+     * @param cellI        X / longitude cell index
+     * @param cellJ        Y / latitude cell index
+     * @param cellWidth    Cell width in meters
+     * @param cellHeight   Cell height in meters
      * @return Envelope of the cell
      */
-    public static Envelope getCellEnv(Envelope mainEnvelope, int cellI, int cellJ, double cellWidth,
+    public static Envelope getCellEnv(int cellI, int cellJ, double cellWidth,
                                       double cellHeight) {
-        return new Envelope(mainEnvelope.getMinX() + cellI * cellWidth,
-                mainEnvelope.getMinX() + cellI * cellWidth + cellWidth,
-                mainEnvelope.getMinY() + cellHeight * cellJ,
-                mainEnvelope.getMinY() + cellHeight * cellJ + cellHeight);
+        return new Envelope(cellI * cellWidth,
+                (cellI + 1) * cellWidth,
+                cellJ * cellHeight,
+                (cellJ + 1) * cellHeight);
+    }
+
+    public int getMinCellI() {
+        if (!subDivideCell) return 0;
+        return (int) Math.floor(mainEnvelope.getMinX() / getCellWidth());
+    }
+
+    public int getMaxCellI() {
+        if (!subDivideCell) return 0;
+        return (int) Math.floor((mainEnvelope.getMaxX() - 1e-9) / getCellWidth());
+    }
+
+    public int getMinCellJ() {
+        if (!subDivideCell) return 0;
+        return (int) Math.floor(mainEnvelope.getMinY() / getCellHeight());
+    }
+
+    public int getMaxCellJ() {
+        if (!subDivideCell) return 0;
+        return (int) Math.floor((mainEnvelope.getMaxY() - 1e-9) / getCellHeight());
     }
 
     public double getGroundSurfaceSplitSideLength() {
@@ -118,13 +147,28 @@ public abstract class GridMapMaker {
         this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
     }
 
-
     public double getCellWidth() {
-        return mainEnvelope.getWidth() / gridDim;
+        if (!subDivideCell) {
+            return mainEnvelope.getWidth();
+        }
+        return Math.max(MIN_CELL_DIMENSION, maximumPropagationDistance / MINIMAL_BUFFER_RATIO);
     }
 
     public double getCellHeight() {
-        return mainEnvelope.getHeight() / gridDim;
+        if (!subDivideCell) {
+            return mainEnvelope.getHeight();
+        }
+        return Math.max(MIN_CELL_DIMENSION, maximumPropagationDistance / MINIMAL_BUFFER_RATIO);
+    }
+
+    /**
+     * Compute the cell number from 0 to maximum cell number
+     * @param cellI Cell column (longitude)
+     * @param cellJ Cell row (latitude)
+     * @return cell number from 0 to maximum cell number
+     */
+    public int getCellIdentifier(int cellI, int cellJ) {
+        return (cellI - getMinCellI()) * (getMaxCellJ() - getMinCellJ() + 1) + (cellJ - getMinCellJ());
     }
 
     abstract public Envelope getComputationEnvelope(Connection connection) throws SQLException;
@@ -176,14 +220,13 @@ public abstract class GridMapMaker {
     }
 
     /**
-     * @return Side computation cell count (same on X and Y)
+     * @return Maximum cell count along X or Y
      */
     public int getGridDim() {
-        return gridDim;
-    }
-
-    public void setGridDim(int gridDim) {
-        this.gridDim = gridDim;
+        if (!subDivideCell) {
+            return 1;
+        }
+        return Math.max(getMaxCellI() - getMinCellI() + 1, getMaxCellJ() - getMinCellJ() + 1);
     }
 
     /**
@@ -406,21 +449,11 @@ public abstract class GridMapMaker {
     }
 
     /**
-     * Set computation area. Update the property subdivisionLevel and gridDim.
+     * Set computation area.
      * @param mainEnvelope Computation area
      */
     public void setMainEnvelope(Envelope mainEnvelope) {
         this.mainEnvelope = mainEnvelope;
-        if(gridDim == 0) {
-            // Split domain into 4^subdiv cells
-            // Compute subdivision level using envelope and maximum propagation distance
-            double greatestSideLength = mainEnvelope.maxExtent();
-            int subdivisionLevel = 0;
-            while(maximumPropagationDistance / (greatestSideLength / Math.pow(2, subdivisionLevel)) < MINIMAL_BUFFER_RATIO) {
-                subdivisionLevel++;
-            }
-            gridDim = (int) Math.pow(2, subdivisionLevel);
-        }
     }
 
     /**
