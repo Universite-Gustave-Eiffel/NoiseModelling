@@ -178,6 +178,10 @@ public class IsoSurfaceJDBCTest {
     }
 
 
+    /**
+     * Check that receivers pk is incremented in delaunay processing
+     * @throws Exception
+     */
     @Test
     public void testNoiseMapBuilding() throws Exception {
         try(Statement st = connection.createStatement()) {
@@ -190,8 +194,8 @@ public class IsoSurfaceJDBCTest {
             noisemap.initialize(connection);
 
             AtomicInteger pk = new AtomicInteger(0);
-            for(int i=0; i < noisemap.getGridDim(); i++) {
-                for(int j=0; j < noisemap.getGridDim(); j++) {
+            for (int i = noisemap.getMinCellI(); i <= noisemap.getMaxCellI(); i++) {
+                for (int j = noisemap.getMinCellJ(); j <= noisemap.getMaxCellJ(); j++) {
                     noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
                 }
             }
