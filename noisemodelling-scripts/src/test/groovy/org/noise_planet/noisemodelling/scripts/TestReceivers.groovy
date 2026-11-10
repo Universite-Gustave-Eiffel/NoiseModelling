@@ -30,6 +30,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.Receivers.*
+import static org.junit.jupiter.api.Assertions.*
 
 class TestReceivers extends JdbcTestCase {
 
