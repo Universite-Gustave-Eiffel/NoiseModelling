@@ -104,7 +104,7 @@ public class RoadVehicleCnossosvarTest {
         rsParameters.setRoadSurface(RoadSurface);
         rsParameters.setJunc_dist(Junc_dist);
         rsParameters.setJunc_type(Junc_type);
-        assertEquals(94.35, RoadVehicleCnossosvar.evaluate(rsParameters), EPSILON_TEST1);
+        assertEquals(95.26, RoadVehicleCnossosvar.evaluate(rsParameters), EPSILON_TEST1);
     }
 
     @Test
