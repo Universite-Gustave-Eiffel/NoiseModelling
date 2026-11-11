@@ -136,17 +136,17 @@ public class CurvedProfileTest {
         }
         flatProfile.add(receiver);
 
-        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
-                flatProfile.toArray(new Coordinate[0]), false);
-        Coordinate[] inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+        List<Coordinate> curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+                flatProfile, false);
+        List<Coordinate> inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
                 curvedCoordinates, true);
-        for (int i = 0; i < inverseCoordinates.length; i++) {
+        for (int i = 0; i < inverseCoordinates.size(); i++) {
             double expectedX = flatProfile.get(i).x;
             double expectedY = flatProfile.get(i).y;
             double expectedZ = flatProfile.get(i).z;
-            double computedX = inverseCoordinates[i].x;
-            double computedY = inverseCoordinates[i].y;
-            double computedZ = inverseCoordinates[i].z;
+            double computedX = inverseCoordinates.get(i).x;
+            double computedY = inverseCoordinates.get(i).y;
+            double computedZ = inverseCoordinates.get(i).z;
             assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
             assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
             assertEquals(expectedZ, computedZ, 0.01, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
@@ -184,33 +184,30 @@ public class CurvedProfileTest {
                 new Coordinate(1000,0, -2.377),
                 new Coordinate(1040,0, 0)
         );
-        Coordinate[] flatGroundcoordinates = new Coordinate[coordinates.size()];
-        for (int i = 0; i < flatGroundcoordinates.length; i++) {
-            flatGroundcoordinates[i] = new Coordinate(coordinates.get(i).x, 0, 0);
-        }
-        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, flatGroundcoordinates, false);
-        for (int i = 0; i < curvedCoordinates.length; i++) {
+        List<Coordinate> flatGroundcoordinates = coordinates.stream()
+                .map(c -> new Coordinate(c.x, 0, 0))
+                .toList();
+        List<Coordinate> curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, flatGroundcoordinates);
+        for (int i = 0; i < curvedCoordinates.size(); i++) {
             double expectedZ = coordinates.get(i).z;
-            double computedZ = curvedCoordinates[i].z;
+            double computedZ = curvedCoordinates.get(i).z;
             assertEquals(expectedZ, computedZ, 0.3, String.format(Locale.ROOT, "Error at point %d : expected %.3f, computed %.3f", i, expectedZ, computedZ));
         }
 
         // Compute inverse transformation
-        Coordinate[] inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, curvedCoordinates, true);
-        for (int i = 0; i < inverseCoordinates.length; i++) {
-            double expectedX = flatGroundcoordinates[i].x;
-            double expectedY = flatGroundcoordinates[i].y;
-            double expectedZ = flatGroundcoordinates[i].z;
-            double computedX = inverseCoordinates[i].x;
-            double computedY = inverseCoordinates[i].y;
-            double computedZ = inverseCoordinates[i].z;
+        List<Coordinate> inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, curvedCoordinates, true);
+        for (int i = 0; i < inverseCoordinates.size(); i++) {
+            double expectedX = flatGroundcoordinates.get(i).x;
+            double expectedY = flatGroundcoordinates.get(i).y;
+            double expectedZ = flatGroundcoordinates.get(i).z;
+            double computedX = inverseCoordinates.get(i).x;
+            double computedY = inverseCoordinates.get(i).y;
+            double computedZ = inverseCoordinates.get(i).z;
             assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
             assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
             assertEquals(expectedZ, computedZ, 0.01, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
         }
     }
-
-
 
 
     /**
@@ -223,7 +220,7 @@ public class CurvedProfileTest {
         ProfileBuilder builder = new ProfileBuilder();
 
         // Add building
-        ProfileBuilder profileBuilder = builder.addBuilding(new Coordinate[]{
+        builder.addBuilding(new Coordinate[]{
                         new Coordinate(113, 10, 6),
                         new Coordinate(127, 16, 6),
                         new Coordinate(102, 70, 6),
@@ -294,6 +291,98 @@ public class CurvedProfileTest {
         assertEquals(4, curvedSideHull.size());
         assertEquals(0, new Coordinate(773, 12, 0).distance(curvedSideHull.get(1)), 0.1);
         assertEquals(0, new Coordinate(986, 79, 0).distance(curvedSideHull.get(2)), 0.1);
+
+    }
+
+    /**
+     * Compare the Cnossos and Harmonoise ground curvature implementations (uses CNOSSOS Test case 28 for favourable
+     * propagation conditions between source and receiver).
+     * Note: both implementations yield similar results. The Cnossos implementation can be used on portion of profiles
+     * while the Harmonoise one shall be used only on whole profiles (from zGround_source to zGround_receiver).
+     */
+    @Test
+    public void testCompareGroundCurvature() {
+
+        //Create obstruction test object
+        ProfileBuilder builder = new ProfileBuilder();
+
+        // Add building
+        builder.addBuilding(new Coordinate[]{
+                        new Coordinate(113, 10, 6),
+                        new Coordinate(127, 16, 6),
+                        new Coordinate(102, 70, 6),
+                        new Coordinate(88, 64, 6)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(176, 19, 10),
+                        new Coordinate(164, 88, 10),
+                        new Coordinate(184, 91, 10),
+                        new Coordinate(196, 22, 10)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(250, 70, 14),
+                        new Coordinate(250, 180, 14),
+                        new Coordinate(270, 180, 14),
+                        new Coordinate(270, 70, 14)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(332, 32, 10),
+                        new Coordinate(348, 126, 10),
+                        new Coordinate(361, 108, 10),
+                        new Coordinate(349, 44, 10)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(400, 5, 9),
+                        new Coordinate(400, 85, 9),
+                        new Coordinate(415, 85, 9),
+                        new Coordinate(415, 5, 9)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(444, 47, 12),
+                        new Coordinate(436, 136, 12),
+                        new Coordinate(516, 143, 12),
+                        new Coordinate(521, 89, 12),
+                        new Coordinate(506, 87, 12),
+                        new Coordinate(502, 127, 12),
+                        new Coordinate(452, 123, 12),
+                        new Coordinate(459, 48, 12)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(773, 12, 14),
+                        new Coordinate(728, 90, 14),
+                        new Coordinate(741, 98, 14),
+                        new Coordinate(786, 20, 14)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(972, 82, 8),
+                        new Coordinate(979, 121, 8),
+                        new Coordinate(993, 118, 8),
+                        new Coordinate(986, 79, 8)}, -1)
+                .addGroundEffect(-11, 1011, -300, 300, 0.5);
+
+        // Generate profile
+        builder.finishFeeding();
+        Coordinate source = new Coordinate(0, 50, 4);
+        Coordinate receiver = new Coordinate(1000, 100, 1);
+        CutProfile profile = builder.getProfile(source, receiver);
+
+        // Get curved profile through Cnossos implementation
+        List<Coordinate> curvedProfile = profile.computePts2D(true);
+
+        // Get curved profile through Harmonoise implementation
+        // Calculate projected distance between source and receiver on the vertical plane
+        double d = source.distance(receiver);
+        // Calculate radius of curvature (Γ) for favourable condition
+        double radius = Math.max(1000, 8 * d);
+        // Get the whole 2D profile including ground points
+        List<Integer> hullIndices = profile.getConvexHullIndices(profile.computePts2D());
+        List<Coordinate> straightProfileUnfolded = profile.computePts2DGround(hullIndices);
+        List<Coordinate> curvedProfileHarmonoise = CurvedProfileGenerator.applyHarmonoiseTransformation(source,
+                receiver, straightProfileUnfolded, radius);
+
+        // Compare
+        for (int i = 1; i < curvedProfile.size() - 1; i++)
+            assertEquals(curvedProfile.get(i).y, curvedProfileHarmonoise.get(2*i -1 + i%2).y, 0.03);
 
     }
 }
