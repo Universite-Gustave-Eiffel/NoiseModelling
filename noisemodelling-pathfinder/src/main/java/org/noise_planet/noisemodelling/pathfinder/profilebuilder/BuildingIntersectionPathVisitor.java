@@ -33,6 +33,7 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
     PreparedLineString seg;
     Set<Integer> pushedBuildingsWideAnglePoints = new HashSet<>();
     Set<Integer> pushedWallsPoints = new HashSet<>();
+    Set<Long> pushedScreens = new HashSet<>();
     ProfileBuilder profileBuilder;
     Plane cutPlane;
     List<Coordinate> input;
@@ -142,6 +143,13 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
                 pushedBuildingsWideAnglePoints.add(processedWall.originId);
             }
         } else if(processedWall.type == ProfileBuilder.IntersectionType.WALL) {
+            if (processedWall.primaryKey >= 0 && pushedScreens.add(processedWall.primaryKey)) {
+                // Push every wall of this screen, so the side path goes around the screen ends, not around one of its panels
+                for (int screenWallId : profileBuilder.getScreenWalls(processedWall.primaryKey)) {
+                    addItem(screenWallId);
+                }
+                return;
+            }
             // A wall not related to a building (polygon)
             if (pushedWallsPoints.contains(processedWall.originId)) {
                 // This wall has already been pushed to input hull
