@@ -791,14 +791,18 @@ public class ProfileBuilder {
             Building building = buildings.get(j);
             buildingsWideAnglePoints.put(j + 1,
                     getWideAnglePointsOnPolygon(building.poly.getExteriorRing(), 0, 2 * Math.PI));
-            Coordinate[] coords = building.poly.getCoordinates();
-            for (int i = 0; i < coords.length - 1; i++) {
-                LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedObstructionIndex(processedObstructions.size());
-                w.setPrimaryKey(building.getPrimaryKey());
-                w.copyAlphas(building);
-                processedObstructions.add(w);
-                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
+            // Ring by ring, so that no wall joins two rings
+            for (int ring = 0; ring <= building.poly.getNumInteriorRing(); ring++) {
+                Coordinate[] coords = (ring == 0 ? building.poly.getExteriorRing()
+                        : building.poly.getInteriorRingN(ring - 1)).getCoordinates();
+                for (int i = 0; i < coords.length - 1; i++) {
+                    LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
+                    Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedObstructionIndex(processedObstructions.size());
+                    w.setPrimaryKey(building.getPrimaryKey());
+                    w.copyAlphas(building);
+                    processedObstructions.add(w);
+                    rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
+                }
             }
         }
         for (int j = 0; j < walls.size(); j++) {
