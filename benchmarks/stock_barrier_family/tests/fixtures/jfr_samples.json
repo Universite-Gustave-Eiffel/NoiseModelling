@@ -1,0 +1,38 @@
+{
+  "recording": {
+    "events": [
+      {
+        "type": "jdk.ExecutionSample",
+        "values": {
+          "stackTrace": {
+            "truncated": true,
+            "frames": [
+              {"method": {"type": {"name": "java.lang.Thread"}, "name": "run"}},
+              {"method": {"type": {"name": "org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor"}, "name": "accept"}}
+            ]
+          }
+        }
+      },
+      {
+        "type": "jdk.NativeMethodSample",
+        "values": {"stackTrace": {"truncated": true, "frames": []}}
+      },
+      {
+        "type": "jdk.ExecutionSample",
+        "values": {"stackTrace": null}
+      },
+      {
+        "type": "jdk.ExecutionSample",
+        "values": {
+          "stackTrace": {
+            "truncated": false,
+            "frames": [
+              {"method": {"type": {"name": "org/locationtech/jts/geom/Geometry"}, "name": "distance"}},
+              {"method": {"type": {"name": "org/noise_planet/noisemodelling/propagation/Attenuation"}, "name": "compute"}}
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
