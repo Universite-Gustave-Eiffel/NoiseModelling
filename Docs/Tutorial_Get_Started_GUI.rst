@@ -19,6 +19,11 @@ In this tutorial, we have 5 layers, zoomed in on the city center of `Lorient`_ (
 
 In the ``resources/`` sub-folder of the NoiseModelling installation, you will find all the data that will be used in the tutorials.
 
+.. note::
+    If you installed NoiseModelling with the macOS ``.dmg``, use absolute paths, e.g.
+    ``/Applications/NoiseModelling.app/Contents/app/resources/buildings.shp``.
+    Alternatively, download the ``NoiseModelling_x.x.x.zip`` release and use its ``resources/`` folder.
+
 You will import these layers into your database using the ``Import File`` Blocks.
 
 - Drag the ``Import File`` Block into the Builder window

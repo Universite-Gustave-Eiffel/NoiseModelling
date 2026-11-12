@@ -115,7 +115,6 @@
                                             <directory>${project.build.directory}</directory>
                                             <includes>
                                                 <include>${project.build.finalName}.jar</include>
-                                                <include>help/**</include>
                                             </includes>
                                         </resource>
                                     </resources>
@@ -136,6 +135,22 @@
                                             <includes>
                                                 <include>**</include>
                                             </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-tutorial-resources</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/resources</outputDirectory>
+                                    <resources>
+                                        <!-- The tutorial data (same content as resources/ in the zip archive) -->
+                                        <resource>
+                                            <directory>${project.basedir}/src/test/resources/org/noise_planet/noisemodelling/scripts</directory>
                                         </resource>
                                     </resources>
                                 </configuration>
@@ -385,7 +400,8 @@
                 <executions>
                     <execution>
                         <id>generate-functions-docs</id>
-                        <phase>package</phase>
+                        <!-- prepare-package: documentation must exist before the macOS/zip packaging copies it -->
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -402,7 +418,8 @@
                     </execution>
                     <execution>
                         <id>generate-cnossos-report</id>
-                        <phase>package</phase>
+                        <!-- prepare-package: documentation must exist before the macOS/zip packaging copies it -->
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -418,7 +435,8 @@
                     </execution>
                     <execution>
                         <id>generate-documentation</id>
-                        <phase>package</phase>
+                        <!-- prepare-package: documentation must exist before the macOS/zip packaging copies it -->
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
