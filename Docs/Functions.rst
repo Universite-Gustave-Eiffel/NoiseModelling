@@ -136,7 +136,6 @@ NoiseModelling
     functions/NoiseModelling/PlotDirectivity
     functions/NoiseModelling/Railway_Emission_from_Traffic
     functions/NoiseModelling/Road_Emission_from_Traffic
-    functions/NoiseModelling/Smash_source_lines
     functions/NoiseModelling/Terts_to_octave
 
 Receivers

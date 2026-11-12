@@ -52,7 +52,7 @@ inputs = [
                 description : '<b>Name of the Rail traffic table.</b>  </br><br>' +
                         'This function recognize the following columns (* mandatory): </br><ul>' +
                         '<li><b>IDTRAFFIC</b>* : A traffic identifier (PRIMARY KEY) (INTEGER) </li>' +
-                        '<li><b>IDSECTION</b>* : A section identifier, refering to RAIL_SECTIONS table (INTEGER)</li>' +
+                        '<li><b>IDSECTION</b>* : A section identifier, referring to RAIL_SECTIONS table (INTEGER)</li>' +
                         '<li><b>TRAINTYPE</b>* : Type of vehicle, listed in the <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/4.X/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/Rail_Train_SNCF_2021.json" target="_blank">Rail_Train_SNCF_2021</a> file (mainly for french SNCF) (STRING)</li>' +
                         '<li><b>TRAINSPD</b>* : Maximum Train speed (in km/h) (DOUBLE)</li>' +
                         '<li><b>TDAY</b>, <b>TEVENING</b> and <b>TNIGHT</b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INTEGER)</li></ul>',
