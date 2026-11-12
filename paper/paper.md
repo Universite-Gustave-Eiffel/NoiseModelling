@@ -75,7 +75,7 @@ Other open-source tools can produce noise maps:
   - OpeNoise Map [@arpa_piemonte_openoise_2024] is a QGis plugin that only implements a simplified version of the CNOSSOS-EU method.
   - The Sound Mapping Tools [@keyel_sound_2017], are open-source Python-based GIS tools designed to model anthropogenic noise propagation in natural ecosystems using SPreAD-GIS [@reed_gis_2012], NMSIMGIS and ISO 9613-2 within an ArcGIS environment.
 
-Commercial software packages such as CadnaA (DataKustik), SoundPLAN (SoundPLAN GmbH), Predictor-LimA (Softnoise) and IMMI (Wölfel) are also used for noise mapping. However, their source code is closed, which prevents users from inspecting, modifying or extending the underlying models, and their licensing costs can be a barrier for research and education.
+Commercial software packages such as CadnaA (DataKustik), SoundPLAN (SoundPLAN GmbH), Predictor-LimA (Softnoise) or IMMI (Wölfel) are also used for noise mapping. However, their source code is closed, which prevents users from inspecting, modifying or extending the underlying models, and their licensing costs can be a barrier for research and education.
 
 NoiseModelling, whose GIS-based approach was first described in @bocher_noisemodelling_2019, therefore occupies a distinctive position by providing CNOSSOS-EU road and railway modelling, sound propagation, three-dimensional spatial processing and an extensible open-source GIS framework in a single modelling environment.
 
