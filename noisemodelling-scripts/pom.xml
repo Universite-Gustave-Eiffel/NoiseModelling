@@ -570,7 +570,7 @@
                     <instructions>
                         <Public-Package>org.noise_planet.noisemodelling.*</Public-Package>
                         <Bundle-Vendor>UMRAE team (Eiffel University), DECIDE team (Lab-STICC) </Bundle-Vendor>
-                        <Import-Package>org.slf4j;version="[1.6.0,2)",!org.h2.*,*</Import-Package>
+                        <Import-Package>org.slf4j;version="[2.0.13,3)",*</Import-Package>
                         <Implementation-Build>${buildNumber}</Implementation-Build>
                     </instructions>
                 </configuration>
