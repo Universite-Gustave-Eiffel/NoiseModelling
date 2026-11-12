@@ -8,6 +8,8 @@
  */
 package org.noise_planet.noisemodelling.jdbc.input;
 
+import org.h2.util.geometry.EWKTUtils;
+import org.h2.util.geometry.JTSUtils;
 import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
@@ -677,8 +679,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 }
                 // add corners of extended envelope to guaranty topography continuity in the simulation
                 cornerZCollector.expandEnvelope(fetchEnvelope.getDiameter());
-                for (Coordinate coordinate : cornerZCollector.getCorners()) {
-                    profileBuilder.addTopographicPoint(coordinate);
+                Coordinate[] corners = cornerZCollector.getCorners();
+                if (corners != null) {
+                    for (Coordinate coordinate : corners) {
+                        profileBuilder.addTopographicPoint(coordinate);
+                    }
+                } else {
+                    LOGGER.warn("No DEM points where found in the computation area {}", EWKTUtils.ewkb2ewkt(JTSUtils.geometry2ewkb(geometryFactory.toGeometry(fetchEnvelope))));
                 }
             }
         }

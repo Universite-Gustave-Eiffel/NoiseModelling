@@ -114,6 +114,29 @@ public class TableLoaderTest {
         assertEquals(2, source.getNumPoints());
     }
 
+    /**
+     * fetchCellDem must not fail when the DEM table contains no points, as
+     * CornerZCollector.getCorners() returns null in that case.
+     */
+    @Test
+    public void testFetchCellDemWithEmptyDemTable() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE DEM_EMPTY(PK INT AUTO_INCREMENT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+        }
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("", "", "");
+        noiseMap.geometryFactory = new GeometryFactory();
+        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMap.setDemTable("DEM_EMPTY");
+        DefaultTableLoader loader = (DefaultTableLoader) noiseMap.getTableLoader();
+        loader.initialize(connection, noiseMap);
+
+        ProfileBuilder profile = new ProfileBuilder();
+        Envelope envelope = new Envelope(0, 100, 0, 100);
+        assertDoesNotThrow(() -> loader.fetchCellDem(connection, envelope, profile));
+        profile.finishFeeding();
+        assertEquals(0, profile.getTriangles().size());
+    }
+
     @Test
     public void testClippedLineSources() throws Exception {
         try (Statement st = connection.createStatement()) {
