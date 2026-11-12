@@ -69,13 +69,15 @@ To date, NoiseModelling has been applied in a variety of research projects and p
 - Dynamic noise map from noise sensors with data assimilation methods [@lesieur_data_2021].
 - Noise quantification of specific sources such as sirens [@siliezar_case_2023] or drones [@legriffon_drone_2024]
 
-Other open-source tools can produce noise maps :
+Other open-source tools can produce noise maps:
 
-  - Code_TYMPAN [@edf_code_tympan] is desktop application that focuses on industrial noise and is based on the ISO 9613-2 method.
+  - Code_TYMPAN [@edf_code_tympan] is a desktop application that focuses on industrial noise and is based on the ISO 9613-2 method.
   - OpeNoise Map [@arpa_piemonte_openoise_2024] is a QGis plugin that only implements a simplified version of the CNOSSOS-EU method.
   - The Sound Mapping Tools [@keyel_sound_2017], are open-source Python-based GIS tools designed to model anthropogenic noise propagation in natural ecosystems using SPreAD-GIS [@reed_gis_2012], NMSIMGIS and ISO 9613-2 within an ArcGIS environment.
 
-NoiseModelling therefore occupies a distinctive position by providing CNOSSOS-EU road and railway modelling, sound propagation, three-dimensional spatial processing and an extensible open-source GIS framework in a single modelling environment.
+Commercial software packages such as CadnaA (DataKustik), SoundPLAN (SoundPLAN GmbH), Predictor-LimA (Softnoise) or IMMI (Wölfel) are also used for noise mapping. However, their source code is closed, which prevents users from inspecting, modifying or extending the underlying models, and their licensing costs can be a barrier for research and education.
+
+NoiseModelling, whose GIS-based approach was first described in @bocher_noisemodelling_2019, therefore occupies a distinctive position by providing CNOSSOS-EU road and railway modelling, sound propagation, three-dimensional spatial processing and an extensible open-source GIS framework in a single modelling environment.
 
 # Architecture
 
@@ -88,8 +90,8 @@ NoiseModelling is made of five main Java libraries:
 - noisemodelling-emission: to determine the sound power level of rail or road traffic,
 - noisemodelling-pathfinder: to find the cut profiles between the source-receiver pairs,
 - noisemodelling-propagation: to compute the noise attenuation between the source-receiver pairs,
+- noisemodelling-jdbc: to connect the above libraries to a spatial database,
 - noisemodelling-scripts: utility and processing scripts, exposed through a built-in web server with a graphical interface and through a command-line runner.
-- noisemodelling-jdbc: to connect above librairies to a spatial database,
 
 Note that the noisemodelling-jdbc library (JDBC = Java DataBase Connectivity) is central since it allows all libraries to communicate with each other as soon as the data are stored in a database. A connection wrapper facilitates the connection to the H2 database with its spatial extension H2GIS, as well as to a PostgreSQL database server with the PostGIS spatial extension.
 
@@ -140,7 +142,7 @@ Using the vertical cut profiles given by the path-finding algorithm, other propa
 A major portion of the code base is covered by unit tests.
 
 Tests that cover the model implementations are comparisons between the code and reference documents and independent CNOSSOS-EU implementations. For propagation and path-finding this is the ISO/TR 17534-4:2020 [@iso_isotr_2020]. For emission the comparison is done with independent implementations.
-All discrepancies between our implementation and the references can be identified in the source code through dedicated tests. The most important tests are presented in a dedicated document.
+All discrepancies between our implementation and the references can be identified in the source code through dedicated tests. The comparison with the ISO/TR 17534-4:2020 test cases is presented in the "Conformity to ISO/TR 17534-4:2020" page of the documentation (https://noisemodelling.readthedocs.io/en/latest/Cnossos_Report.html).
 
 # Community
 
