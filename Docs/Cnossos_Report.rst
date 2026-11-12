@@ -1,11 +1,7 @@
-Conformity to ISO/TR 17534-4:2020
-=================================
+Conformity to ISO 17534-1:2015
+==============================
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/autodoc/GenerateReferenceDeviation.java
-
-The test cases (TC01 to TC28) and reference values used below come from ISO/TR 17534-4:2020,
-which provides recommendations for a quality-assured implementation of Directive (EU) 2015/996
-(CNOSSOS-EU) in software according to ISO 17534-1:2015.
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java
 
 Clarifications on the ISO Standard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

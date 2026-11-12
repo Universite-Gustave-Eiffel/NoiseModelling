@@ -89,7 +89,7 @@ Download the latest release of NoiseModelling on `Github`_.
     The chosen directory can be anywhere, but make sure you have write access. If you are using a company computer, the Program Files folder is probably not a good idea.
 
 .. warning::
-    For **Linux** and **Mac** users, please make sure your Java environment is correctly set up (see previous step). **Windows** users using the ``.exe`` file and **macOS** users using the ``.dmg`` file are not concerned, since the Java Runtime Environment is **already embedded**.
+    For **Linux** and **Mac** users, please make sure your Java environment is correctly set up (see previous step). **Windows** users who are using the ``.exe`` file are not concerned, since the Java Runtime Environment is **already embedded**.
 
 .. _Github : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
 
@@ -109,9 +109,7 @@ To launch NoiseModelling with the GUI, start it from a command prompt (terminal)
 Please execute:
 
 * Windows: ``NoiseModelling.exe`` or ``NoiseModelling_xxx\start_windows.bat``
-* macOS (``.dmg``): open the ``.dmg``, drag ``NoiseModelling`` into ``Applications``, then launch it from ``Applications`` or Launchpad. No terminal window is opened; your browser opens http://localhost:8000. To stop NoiseModelling, quit the application from its Dock icon.
-  As the application is not signed, macOS may block the first launch: right-click the app and choose ``Open``.
-* Linux or Mac (``.zip``): ``NoiseModelling_xxx/start_linux_macos.sh`` *(make sure the file is allowed to be executed before running it)*
+* Linux or Mac: ``NoiseModelling_xxx/start_linux_macos.sh`` *(make sure the file is allowed to be executed before running it)*
 
 .. tip::
     NoiseModelling will stay open as long as the command window is open. If you close it, NoiseModelling will automatically stop and the GUI will no longer be available.
