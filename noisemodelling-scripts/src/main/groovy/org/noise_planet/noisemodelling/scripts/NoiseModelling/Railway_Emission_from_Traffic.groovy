@@ -36,9 +36,14 @@ import java.sql.SQLException
 
 
 title = 'Compute railway emission lines sources from vehicle, traffic table AND section table.'
-description = '&#10145;&#65039; Compute railway emission lines sources from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
+description = '&#10145;&#65039; Compute railway emission lines sources from Day, Evening and Night traffic flow rate and' +
+        ' speed estimates (specific format, see input details). </br>' +
               '<hr>' +
-              '&#x2705; The output table is called <b>LW_RAILWAY</b> and will contain the columns pk_section, the_geom, dir_id, gs, hrail, cref'
+              '&#x2705; The output table is called <b>LW_RAILWAY</b> and will contain the columns pk_section, ' +
+        'the_geom, dir_id, gs, hrail, cref and all emissions in all third octave bands for all day, evening and night' +
+        ' periods. **NOTE**: The CNOSSOS method requires the railway noise source sound power to be calculated in third' +
+        ' octave bands. All other calculations, including railway noise propagation, are in octave bands. To convert' +
+        ' third octave bands to octaves, you can use the `Terts_to_octave` script.'
 
 inputs = [
         tableRailwayTraffic: [

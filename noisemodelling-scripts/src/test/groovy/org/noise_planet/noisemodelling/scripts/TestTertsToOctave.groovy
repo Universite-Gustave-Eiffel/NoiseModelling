@@ -68,7 +68,9 @@ class TestTertsToOctave extends JdbcTestCase {
         // Test content
         def tertsbands = sql.rows("SELECT * FROM LW_RAILWAY WHERE PK=1")
         def octaveLevel = sql.rows("SELECT * FROM LW_RAILWAY_OCTAVE WHERE PK=1 ")
-        def expectedOctaveLevel = 10*Math.log10(10**(tertsbands[0]["HZD50"]/10) + 10**(tertsbands[0]["HZD63"]/10)  + 10**(tertsbands[0]["HZD80"]/10))
+        def expectedOctaveLevel = 10*Math.log10(10**(tertsbands[0]["HZD50"]/10) +
+                                                10**(tertsbands[0]["HZD63"]/10)  +
+                                                10**(tertsbands[0]["HZD80"]/10))
         assertEquals(expectedOctaveLevel, octaveLevel[0]["HZD63"] as double, 0.001)
     }
 }

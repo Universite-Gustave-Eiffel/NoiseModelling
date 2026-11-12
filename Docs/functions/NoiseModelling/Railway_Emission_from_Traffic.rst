@@ -10,7 +10,7 @@ Overview
 --------
 
 ➡️ Compute railway emission lines sources from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details).
-✅ The output table is called LW_RAILWAY and will contain the columns pk_section, the_geom, dir_id, gs, hrail, cref
+✅ The output table is called LW_RAILWAY and will contain the columns pk_section, the_geom, dir_id, gs, hrail, cref and all emissions in all third octave bands for all day, evening and night periods. **NOTE**: The CNOSSOS method requires the railway noise source sound power to be calculated in third octave bands. All other calculations, including railway noise propagation, are in octave bands. To convert third octave bands to octaves, you can use the `Terts_to_octave` script.
 
 Arguments
 ---------
@@ -50,7 +50,7 @@ Mandatory inputs
    
    * IDTRAFFIC* : A traffic identifier (PRIMARY KEY) (INTEGER)
    
-   * IDSECTION* : A section identifier, referring to RAIL_SECTIONS table (INTEGER)
+   * IDSECTION* : A section identifier, refering to RAIL_SECTIONS table (INTEGER)
    
    * TRAINTYPE* : Type of vehicle, listed in the Rail_Train_SNCF_2021 file (mainly for french SNCF) (STRING)
    

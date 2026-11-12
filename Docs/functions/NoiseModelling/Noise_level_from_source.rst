@@ -46,8 +46,8 @@ Mandatory inputs
    
    *   THE_GEOM  : the 3D geometry of the receivers (POINTZ)
    
-   *   REFL_IGNOR  : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
-
+   *   REFL_IGNOR  : optional maximum receiver-to-facade distance (FLOAT, in meters) below which reflection paths on the nearby facade are ignored. NULL or 0 disables this filter for the receiver. With regard to the populationΓÇÖs exposure to noise, it is recommended that the contribution due to reflection off the fa├ºade wall of the building where the resident lives should be disregarded. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
+   
    💡 This table can be generated from the WPS Blocks in the "Receivers" folder
 
    Type: ``String``
@@ -106,7 +106,7 @@ Optional inputs
    Default: ``false``
 
 ``confFavourableOccurrencesDefault`` — *Default favourable occurrences*
-   Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n┬░16 in the schema below) not the first one.
    
    .. figure:: acoustics_parameters_confFavorableOccurrences.png
       :align: center
@@ -188,7 +188,7 @@ Optional inputs
    Default: ``false``
 
 ``confTemperature`` — *Air temperature*
-   🌡 Air temperature (°C)
+   🌡 Air temperature (┬░C)
 
    Type: ``Double``
 
@@ -238,7 +238,7 @@ Optional inputs
    
    *   PERIOD : time period (VARCHAR PRIMARY KEY)
    
-   *   WINDROSE : Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   *   WINDROSE : Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n┬░16 in the schema below) not the first one.
    
    .. figure:: acoustics_parameters_confFavorableOccurrences.png
       :align: center
