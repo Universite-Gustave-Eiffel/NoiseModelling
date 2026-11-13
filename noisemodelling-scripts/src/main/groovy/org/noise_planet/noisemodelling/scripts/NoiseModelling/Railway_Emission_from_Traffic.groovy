@@ -97,6 +97,14 @@ inputs = [
                 description : 'URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
                 type: String.class,
                 min: 0, max: 1
+        ],
+        octaveOutput : [
+                name: 'Output table in octaves, not terts',
+                title: 'Output table in octaves',
+                description: 'Generate the output table with emissions per octave band, not per third octave band.',
+                type: Boolean.class,
+                min: 0, max: 1,
+                default: false
         ]
 ]
 
@@ -129,8 +137,8 @@ def exec(Connection connection, input) {
     sources_geom_table_name = sources_geom_table_name.toUpperCase()
 
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_geom_table_name))
-    if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_geom_table_name+".")
-    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_geom_table_name+" does not have an associated spatial reference system. (missing prj file on import ?)")
+    if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for " + sources_geom_table_name + ".")
+    if (sridSources == 0) throw new IllegalArgumentException("Error : The table " + sources_geom_table_name + " does not have an associated spatial reference system. (missing prj file on import ?)")
 
     String sources_table_traffic_name = input['tableRailwayTraffic'] as String
     // do it case-insensitive
@@ -162,24 +170,29 @@ def exec(Connection connection, input) {
     }
     // Collect optional fields for input JSON
     String vehicleDataFile = RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON
-    if(input['vehicleDataFile'] != null && !(input['vehicleDataFile'] as String).trim().isEmpty()) {
+    if (input['vehicleDataFile'] != null && !(input['vehicleDataFile'] as String).trim().isEmpty()) {
         vehicleDataFile = input['vehicleDataFile'] as String
     }
     String trainSetDataFile = RailWayLWIterator.RAILWAY_TRAINSETS_JSON
-    if(input['trainSetDataFile'] != null && !(input['trainSetDataFile'] as String).trim().isEmpty()) {
+    if (input['trainSetDataFile'] != null && !(input['trainSetDataFile'] as String).trim().isEmpty()) {
         trainSetDataFile = input['trainSetDataFile'] as String
     }
     String railwayEmissionDataFile = RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON
-    if(input['railwayEmissionDataFile'] != null && !(input['railwayEmissionDataFile'] as String).trim().isEmpty()) {
+    if (input['railwayEmissionDataFile'] != null && !(input['railwayEmissionDataFile'] as String).trim().isEmpty()) {
         railwayEmissionDataFile = input['railwayEmissionDataFile'] as String
     }
     String railwayPlatformDataFile = RailWayLWIterator.RAILWAY_PLATFORMS_JSON
-    if(input['railwayPlatformDataFile'] != null && !(input['railwayPlatformDataFile'] as String).trim().isEmpty()) {
+    if (input['railwayPlatformDataFile'] != null && !(input['railwayPlatformDataFile'] as String).trim().isEmpty()) {
         railwayPlatformDataFile = input['railwayPlatformDataFile'] as String
+    }
+    Boolean octaveOutput = false;
+    if (input['octaveOutput'] != null) {
+        octaveOutput = input['octaveOutput'] as Boolean
     }
 
     EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile, railwayPlatformDataFile)
+            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile,
+            railwayPlatformDataFile, octaveOutput)
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");
