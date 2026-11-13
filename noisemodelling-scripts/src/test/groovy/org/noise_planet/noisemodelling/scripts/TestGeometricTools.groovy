@@ -294,8 +294,8 @@ class TestGeometricTools extends JdbcTestCase {
             (2, ST_GeomFromText('POLYGON((200 0, 300 0, 300 100, 200 100, 200 0))', 2154), 1),
             (3, ST_GeomFromText('POLYGON((0 100, 100 100, 100 200, 0 200, 0 100))', 2154), 0.1),
             (4, ST_GeomFromText('POLYGON((0 -200, 100 -200, 100 -100, 0 -100, 0 -200))', 2154), 0)""")
-        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE)")
-        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 110 0 1)', 2154), 10)")
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE, PLATFORM VARCHAR)")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 110 0 1)', 2154), 10, 'SNCF')")
 
         new Enrich_Landcover_with_rail().exec(connection,
                 ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL", "railWidth": "WIDTH"])
