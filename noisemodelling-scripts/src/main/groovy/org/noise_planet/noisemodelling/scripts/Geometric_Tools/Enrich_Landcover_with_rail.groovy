@@ -223,7 +223,7 @@ def exec(Connection connection, input) {
     if ('outputsuffix' in input) {
         outputsuffix = input["outputsuffix"] as String
     }
-    String enrichedLandcover = input["inputLandcover"] + "_" + input["outputsuffix"] as String
+    String enrichedLandcover = inputLandcover + "_" + outputsuffix
 
     // print to command window
     logger.info('List of the input parameters:')
@@ -256,10 +256,9 @@ def exec(Connection connection, input) {
     def import_landcover = """
     ------------
     -- Import Landcover
-    -- Only geometries where $gColumn is higher than 0 are kept
 
     DROP TABLE IF EXISTS landcover_to_enrich;
-    CREATE TABLE landcover_to_enrich AS SELECT THE_GEOM, $gColumn FROM $inputLandcover WHERE $gColumn>0;
+    CREATE TABLE landcover_to_enrich AS SELECT THE_GEOM, CAST($gColumn AS DOUBLE) as g FROM $inputLandcover;
     CREATE SPATIAL INDEX ON landcover_to_enrich(the_geom);
 
     -- Landcover: layer $inputLandcover imported
@@ -299,28 +298,13 @@ def exec(Connection connection, input) {
     CREATE TABLE rail_buff_d3_expl AS SELECT a.the_geom, b.g2 as g FROM ST_Explode('RAIL_DIFF_D3_D1 ') a, PLATEFORM  b WHERE b.IDPLATFORM ='SNCF';
     CREATE TABLE rail_buff_d4_expl AS SELECT a.the_geom, b.g1 as g FROM ST_Explode('RAIL_DIFF_D4_D3 ') a, PLATEFORM  b WHERE b.IDPLATFORM ='SNCF';
 
-    DROP TABLE IF EXISTS LANDCOVER_G_0, LANDCOVER_G_03, LANDCOVER_G_07, LANDCOVER_G_1;
-    CREATE TABLE LANDCOVER_G_0 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=0;
-    CREATE TABLE LANDCOVER_G_03 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=0.3;
-    CREATE TABLE LANDCOVER_G_07 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=0.7;
-    CREATE TABLE LANDCOVER_G_1 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=1;
-
-    DROP TABLE IF EXISTS LANDCOVER_0_DIFF_D4, LANDCOVER_03_DIFF_D4, LANDCOVER_07_DIFF_D4, LANDCOVER_1_DIFF_D4;
-    CREATE TABLE LANDCOVER_0_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_0 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE LANDCOVER_03_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_03 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE LANDCOVER_07_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_07 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE LANDCOVER_1_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_1 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-
-    DROP TABLE IF EXISTS LANDCOVER_0_EXPL, LANDCOVER_03_EXPL, LANDCOVER_07_EXPL, LANDCOVER_1_EXPL;
-    CREATE TABLE LANDCOVER_0_EXPL AS SELECT the_geom, 0 as g FROM ST_Explode('LANDCOVER_0_DIFF_D4 ');
-    CREATE TABLE LANDCOVER_03_EXPL AS SELECT the_geom, 0.3 as g FROM ST_Explode('LANDCOVER_03_DIFF_D4 ');
-    CREATE TABLE LANDCOVER_07_EXPL AS SELECT the_geom, 0.7 as g FROM ST_Explode('LANDCOVER_07_DIFF_D4 ');
-    CREATE TABLE LANDCOVER_1_EXPL AS SELECT the_geom, 1 as g FROM ST_Explode('LANDCOVER_1_DIFF_D4 ');
+    DROP TABLE IF EXISTS LANDCOVER_DIFF_D4, LANDCOVER_EXPL;
+    CREATE TABLE LANDCOVER_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom, b.g from rail_buff_d4 a, landcover_to_enrich b;
+    CREATE TABLE LANDCOVER_EXPL AS SELECT the_geom, g FROM ST_Explode('LANDCOVER_DIFF_D4');
 
     -- Unifiy tables
     DROP TABLE IF EXISTS LANDCOVER_UNION, LANDCOVER_MERGE;
-    CREATE TABLE LANDCOVER_UNION AS SELECT * FROM LANDCOVER_0_EXPL UNION SELECT * FROM LANDCOVER_03_EXPL UNION SELECT * FROM LANDCOVER_07_EXPL 
-    UNION SELECT * FROM LANDCOVER_1_EXPL UNION SELECT * FROM RAIL_BUFF_D1_EXPL UNION SELECT * FROM RAIL_BUFF_D3_EXPL UNION SELECT * FROM RAIL_BUFF_D4_EXPL ; 
+    CREATE TABLE LANDCOVER_UNION AS SELECT * FROM LANDCOVER_EXPL UNION SELECT * FROM RAIL_BUFF_D1_EXPL UNION SELECT * FROM RAIL_BUFF_D3_EXPL UNION SELECT * FROM RAIL_BUFF_D4_EXPL ; 
 
     -- Merge geometries that have the same G
     CREATE TABLE LANDCOVER_MERGE AS SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, g FROM LANDCOVER_UNION GROUP BY g;
@@ -330,9 +314,7 @@ def exec(Connection connection, input) {
 
     -- Remove non-needed tables
     DROP TABLE IF EXISTS rail_buff_d1, rail_buff_d3, rail_buff_d4, rail_diff_d3_d1, rail_diff_d4_d3, rail_buff_d1_expl, 
-    rail_buff_d3_expl, rail_buff_d4_expl, LANDCOVER_G_0, LANDCOVER_G_03, LANDCOVER_G_07, LANDCOVER_G_1, 
-    LANDCOVER_0_DIFF_D4, LANDCOVER_03_DIFF_D4, LANDCOVER_07_DIFF_D4, LANDCOVER_1_DIFF_D4, 
-    LANDCOVER_0_EXPL, LANDCOVER_03_EXPL, LANDCOVER_07_EXPL, LANDCOVER_1_EXPL, 
+    rail_buff_d3_expl, rail_buff_d4_expl, LANDCOVER_DIFF_D4, LANDCOVER_EXPL, 
     LANDCOVER_UNION, LANDCOVER_MERGE, landcover_rail, landcover_to_enrich;
 
 
