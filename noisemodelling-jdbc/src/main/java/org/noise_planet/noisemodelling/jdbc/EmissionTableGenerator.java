@@ -6,7 +6,6 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
@@ -271,7 +270,7 @@ public class EmissionTableGenerator {
      */
     public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
         boolean octaveOutput = false;
-        makeTrainLWTable(connection, railSectionTableName, railTrafficTableName, outputTable, frequencyPrepend, RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON), octaveOutput;
+        makeTrainLWTable(connection, railSectionTableName, railTrafficTableName, outputTable, frequencyPrepend, RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON, octaveOutput);
     }
 
     /**
@@ -294,7 +293,7 @@ public class EmissionTableGenerator {
                                         boolean octaveOutput)
             throws SQLException {
 
-        int[] outputFrequencies = octaveOutput ? roadOctaveFrequencyBands : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
+        int[] outputFrequencies = octaveOutput ? roadOctaveFrequencyBands.stream().mapToInt(Integer::intValue).toArray() : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
 
