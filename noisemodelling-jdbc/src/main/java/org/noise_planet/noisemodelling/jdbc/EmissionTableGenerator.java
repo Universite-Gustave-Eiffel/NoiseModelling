@@ -27,13 +27,12 @@ import java.util.Map;
 
 import static org.noise_planet.noisemodelling.emission.utils.Utils.tertsToOctave;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 
 /**
  * Create emission table from traffic data (RAIL or ROADS)
  */
 public class EmissionTableGenerator {
-    public static final List<Integer> roadOctaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    public static final List<Integer> octaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public static final String DEN_PERIOD = "DEN";
 
     public enum STANDARD_PERIOD {DAY, EVENING, NIGHT}
@@ -182,9 +181,9 @@ public class EmissionTableGenerator {
             hgvPerHour = hv;
         }
         // Compute emission
-        double[] lvl = new double[roadOctaveFrequencyBands.size()];
-        for (int idFreq = 0; idFreq < roadOctaveFrequencyBands.size(); idFreq++) {
-            int freq = roadOctaveFrequencyBands.get(idFreq);
+        double[] lvl = new double[octaveFrequencyBands.size()];
+        for (int idFreq = 0; idFreq < octaveFrequencyBands.size(); idFreq++) {
+            int freq = octaveFrequencyBands.get(idFreq);
             RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
@@ -293,7 +292,7 @@ public class EmissionTableGenerator {
                                         boolean octaveOutput)
             throws SQLException {
 
-        int[] outputFrequencies = octaveOutput ? roadOctaveFrequencyBands.stream().mapToInt(Integer::intValue).toArray() : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
+        int[] outputFrequencies = octaveOutput ? octaveFrequencyBands.stream().mapToInt(Integer::intValue).toArray() : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
 
