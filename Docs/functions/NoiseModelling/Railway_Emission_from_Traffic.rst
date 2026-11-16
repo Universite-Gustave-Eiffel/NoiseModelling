@@ -50,7 +50,7 @@ Mandatory inputs
    
    * IDTRAFFIC* : A traffic identifier (PRIMARY KEY) (INTEGER)
    
-   * IDSECTION* : A section identifier, referring to RAIL_SECTIONS table (INTEGER)
+   * IDSECTION* : A section identifier, refering to RAIL_SECTIONS table (INTEGER)
    
    * TRAINTYPE* : Type of vehicle, listed in the Rail_Train_SNCF_2021 file (mainly for french SNCF) (STRING)
    
@@ -63,6 +63,13 @@ Mandatory inputs
 Optional inputs
 ~~~~~~~~~~~~~~~
 
+``octaveOutput`` — *Output table in octaves*
+   Generate the output table with emissions per octave band, not per third octave band.
+
+   Type: ``Boolean``
+
+   Default: ``false``
+
 ``railwayEmissionDataFile`` — *Railway emission data file*
    URL of the railway emission data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
 
@@ -72,6 +79,13 @@ Optional inputs
    URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
 
    Type: ``String``
+
+``speedUp`` — *Speedup propagation calculation*
+   Generate the output table by summing the sources with the same source height and same directivity profile. Requirese `octaveOutput=TRUE`.
+
+   Type: ``Boolean``
+
+   Default: ``false``
 
 ``trainSetDataFile`` — *Railway train set data file*
    URL of the railway train set data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
