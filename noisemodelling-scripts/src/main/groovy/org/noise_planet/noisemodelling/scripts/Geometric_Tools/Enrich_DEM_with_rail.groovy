@@ -272,9 +272,9 @@ def exec(Connection connection, input) {
     -- Import railways (remove geometries without Z data)
 
     DROP TABLE IF EXISTS dem_rail;    
-    CREATE TABLE dem_rail AS SELECT a.THE_GEOM, 'RAIL' as SOURCE, p.d2 as D2, p.d3 as D3, $d4Expr as D4, p.h2 as HRAIL
+    CREATE TABLE dem_rail AS SELECT ST_LineMerge(ST_Accum(a.THE_GEOM)) THE_GEOM, 'RAIL' as SOURCE, p.d2 as D2, p.d3 as D3, $d4Expr as D4, p.h2 as HRAIL
         FROM $inputRail a, PLATEFORM p 
-        WHERE not (st_zmin(a.THE_GEOM) = 0 AND st_zmax(a.THE_GEOM) = 0) AND p.idplatform = a.$platformColumn;
+        WHERE not (st_zmin(a.THE_GEOM) = 0 AND st_zmax(a.THE_GEOM) = 0) AND p.idplatform = a.$platformColumn GROUP BY p.d2, p.d3, $d4Expr, p.h2, p.idplatform;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
     ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
