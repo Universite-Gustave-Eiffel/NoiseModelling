@@ -336,6 +336,21 @@ public class JTSUtility {
         if(n == 0) {
             return new double[] {0, profile[0].y};
         }
+        if(profile[n].x == profile[0].x) {
+            // Degenerate case: the whole profile has zero horizontal extent, e.g. a receiver
+            // placed directly above/below its source (dp = 0, no horizontal "grazing" segment
+            // for a ground slope to describe). The regression below divides by
+            // (profile[n].x - profile[0].x)^3/^4, which would be 0/0 here. Fall back to a flat
+            // plane at the profile's mean height, the same degenerate treatment as the
+            // single-point case just above - AttenuationCnossos's own aGroundMin floor is the
+            // physically correct handling for propagation with no horizontal extent, but it
+            // needs a finite A/B to floor, not the NaN this would otherwise produce.
+            double meanY = 0;
+            for (Coordinate c : profile) {
+                meanY += c.y;
+            }
+            return new double[] {0, meanY / profile.length};
+        }
         double valA1 = 0;
         double valA2 = 0;
         double valB1 = 0;

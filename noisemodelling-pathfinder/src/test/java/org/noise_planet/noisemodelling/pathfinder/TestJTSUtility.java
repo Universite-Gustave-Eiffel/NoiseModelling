@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TestJTSUtility {
 
@@ -51,6 +52,24 @@ public class TestJTSUtility {
         assertZProfil(expectedZProfile, actualZProfile);
     }
 
+
+    @Test
+    public void testGetMeanPlaneCoefficientsZeroHorizontalExtent() {
+        // A receiver placed directly above/below its source (e.g. through a bridge deck) has
+        // zero horizontal distance, so every point of its unfolded ground profile shares the
+        // same x. The regression used for a normal profile divides by
+        // (profile[n].x - profile[0].x)^3, which is 0 here - it must not come out as NaN/Infinity.
+        Coordinate[] profile = new Coordinate[] {
+                new Coordinate(12.5, 0.0),
+                new Coordinate(12.5, 0.0),
+                new Coordinate(12.5, 0.0)
+        };
+        double[] coefficients = JTSUtility.getMeanPlaneCoefficients(profile);
+        assertFalse(Double.isNaN(coefficients[0]), "slope A must not be NaN for a zero-horizontal-extent profile");
+        assertFalse(Double.isNaN(coefficients[1]), "height B must not be NaN for a zero-horizontal-extent profile");
+        assertEquals(0.0, coefficients[0], 1e-9, "a flat (zero-horizontal-extent) profile has no meaningful slope");
+        assertEquals(0.0, coefficients[1], 1e-9, "height should fall back to the profile's own (flat) ground height");
+    }
 
     private static void assertZProfil(List<Coordinate> expectedZ_profile, List<Coordinate> actualZ_profile) {
         if (expectedZ_profile.size() != actualZ_profile.size()){

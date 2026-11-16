@@ -190,6 +190,13 @@ public class CutProfile {
                 totalLength += segmentLength;
             }
         }
+        if(totalLength == 0) {
+            // Zero horizontal extent (e.g. a receiver placed directly above/below its source,
+            // where distance() - 2D, ignoring z - is 0 between every cut point): there is no
+            // real path length to weight by, so rsLength/totalLength would be 0/0. Fall back to
+            // the ground coefficient right where the path actually is.
+            return p0.getGroundCoefficient();
+        }
         return rsLength / totalLength;
     }
 
@@ -235,6 +242,10 @@ public class CutProfile {
                 rsLength += segmentLength * (aboveRoof ? buildingRoofG : current.getGroundCoefficient());
                 totalLength += segmentLength;
             }
+        }
+        if(totalLength == 0) {
+            // Zero horizontal extent - see getGPath(CutPoint, CutPoint, double) above.
+            return cutPoints.get(i0).getGroundCoefficient();
         }
         return rsLength / totalLength;
     }

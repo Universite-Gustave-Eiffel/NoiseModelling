@@ -1132,6 +1132,25 @@ public class BridgeProfileBuilderTest {
     }
 
     @Test
+    public void receiverDirectlyAboveTheSourceDoesNotGetANaNGroundCoefficient() {
+        // PR #1061 flat-terrain regression (kaasym): a receiver placed directly above its source
+        // on a bridge deck (e.g. "1 m above the road") has zero horizontal distance to it, so
+        // Coordinate#distance (2D, ignores z) is 0 between every cut point of the profile.
+        // CutProfile#getGPath weights each point's ground coefficient by its segment length and
+        // divides by the total length - with every segment length 0, that is 0/0 = NaN, which
+        // then poisons the whole downstream attenuation computation (every receiver ends up with
+        // no valid level at all for this source).
+        ProfileBuilder pb = builderWithDeck();
+        double deckHeight = 10;
+        Coordinate source = new Coordinate(40, 20, deckHeight + 0.05);
+        Coordinate receiver = new Coordinate(40, 20, deckHeight + 1.0);
+
+        CutProfile profile = pb.getProfile(source, receiver);
+        assertFalse(Double.isNaN(profile.getGPath()),
+                "a receiver directly above its source must not get a NaN ground coefficient");
+    }
+
+    @Test
     public void sourceAwayFromAnyBridgeStaysUnrelated() {
         ProfileBuilder pb = builderWithDeck();
         CutProfile profile = pb.getProfile(new Coordinate(10, 60, 2.0), new Coordinate(10, 90, 2.0));
