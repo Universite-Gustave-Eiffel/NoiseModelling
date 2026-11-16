@@ -14,6 +14,7 @@ package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -22,9 +23,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_rail
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_Landcover_with_rail
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
@@ -33,6 +36,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
@@ -308,5 +312,39 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals([0.0d: 10000d, 0.1d: 10000d, 0.7d: 9000d, 1.0d: 10000d], areas)
         // Inside the rail strip, the G=0.7 landcover is cut away
         assertEquals(0d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(THE_GEOM, ST_MakeEnvelope(-20, -5, 120, 5, 2154)))), 0) A FROM LANDCOVER_ENRICHED WHERE G = 0.7").A as double, 1e-6)
+    }
+
+    @Test
+    void testEnrichDEMWithRail() {
+        // Import DEM near the train tracks
+        new Import_Asc_File().exec(connection,
+                ["pathFile" : TestGeometricTools.getResource("testDem/dem.asc.gz").getPath(),
+                 "inputSRID": 2154])
+
+        // Import the train tracks
+        new Import_File().exec(connection, [
+                "pathFile" : TestGeometricTools.getResource("testDem/rail_track.geojson").getPath(),
+                tableName: "RAIL"
+        ])
+
+        def sql = new Sql(connection)
+
+
+        // Update RAIL table with a WIDTH column and a PLATFORM column (platform SNCF is resolved against the data file)
+        sql.execute("ALTER TABLE RAIL ADD COLUMN PLATFORM VARCHAR")
+        sql.execute("UPDATE RAIL SET PLATFORM = 'SNCF'")
+        sql.execute("ALTER TABLE RAIL RENAME COLUMN largempris TO WIDTH")
+
+        assertEquals("DEM_ENRICHED", new Enrich_DEM_with_rail().exec(connection,
+                ["inputDEM": "DEM", "inputRail": "RAIL", "railWidth": "WIDTH"]).result)
+
+        assertTrue(JDBCUtilities.tableExists(connection, "DEM_ENRICHED"))
+
+        // Get the average height near the train tracks
+        def averageHeightBefore = sql.firstRow("SELECT AVG(ST_Z(d.the_geom)) avgz FROM DEM d, RAIL R WHERE ST_EXPAND(r.the_geom, 15, 15) && d.the_geom AND ST_Intersects(ST_Buffer(r.the_geom, 15), d.the_geom)").avgz
+
+        def averageHeightAfter = sql.firstRow("SELECT AVG(ST_Z(d.the_geom)) avgz FROM DEM_ENRICHED d, RAIL R WHERE ST_EXPAND(r.the_geom, 15, 15) && d.the_geom AND ST_Intersects(ST_Buffer(r.the_geom, 15), d.the_geom)").avgz
+
+        assertNotEquals(averageHeightBefore, averageHeightAfter)
     }
 }
