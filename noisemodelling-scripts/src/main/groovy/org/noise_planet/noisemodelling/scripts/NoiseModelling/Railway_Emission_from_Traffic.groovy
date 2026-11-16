@@ -66,7 +66,7 @@ inputs = [
                         '<li><b>IMPACT</b> : Impact noise coefficient identifier, e.g. "SNCF1" or "EU1", empty for none (VARCHAR)</li>' +
                         '<li><b>CURVATURE</b> : Listed code describing the curvature of the section (INTEGER)</li>' +
                         '<li><b>BRIDGE</b> : Bridge transfer function identifier, e.g. "EU3", empty for none (VARCHAR)</li>' +
-                        '<li><b>TRACKSPD</b> : Commercial speed on the section (in km/h) (DOUBLE)</li>' +
+                        '<li><b>COMSPD</b> : Commercial speed on the section (in km/h) (DOUBLE)</li>' +
                         '<li><b>ISTUNNEL</b> : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN) </li></ul>',
                 type: String.class
         ],

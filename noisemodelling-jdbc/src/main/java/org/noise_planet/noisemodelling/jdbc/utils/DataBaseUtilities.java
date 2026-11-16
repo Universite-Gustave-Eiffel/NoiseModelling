@@ -8,10 +8,22 @@
  */
 package org.noise_planet.noisemodelling.jdbc.utils;
 
+import org.h2.util.ScriptReader;
+import org.h2gis.api.ProgressVisitor;
+import org.slf4j.Logger;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 
 public class DataBaseUtilities {
     /**
@@ -55,5 +67,48 @@ public class DataBaseUtilities {
         }
 
         return false;
+    }
+
+    /**
+     * Parses a script containing multiple SQL statements and executes each of them on the given connection,
+     * reporting progress through the provided visitor.
+     *
+     * @param sqlInstructions The SQL instructions to execute
+     * @param connection      A live JDBC connection
+     * @param progressVisitor Visitor used to report progress
+     * @param logger          Logger used to report SQL comments
+     */
+    public static void parseScript(String sqlInstructions, Connection connection, ProgressVisitor progressVisitor, Logger logger) throws SQLException {
+        InputStream is = new ByteArrayInputStream(sqlInstructions.getBytes());
+        List<String> statementList = new LinkedList<>();
+        try (Reader reader = new InputStreamReader(is)) {
+            ScriptReader scriptReader = new ScriptReader(reader);
+            scriptReader.setSkipRemarks(false);
+            String statement = scriptReader.readStatement();
+            while (statement != null && !statement.trim().isEmpty()) {
+                statementList.add(statement);
+                statement = scriptReader.readStatement();
+            }
+        } catch (java.io.IOException e) {
+            throw new SQLException(e);
+        }
+        int idStatement = 0;
+        final int nbStatements = statementList.size();
+        ProgressVisitor evalProgress = progressVisitor.subProcess(nbStatements);
+        for (String statement : statementList) {
+            for (String subStatement : statement.split("\n")) {
+                if (subStatement.trim().startsWith("--")) {
+                    logger.info(String.format(Locale.ROOT, "%d/%d %s", idStatement + 1, nbStatements, subStatement.replace("--", "")));
+                }
+            }
+            idStatement++;
+            try (Statement st = connection.createStatement()) {
+                st.execute(statement);
+            }
+            evalProgress.endStep();
+            if (evalProgress.isCanceled()) {
+                throw new SQLException("Canceled by user");
+            }
+        }
     }
 }

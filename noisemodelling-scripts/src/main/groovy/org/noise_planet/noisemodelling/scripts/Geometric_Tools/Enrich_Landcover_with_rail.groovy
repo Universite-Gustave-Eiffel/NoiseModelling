@@ -29,6 +29,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator
 import org.noise_planet.noisemodelling.jdbc.railway.RailwayPlatform
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -56,7 +57,7 @@ description = '&#10145;&#65039; Insert rail ground surfaces into the input LANDC
               '<hr>' +
               'The railway platform geometry (track gauge, ground factors, heights and section widths) is read from the ' +
               '<b>PLATFORM</b> column of the input railways table and resolved against the railway platform data file. ' +
-              'In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 (the section half-widths) are taken from the platform definition ' +
+              'In the schema below, the points (in orange) will be inserted into the DEM. d2, d3 and d4 (the section half-widths) are taken from the platform definition ' +
               '(d2_0, d3_0 and d4_0 respectively), and d4 can be overridden by the <b>railWidth</b> column when it is present in the railways table:' +
               '<ul>' +
                 '<li>d2 = d2_0</li>' +
@@ -131,49 +132,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-@CompileStatic
-static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progressVisitor, Logger logger) {
-    Reader reader = null
-    ByteArrayInputStream s = new ByteArrayInputStream(sqlInstructions.getBytes())
-    InputStream is = s
-    List<String> statementList = new LinkedList<>()
-    try {
-        reader  = new InputStreamReader(is)
-        ScriptReader scriptReader = new ScriptReader(reader)
-        scriptReader.setSkipRemarks(false)
-        String statement = scriptReader.readStatement()
-        while (statement != null && !statement.trim().isEmpty()) {
-            statementList.add(statement)
-            statement = scriptReader.readStatement()
-        }
-    } finally {
-        reader.close()
-    }
-    int idStatement = 0
-    final int nbStatements = statementList.size()
-    ProgressVisitor evalProgress = progressVisitor.subProcess(nbStatements)
-    for(String statement : statementList) {
-        for(String subStatement : statement.split("\n")) {
-            if(subStatement.trim().startsWith("--")){
-                logger.info(String.format(Locale.ROOT, "%d/%d %s", idStatement + 1, nbStatements, subStatement.replace("--", "")))            
-            }
-        } 
-        idStatement++
-        sql.execute(statement)
-        evalProgress.endStep()
-        if(evalProgress.isCanceled()) {
-            throw new SQLException("Canceled by user")
-        }
-    }
-}
-
-
-
-
-
-
-
 
 def exec(Connection connection, input) {
 
@@ -356,7 +314,7 @@ def exec(Connection connection, input) {
 
     def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "platformColumn": platformColumn, "outputsuffix": outputsuffix, "srid": srid, "platformInsert": platformInsert, "d4Expr": d4Expr]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
-    parseScript(template.toString(), sql, progress, logger)
+    DataBaseUtilities.parseScript(template.toString(), connection, progress, logger)
 
     return [result: enrichedLandcover]
 
