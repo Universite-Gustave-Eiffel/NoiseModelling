@@ -110,7 +110,7 @@ inputs = [
         speedUp : [
                 name: 'Speedup propagation calculation',
                 title: 'Speedup propagation calculation',
-                description: 'Generate the output table by summing the sources with the same source height and same directivity profile. Requirese `octaveOutput=TRUE`.',
+                description: 'Generate the output table by summing the sources with the same source height and same directivity profile. Requires `octaveOutput=TRUE`.',
                 type: Boolean.class,
                 min: 0, max: 1,
                 default: false

@@ -81,7 +81,7 @@ Optional inputs
    Type: ``String``
 
 ``speedUp`` — *Speedup propagation calculation*
-   Generate the output table by summing the sources with the same source height and same directivity profile. Requirese `octaveOutput=TRUE`.
+   Generate the output table by summing the sources with the same source height and same directivity profile. Requires `octaveOutput=TRUE`.
 
    Type: ``Boolean``
 
