@@ -967,6 +967,171 @@ public class BridgeProfileBuilderTest {
     }
 
     @Test
+    public void groundEffectUnderTheDeckDoesNotInflateTheOffAxisPivotPath() {
+        // PR #1061 flat-terrain regression (kaasym): the topography fix above only strips
+        // CutPointTopography out of the bridge's own footprint. On perfectly flat terrain,
+        // addTopoCutPts never emits a CutPointTopography at all (every point is a linear
+        // interpolation of its neighbours, so fetchTopographicProfile's DELTA check drops it),
+        // so that fix is a no-op there - but a uniform ground-absorption polygon still produces
+        // CutPointGroundEffect markers via addGroundBuildingCutPts, which is just as stale and
+        // just as capable of turning the unfolded profile into a spurious back-and-forth detour.
+        List<Coordinate> pts = Arrays.asList(
+                new Coordinate(0, 20, 10),
+                new Coordinate(50, 20, 10),
+                new Coordinate(100, 20, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < pts.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 100L, pts.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge deckBridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(100L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .build();
+        ProfileBuilder pb = new ProfileBuilder();
+        for (int x = 0; x <= 100; x += 50) {
+            for (int y = 0; y <= 100; y += 50) {
+                pb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        // Two adjacent ground types with a boundary at x=42, strictly between the source (x=40)
+        // and the receiver (x=45) - the straight source-receiver line crosses it well within the
+        // bridge's own footprint (x in [0,100]), exactly like a real ground-type change would.
+        pb.addGroundEffect(-50, 42, -50, 150, 0.1);
+        pb.addGroundEffect(42, 150, -50, 150, 0.5);
+        pb.addBridge(deckBridge);
+        pb.finishFeeding();
+
+        double deckHeight = 10;
+        Coordinate source = new Coordinate(40, 20, deckHeight + 0.05);
+        // Off-axis under the deck, same x as the pivot search's closer edge.
+        Coordinate receiver = new Coordinate(45, 20, 2.0);
+
+        CutProfile profile = pb.getProfile(source, receiver);
+        assertEquals(BridgeRelationship.RelationType.ACTUAL_SOURCE_ON_BRIDGE,
+                profile.getSource().getBridgeRelationship().getRelationType());
+
+        Bridge bridge = pb.getBridgeByPk(100L);
+        // The only ground-effect point allowed inside the footprint is the deliberate hand-off
+        // marker ProfileBuilder#addBridgeCutPts now inserts right at the pivot itself, carrying
+        // the real ground coefficient forward for the rest of the profile - any other one is a
+        // stale leftover from the straight-line walk.
+        Coordinate pivotCoordinate = profile.getCutPoints().stream()
+                .filter(cp -> cp instanceof CutPointBridgeWall)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a bridge pivot cut point in this profile"))
+                .getCoordinate();
+        for (CutPoint cp : profile.getCutPoints()) {
+            if (cp instanceof CutPointGroundEffect && bridge.isPointWithinBridgeFootprint(cp.getCoordinate())) {
+                assertEquals(pivotCoordinate, cp.getCoordinate(),
+                        "a ground-effect point inside the bridge's own footprint must be the pivot's own "
+                                + "hand-off marker, not a stale leftover: " + cp.getCoordinate());
+            }
+        }
+
+        List<Coordinate> pts2D = profile.computePts2D();
+        double unfolded = pts2D.get(pts2D.size() - 1).x;
+        double dc = source.distance3D(receiver);
+        assertTrue(unfolded < dc * 1.5,
+                "the 2D-unfolded profile length must stay close to the true distance (dc=" + dc
+                        + "), found " + unfolded + " - a stray ground-effect point is turning this into a "
+                        + "spurious back-and-forth detour");
+    }
+
+    @Test
+    public void groundHeightAtThePivotIsInterpolatedNotLeftAtNaN() {
+        // Companion check for groundCoefficientAfterThePivotComesFromTheRealGroundThereNotTheSource:
+        // does the same "whoever updates it last wins" hazard exist for ground *height* (zGround),
+        // not just ground coefficient? It does not, and for a different reason than a hand-off
+        // marker: ProfileBuilder#getProfile's "Compute the interpolation of Z ground for
+        // intermediate points" pass (run after addBridgeCutPts) fills in any cut point whose
+        // zGround is still NaN - which the pivot's always is, nothing ever sets it explicitly - by
+        // linearly interpolating between the nearest points *before and after it* that do have a
+        // real one, found by position, not by "last one seen". Removing the stale topography/
+        // ground-effect points in between does not break this: it just means that search steps
+        // over the gap directly from source to receiver.
+        ProfileBuilder pb = builderWithDeck();
+        double deckHeight = 10;
+        Coordinate source = new Coordinate(40, 20, deckHeight + 0.05);
+        Coordinate receiver = new Coordinate(45, 20, 2.0);
+
+        CutProfile profile = pb.getProfile(source, receiver);
+        CutPoint pivot = profile.getCutPoints().stream()
+                .filter(cp -> cp instanceof CutPointBridgeWall)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a bridge pivot cut point in this profile"));
+        assertFalse(Double.isNaN(pivot.getzGround()), "the pivot's own ground height must be interpolated, not left as NaN");
+        // builderWithDeck's terrain is flat at z=0 everywhere, so the correctly-interpolated
+        // height here must also be (close to) 0 - not a sudden drop or jump to some other value.
+        assertEquals(0.0, pivot.getzGround(), 1e-6,
+                "on flat terrain the pivot's interpolated ground height must match the real ground (0 m), "
+                        + "got " + pivot.getzGround());
+
+        for (Coordinate groundPt : CutProfile.computePtsGround(profile.getCutPoints(), null)) {
+            assertFalse(Double.isNaN(groundPt.z), "no point of the ground profile may be NaN: " + groundPt);
+        }
+    }
+
+    @Test
+    public void groundCoefficientAfterThePivotComesFromTheRealGroundThereNotTheSource() {
+        // Companion to groundEffectUnderTheDeckDoesNotInflateTheOffAxisPivotPath: dropping the
+        // stale ground-effect markers is not enough on its own - without a replacement hand-off
+        // right at the pivot, ProfileBuilder#getProfile's coefficient-propagation pass has nothing
+        // left to update its running value from, so the receiver would silently inherit the
+        // source's own ground coefficient (G=0.1) instead of the real one under where the ray
+        // actually leaves the deck and reaches it (G=0.5).
+        List<Coordinate> pts = Arrays.asList(
+                new Coordinate(0, 20, 10),
+                new Coordinate(50, 20, 10),
+                new Coordinate(100, 20, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < pts.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 100L, pts.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge deckBridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(100L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .build();
+        ProfileBuilder pb = new ProfileBuilder();
+        for (int x = 0; x <= 100; x += 50) {
+            for (int y = 0; y <= 100; y += 50) {
+                pb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        // Same boundary as the companion test: source is on the G=0.1 side, the pivot and
+        // receiver are on the G=0.5 side.
+        pb.addGroundEffect(-50, 42, -50, 150, 0.1);
+        pb.addGroundEffect(42, 150, -50, 150, 0.5);
+        pb.addBridge(deckBridge);
+        pb.finishFeeding();
+
+        Coordinate source = new Coordinate(40, 20, 10.05);
+        Coordinate receiver = new Coordinate(45, 20, 2.0);
+        CutProfile profile = pb.getProfile(source, receiver);
+
+        assertEquals(0.5, profile.getReceiver().getGroundCoefficient(), 1e-9,
+                "the receiver sits on the far side of the ground-type boundary from the source - "
+                        + "it must get that side's own coefficient (0.5), not the source's (0.1)");
+    }
+
+    @Test
     public void sourceAwayFromAnyBridgeStaysUnrelated() {
         ProfileBuilder pb = builderWithDeck();
         CutProfile profile = pb.getProfile(new Coordinate(10, 60, 2.0), new Coordinate(10, 90, 2.0));

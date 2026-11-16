@@ -1182,7 +1182,8 @@ public class ProfileBuilder {
 
         //Add bridge deck cut points
         if(bridgeProcessedWalls.getProcessedRtree() != null && bridgeService.getBridgeCount() > 0) {
-            addBridgeCutPts(new LineSegment(sourceCoordinate, receiverCoordinate), profile, stopAtObstacleOverSourceReceiver);
+            addBridgeCutPts(new LineSegment(sourceCoordinate, receiverCoordinate), profile, stopAtObstacleOverSourceReceiver,
+                    defaultGroundAttenuation);
             if(stopAtObstacleOverSourceReceiver && profile.hasBridgeIntersection) {
                 return profile;
             }
@@ -1463,8 +1464,11 @@ public class ProfileBuilder {
      * @param fullLine full source-receiver segment
      * @param profile profile being built
      * @param stopAtObstacleOverSourceReceiver stop as soon as a blocking bridge cut point is found
+     * @param defaultGroundAttenuation default ground absorption value, used if the pivot's own
+     *                                 position (see below) isn't covered by any ground absorption polygon
      */
-    private void addBridgeCutPts(LineSegment fullLine, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
+    private void addBridgeCutPts(LineSegment fullLine, CutProfile profile, boolean stopAtObstacleOverSourceReceiver,
+                                  double defaultGroundAttenuation) {
         BridgeService.PropagationType propagationType = bridgeService.checkPropagationType(profile);
         if (propagationType == BridgeService.PropagationType.NOT_RELATED_TO_BRIDGE) {
             // v0: bridge cut points are only computed for a source that is on / under a bridge.
@@ -1482,16 +1486,20 @@ public class ProfileBuilder {
             CutPointBridgeWall firstCut = bridgeService.calculateFirstBridgeCutpoint(profile, propagationType);
             // Between the source and this pivot the acoustic ray runs along the bridge itself (on
             // the deck, or under it in the imaginary-source case) - there is no room for a terrain
-            // intersection there, so any CutPointTopography that addTopoCutPts already found for
-            // that stretch (by walking the straight source-receiver line, before this bent, two-leg
-            // path via the pivot was known) does not describe anything on the real path. Left in
-            // place it stays ordered by its distance from the source along that straight line, which
-            // no longer matches this profile's real point order once the pivot is inserted right
-            // after the source (see CutProfile#insertCutPoint's unsorted branch below) - a nearby
-            // topography point ends up listed after a far-side one, and CutProfile#computePts2D's
-            // cumulative-distance unfolding (which just walks the list in order) turns that into a
-            // large spurious back-and-forth detour, inflating the unfolded profile length (and the
-            // diffraction delta derived from it) far past anything physically meaningful.
+            // intersection, nor a real-ground absorption transition, in that stretch. Both
+            // CutPointTopography (addTopoCutPts) and CutPointGroundEffect (addGroundBuildingCutPts)
+            // are found by walking the straight source-receiver line, before this bent, two-leg path
+            // via the pivot was known, so they do not describe anything on the real path. Left in
+            // place they stay ordered by distance from the source along that straight line, which no
+            // longer matches this profile's real point order once the pivot is inserted right after
+            // the source (see CutProfile#insertCutPoint's unsorted branch below) - a nearby point
+            // ends up listed after a far-side one, and CutProfile#computePts2D's cumulative-distance
+            // unfolding (which just walks the list in order) turns that into a large spurious
+            // back-and-forth detour, inflating the unfolded profile length (and the diffraction delta
+            // derived from it) far past anything physically meaningful. On perfectly flat terrain
+            // there are never any CutPointTopography entries to begin with (addTopoCutPts only keeps
+            // points that deviate from a straight interpolation), so CutPointGroundEffect is the one
+            // that actually triggers this on a flat scene with a uniform ground absorption polygon.
             org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship sourceBridgeRelationship =
                     profile.getSource().getBridgeRelationship();
             long pivotBridgePk = propagationType == BridgeService.PropagationType.ACTUAL_SOURCE_TO_LOWER_RECEIVER
@@ -1499,10 +1507,28 @@ public class ProfileBuilder {
                     : sourceBridgeRelationship.getBridgePkAbove();
             Bridge pivotBridge = bridgeService.getBridgeByPk(pivotBridgePk);
             if (pivotBridge != null) {
-                profile.cutPoints.removeIf(cp -> cp instanceof CutPointTopography
+                profile.cutPoints.removeIf(cp -> (cp instanceof CutPointTopography || cp instanceof CutPointGroundEffect)
                         && pivotBridge.isPointWithinBridgeFootprint(cp.getCoordinate()));
             }
             newCutPoints.add(firstCut);
+            // Removing those stray CutPointGroundEffect markers above also removes whatever ground
+            // coefficient they would have handed off to the rest of the profile - ProfileBuilder#
+            // getProfile's "propagate ground coefficient for unknown coefficients" pass only updates
+            // its running value when it meets one, so everything after the pivot would otherwise
+            // silently keep inheriting the source's own (irrelevant - the source is up on the deck,
+            // not touching this ground at all) coefficient instead of whatever is really under where
+            // the ray leaves the deck. Hand off explicitly to the real ground right at the pivot,
+            // the same way the source's own groundCoefficient is established in getProfile above.
+            int pivotGroundAbsorptionIndex = getIntersectingGroundAbsorption(FACTORY.createPoint(firstCut.getCoordinate()));
+            double pivotGroundCoefficient = pivotGroundAbsorptionIndex >= 0
+                    ? groundAbsorptions.get(pivotGroundAbsorptionIndex).getCoefficient()
+                    : defaultGroundAttenuation;
+            // CutPoint's constructor keeps a reference to the Coordinate it is given, not a copy -
+            // reusing firstCut's own Coordinate object here would alias the two cut points, so a
+            // later in-place mutation of either one's coordinate (several places in this codebase
+            // do that, e.g. CnossosPathBuilder adjusting a reflection point's height) would corrupt
+            // both. Always pass a fresh copy.
+            newCutPoints.add(new CutPointGroundEffect(pivotGroundAbsorptionIndex, new Coordinate(firstCut.getCoordinate()), pivotGroundCoefficient));
             profile.hasBridgeIntersection = true;
             sortCutPoints = false;
             segments = ProfileUtils.splitToSegments(firstCut.getCoordinate(), fullLine.p1, maxLineLength);
