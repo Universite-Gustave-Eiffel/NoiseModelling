@@ -1088,7 +1088,7 @@ public class OsmHandler implements Sink {
                 if ("highway".equalsIgnoreCase((tag.getKey()))) {
                     isRoad = true
                 }
-                if (isBuilding) {
+                /*if (isBuilding) {
                     if (!trueHeightFound && "building:levels".equalsIgnoreCase(tag.getKey())) {
                         height = height - 4 + Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", "")) * 3.0;
                     }
@@ -1096,7 +1096,7 @@ public class OsmHandler implements Sink {
                         height = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
                         trueHeightFound = true;
                     }
-                }
+                }*/
             }
             if (!ignoreBuildings && isBuilding && closedWay) {
                 buildings.add(new Building(way, height));

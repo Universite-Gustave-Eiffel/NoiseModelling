@@ -160,7 +160,7 @@ def exec(Connection connection, input) {
 
     int nIterations = (int) Math.round(duration/timestep);
 
-    int time_offset = 0 // Extend and loop X seconds to ensure produce exact traffic exists, default value was 120
+    int time_offset = 180 // Extend and loop X seconds to ensure produce exact traffic exists, default value was 120
 
     String method = "PROBA"
     if (input['method']) {
@@ -179,9 +179,9 @@ def exec(Connection connection, input) {
 
     sql.execute("DROP TABLE IF EXISTS ROAD_POINTS" )
     sql.execute("CREATE TABLE ROAD_POINTS(ROAD_ID serial, THE_GEOM geometry," +
-            "LV int, LV_SPD real, HV int, HV_SPD real, WBV int, WBV_SPD real, LENGTH real, LANES int, SLOPE_PCT real)" +
+            "LV int, LV_SPD real, HV int, HV_SPD real, WBV int, WBV_SPD real, LENGTH real, LANES int, SLOPE_PCT real, Signal VARCHAR)" +
             "AS SELECT r.PK, ST_Tomultipoint(ST_Densify(the_geom, "+gridStep+"))," +
-            "r.LV_D, r.LV_SPD_D, r.HGV_D, r.HGV_SPD_D, r.WBV_D, r.WBV_SPD_D, r.Length, r.LANES, r.SLOPE_PCT " +
+            "r.LV_D, r.LV_SPD_D, r.HGV_D, r.HGV_SPD_D, r.WBV_D, r.WBV_SPD_D, r.Length, r.LANES, r.SLOPE_PCT, r.Signal " +
             "FROM  "+sources_table_name+" r WHERE NOT ST_IsEmpty(r.THE_GEOM) ;")
 
     sql.execute("drop table VEHICLES if exists;" +
@@ -303,7 +303,8 @@ def exec(Connection connection, input) {
                         rs.getDouble('HGV_SPD_D'),
                         (int) Math.round(rs.getInt('WBV_D')*duration/3600),
                         rs.getDouble('WBV_SPD_D'),
-                        rs.getDouble('SLOPE_PCT')
+                        rs.getDouble('SLOPE_PCT'),
+                        rs.getString('Signal')
                 )
 
                 sql.query("SELECT * FROM SOURCES_0dB WHERE ROAD_ID = " + road.id, { ResultSet result2 ->
@@ -385,6 +386,7 @@ class Road {
     double length
     double duration
     double SLope
+    String Signal
 
     public List<SourcePoint> source_points = new ArrayList<SourcePoint>()
 
@@ -406,7 +408,7 @@ class Road {
         this.duration = duration;
     }
 
-    void setRoad(long id, String type, Geometry geom, int lv, double lv_spd, int hv, double hv_spd, int wbv, double wbv_spd, double Slope) {
+    void setRoad(long id, String type, Geometry geom, int lv, double lv_spd, int hv, double hv_spd, int wbv, double wbv_spd, double Slope, String Signal) {
         if (geom.getGeometryType() == "MultiLineString") {
             geom = geom.getGeometryN(0)
         }
@@ -424,6 +426,7 @@ class Road {
         this.wbv_spd = wbv_spd
         this.length = geom.getLength()
         this.SLope = Slope
+        this.Signal = Signal
 
         Coordinate[] coordinates = geom.getCoordinates()
         for(int i = 1; i < coordinates.length; i++){
@@ -443,21 +446,21 @@ class Road {
         def samples = distribution.getSamples(lv, duration)
         for (int i = 0; i < lv; i++) {
             start += samples[i]
-            vehicles.add(new Vehicle(lv_spd / 3.6, length, start, Vehicle.LIGHT_VEHICLE_TYPE, (i % 2 == 1), Slope))
+            vehicles.add(new Vehicle(lv_spd / 3.6, length, start, start, Vehicle.LIGHT_VEHICLE_TYPE, (i % 2 == 1), Slope, Signal))
         }
         distribution = new DisplacedNegativeExponentialDistribution(hv, 1, seed, duration)
         start = 0
         samples = distribution.getSamples(hv, duration)
         for (int i = 0; i < hv; i++) {
             start += samples[i]
-            vehicles.add(new Vehicle(hv_spd / 3.6, length, start, Vehicle.HEAVY_VEHICLE_TYPE, (i % 2 == 1), Slope))
+            vehicles.add(new Vehicle(hv_spd / 3.6, length, start, start, Vehicle.HEAVY_VEHICLE_TYPE, (i % 2 == 1), Slope, Signal))
         }
         distribution = new DisplacedNegativeExponentialDistribution(wbv, 1, seed, duration)
         start = 0
         samples = distribution.getSamples(wbv, duration)
         for (int i = 0; i < wbv; i++) {
             start += samples[i]
-            vehicles.add(new Vehicle(wbv_spd / 3.6, length, start, Vehicle.MOTORCYCLE_VEHICLE_TYPE, (i % 2 == 1), Slope))
+            vehicles.add(new Vehicle(wbv_spd / 3.6, length, start, start, Vehicle.MOTORCYCLE_VEHICLE_TYPE, (i % 2 == 1), Slope, Signal))
         }
         /*for (Vehicle vehicle: vehicles) {
             vehicle.lw_correction = 0 //lw_corr_generators.get(vehicle.vehicle_type).generate()
@@ -613,9 +616,10 @@ class Vehicle {
     double position = 0.0
     double max_position = 0.0
     double speed = 0.0 // m/s
-    double time = 0.0
     double start_time = 0
+    double base_start_time = 0
     boolean exists = false
+    String Signal = null
     boolean backward = false
     double LwStd = 0
     double Slope = 0.0
@@ -627,14 +631,16 @@ class Vehicle {
         return last_id
     }
 
-    Vehicle(double speed, double length, double start, String type, boolean is_back, double Slope) {
+    Vehicle(double speed, double length, double start, double base_start, String type, boolean is_back, double Slope, String Signal) {
         max_position = length
         vehicle_type = type
         start_time = start
         backward = is_back
+        this.Signal = Signal
         id = getNextId()
 
         this.speed = speed
+        this.base_start_time = base_start
 
         if (this.vehicle_type == HEAVY_VEHICLE_TYPE || this.vehicle_type == MEDIUM_VEHICLE_TYPE) {
             this.speed = Math.min(this.speed, 90 / 3.6)
@@ -658,7 +664,7 @@ class Vehicle {
                 }
             }
         }
-
+        //this.LwStd = 5
         this.Slope = Slope
     }
 
@@ -670,34 +676,99 @@ class Vehicle {
         this(speed, length, 0.0, LIGHT_VEHICLE_TYPE, false, 5113)
     }
 
+    static final double CYCLE     = 60.0;   // full signal cycle (s)
+
     void move(double input_time, double max_time) {
-        // Prevent skip moving early vehicle
-        time = input_time % max_time
-        double real_speed = (backward ? (-1 * speed) : speed)
+        double v = backward ? -speed : speed;
+        double real_start = base_start_time;
+
         if (do_loop) {
-            exists = true
-            position = ((time + max_time + start_time) % max_time) * real_speed
+            exists   = true;
+            position = ((input_time + start_time) % max_time) * v;
         }
-        else {
-            // Insert the entry point
-            if (time >= start_time - 1 && time < start_time) {
-                exists = true
-                position = (backward ? -0.01 : 0.01)
-            }
-            else if (time >= start_time) {
-                exists = true
-                position = (time - start_time) * real_speed
-            } else {
-                exists = false
-            }
-            if (position > max_position || position < -max_position) {
-                exists = false
-            }
+
+        //Traffic signal
+        if (Signal == "True") {
+            real_start = (int)(base_start_time / CYCLE) * CYCLE +
+                    (base_start_time % CYCLE) / 1.0
+        }
+
+        // Entry seed
+        if (input_time >= real_start - 1 && input_time < real_start) {
+            exists   = true;
+            position = backward ? -0.01 : 0.01;
+        } else if (input_time >= real_start) {
+            exists   = true;
+            position = (input_time - real_start) * v;
+        } else {
+            exists = false;
+            return;
+        }
+
+        if (position > max_position || position < -max_position) {
+            exists = false;
         }
     }
 
     double getPosition() {
         return position % max_position;
+    }
+
+
+    private static final Random RNG = new Random(12345); // reproducible
+/**
+ * Sample from a Generalized Pareto Distribution truncated to [min, max].
+ *
+ * @param min   minimum correction, dB
+ * @param max   maximum correction, dB
+ * @param shape GPD shape parameter xi
+ * @param scale GPD scale parameter beta (> 0)
+ * @return sampled correction in dB
+ */
+    public static double sampleTruncatedGPD(
+            double min,
+            double max,
+            double shape,
+            double scale) {
+
+        if (scale <= 0.0) {
+            throw new IllegalArgumentException("GPD scale must be > 0");
+        }
+
+        double width = max - min;
+
+        // CDF at upper truncation limit
+        double fMax;
+
+        if (Math.abs(shape) < 1e-10) {
+            // xi -> 0 : exponential distribution
+            fMax = 1.0 - Math.exp(-width / scale);
+        } else {
+            double support = 1.0 + shape * width / scale;
+
+            if (support <= 0.0) {
+                throw new IllegalArgumentException(
+                        "Upper limit lies outside GPD support"
+                );
+            }
+
+            fMax = 1.0 - Math.pow(support, -1.0 / shape);
+        }
+
+        // Uniform quantile within truncated probability range
+        double u = RNG.nextDouble();
+        double q = u * fMax;
+
+        double y;
+
+        if (Math.abs(shape) < 1e-10) {
+            y = -scale * Math.log(1.0 - q);
+        } else {
+            y = scale / shape *
+                    (Math.pow(1.0 - q, -shape) - 1.0);
+        }
+
+        return min + y;
     }
 
     double[] getLw() {
@@ -709,15 +780,46 @@ class Vehicle {
             }
             return result;
         }
+        /*double noisyMotorCorrection = 0.0;
+
+        double probabilityNoisyMotor = 0.004;  // example: 5%
+
+        boolean isNoisyMotor =
+                //vehicle_type?.toString() == "4b" &&
+                        Math.random() < probabilityNoisyMotor
+
+        if (isNoisyMotor) {
+            noisyMotorCorrection = sampleTruncatedGPD(
+                    10.0,
+                    25.0,
+                    0.25,
+                    4.0
+            )
+        }*/
+
         for (int i = 0; i < freqs.length; i++) {
 
-            RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
-                    speed * 3.6, 0, vehicle_type, 1,  false, LwStd, id)
+            RoadVehicleCnossosvarParameters rsParametersDynamic =
+                    new RoadVehicleCnossosvarParameters(
+                            speed * 3.6,
+                            0,
+                            vehicle_type,
+                            1,
+                            false,
+                            LwStd,
+                            id
+                    )
+
             rsParametersDynamic.setRoadSurface("DEF")
             rsParametersDynamic.setSlopePercentage(Slope)
             rsParametersDynamic.setFrequency(freqs[i])
-            // remove lw_correction
-            result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic);
+            rsParametersDynamic.setTemperature(20)
+
+            result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic)
+
+            /*if (isNoisyMotor) {
+                result[i] += noisyMotorCorrection
+            }*/
         }
         return result;
     }

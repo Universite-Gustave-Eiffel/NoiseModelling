@@ -44,12 +44,15 @@ class Run {
         //RunDynamicFlow("Sensor_MEAN_filtered", "POISSON_nohmin", 5 , 3600, "0")
         //PrintLW("TIME_MEAN_filtered", "POISSON_nohmin", 5, 4200, "0")
         //PrintLW("Road_2025_03_17_22_57", "PROBA", 5, 180, "0")
-        // Folder path
-        String folderPath = "/home/gao/Downloads/Noise/Paris/3_18/Roads/";
-        // Define start and end times
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm");
-        LocalDateTime start = LocalDateTime.parse("2025_03_17_22_57", formatter);
-        LocalDateTime end = LocalDateTime.parse("2025_03_18_22_54", formatter);
+        //PrintLW("Road_2025_03_17_22_57", "PROBA", 5, 180, "0")
+        //PrintLW_Stockholm("TIME_MEAN_filtered", "PROBA", 5, 180, "0")
+        //PrintLW_SUMO("fcd_filtered_output_32633", "SUMO_acc", 5)
+        //Import_OSM("Paris_osm.osm.pbf")
+        RunParis("/home/gao/Downloads/Noise/Paris/3_18/Roads", "output_poisson","2025_03_17_22_57", "2025_03_18_22_54")
+        //Backgroundnoise("/home/gao/Downloads/Noise/Paris/data/Roads_hourly_20250318")
+    }
+
+    static void RunParis(String folderPath, String outfolder, String start_input, String end_input){
 
         String dbName = "file:///home/gao/noise_modeling_database"
         Connection connection;
@@ -58,6 +61,10 @@ class Run {
         Driver.load();
         connection = DriverManager.getConnection(databasePath, "", "");
         H2GISFunctions.load(connection);
+        // Define start and end times
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm");
+        LocalDateTime start = LocalDateTime.parse(start_input, formatter);
+        LocalDateTime end = LocalDateTime.parse(end_input, formatter);
 
         new Import_File().exec(connection,
                 ["pathFile" :  "/home/gao/Downloads/Noise/Paris/data/building.shp",
@@ -84,11 +91,11 @@ class Run {
         while (!start.isAfter(end)) {
             String timeStr = start.format(formatter);
             String roadName = "Road_" + timeStr;
-            String shpPath = folderPath + roadName + ".shp";
+            String shpPath = folderPath + "/" + roadName + ".shp";
 
             // Check if shapefile exists
             if (Files.exists(Paths.get(shpPath))) {
-                RunDynamicFlow(roadName, "Poisson", 5, 180, "0");
+                RunDynamicFlow(outfolder, roadName, "Poisson", 5, 180, "0");
             } else {
                 System.out.println("⚠️ Shapefile not found, skipped: " + shpPath);
             }
@@ -96,10 +103,6 @@ class Run {
             // Increase time by 3 minutes
             start = start.plus(3, ChronoUnit.MINUTES);
         }
-
-        //PrintLW("Road_2025_03_17_22_57", "PROBA", 5, 180, "0")
-        //PrintLW_Stockholm("TIME_MEAN_filtered", "PROBA", 5, 180, "0")
-        //PrintLW_SUMO("fcd_filtered_output_32633", "SUMO_acc", 5)
     }
 
     static void RunSUMO(String File_name, String Format, int gridStep){
@@ -274,7 +277,7 @@ class Run {
         connection.close();
     }
 
-    static void RunDynamicFlow(String File_name,String method, int grid, int duration, String name){
+    static void RunDynamicFlow(String folder, String File_name,String method, int grid, int duration, String name){
         String dbName = "file:///home/gao/noise_modeling_database"
         Connection connection;
         File dbFile = new File(URI.create(dbName));
@@ -282,6 +285,11 @@ class Run {
         Driver.load();
         connection = DriverManager.getConnection(databasePath, "", "");
         H2GISFunctions.load(connection);
+
+        new Import_File().exec(connection,
+                ["pathFile" :  "/home/gao/Downloads/Noise/Paris/data/building.shp",
+                 "inputSRID": "2154",
+                 "tableName": "BUILDINGS"])
 
         new Import_File().exec(connection,
                 ["pathFile" : String.format('/home/gao/Downloads/Noise/Paris/3_18/Roads/%s.shp',File_name),
@@ -316,8 +324,8 @@ class Run {
                  "tableReceivers": "RECEIVERS",
                  "tableDEM": "DEM",
                  "confReflOrder": 1,
-                 "confMaxReflDist": 500,
-                 "confMaxSrcDist" : 500,
+                 "confMaxReflDist": 1000,
+                 "confMaxSrcDist" : 1000,
                  "confDiffHorizontal" : true,
                  "confDiffVertical" : true,
                  "confExportSourceId": true,
@@ -348,7 +356,7 @@ class Run {
 
         System.out.println("End Noise_From_Attenuation_Matrix! Current time: " + LocalTime.now());
         new Export_Table().exec(connection, [
-                "exportPath"    : String.format('/home/gao/Downloads/Noise/Paris/output_poisson/%s_%s_%s_LDAY_GEOM_%s.csv',File_name, method, duration, name),
+                "exportPath"    : String.format('/home/gao/Downloads/Noise/Paris/%s/%s_%s_%s_LDAY_GEOM_%s.csv',folder,File_name, method, duration, name),
                 "tableToExport" : "LT_GEOM"
         ])
 
@@ -546,4 +554,100 @@ class Run {
         connection.close();
 
         }
+
+    static void Import_OSM(String File_name) {
+        String dbName = "file:///home/gao/noise_modeling_database"
+        Connection connection;
+        File dbFile = new File(URI.create(dbName));
+        String databasePath = "jdbc:h2:" + dbFile.getAbsolutePath() + ";AUTO_SERVER=TRUE";
+        Driver.load();
+        connection = DriverManager.getConnection(databasePath, "", "");
+        H2GISFunctions.load(connection);
+
+        // Import Buildings for your study area
+        new Import_OSM().exec(connection,
+                ["pathFile" : String.format("/home/gao/Downloads/Noise/Paris/3_18/Paris_osm/%s", File_name),
+                 "inputSRID": "2154",
+                "ignoreBuilding": 1,
+                "ignoreGround": 1])
+
+        connection.close();
+
+    }
+
+    static void Backgroundnoise(String folderPath) {
+
+        String dbName = "file:///home/gao/noise_modeling_database"
+        Connection connection;
+        File dbFile = new File(URI.create(dbName));
+        String databasePath = "jdbc:h2:" + dbFile.getAbsolutePath() + ";AUTO_SERVER=TRUE";
+        Driver.load();
+        connection = DriverManager.getConnection(databasePath, "", "");
+        H2GISFunctions.load(connection);
+
+        // Static layers
+        new Import_File().exec(connection,
+                [
+                        "pathFile":"/home/gao/Downloads/Noise/Paris/data/building.shp",
+                        "inputSRID":"2154",
+                        "tableName":"BUILDINGS"
+                ]);
+
+        new Import_Asc_File().exec(connection,
+                [
+                        "pathFile":"/home/gao/Downloads/Noise/Paris/data/paris_dem.asc",
+                        "inputSRID":"2154"
+                ]);
+
+        new Import_File().exec(connection,
+                [
+                        "pathFile":"/home/gao/Downloads/Noise/Paris/data/Receivers_selected.shp",
+                        "inputSRID":"2154",
+                        "tableName":"RECEIVERS"
+                ]);
+
+        new Set_Height().exec(connection,
+                [
+                        "tableName":"RECEIVERS",
+                        "height":4
+                ]);
+
+        // Hourly traffic files
+        for (int hour = 0; hour < 24; hour++) {
+
+            String roadName =
+                    String.format(
+                            "Roads_updated_slope_20250318_%02dh",
+                            hour
+                    );
+
+            String shpPath =
+                    folderPath + "/" + roadName + ".shp";
+
+            if (Files.exists(Paths.get(shpPath))) {
+
+                System.out.println(
+                        "Running hour "
+                                + hour
+                                + " : "
+                                + shpPath
+                );
+
+                RunDynamicFlow(
+                        roadName,
+                        "Poisson",
+                        20,
+                        3600,
+                        "0"
+                );
+
+            } else {
+
+                System.out.println(
+                        "⚠️ Shapefile not found: "
+                                + shpPath
+                );
+            }
+        }
+    }
     }
