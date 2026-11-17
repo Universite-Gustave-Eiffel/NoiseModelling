@@ -71,6 +71,8 @@ Mandatory inputs
    
    *   DIR_ID  : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER)
    
+   *   BRIDGE_PK  : optional, identifies the bridge deck (from tableBridgePoints) this source sits on. When confSourcesZIsAltitude is false, its relative Z is resolved against that deck instead of the ground below it
+   
    💡 This table can be generated from the WPS Block "Road_Emission_from_Traffic"
 
    Type: ``String``
@@ -215,6 +217,25 @@ Optional inputs
    Type: ``Double``
 
    Default: ``0.1``
+
+``tableBridgePoints`` — *Bridge deck points table name*
+   Name of the bridge deck points table (elevated road structures). Optional.  One bridge deck is built per BRIDGE_PK value from its ordered PK points. The table must contain:
+   
+   *   PK : point identifier (INTEGER)
+   
+   *   BRIDGE_PK : identifier of the bridge this point belongs to (INTEGER)
+   
+   *   THE_GEOM : 2D point on the deck centre line (POINT)
+   
+   *   ABSOLUTE_DECK_HEIGHT  /  RELATIVE_DECK_HEIGHT : deck top height, absolute or relative to the ground (DOUBLE, one of the two)
+   
+   *   DECK_THICKNESS, RIGHT_WIDTH, LEFT_WIDTH, RIGHT_BARRIER_HEIGHT, LEFT_BARRIER_HEIGHT  (DOUBLE)
+   
+   *   POSITION : CENTER | LEFT | RIGHT
+   
+   *   GIRDER_TYPE, SLAB_TYPE  (VARCHAR)
+
+   Type: ``String``
 
 ``tableDEM`` — *DEM table name*
    Name of the Digital Elevation Model (DEM) table  The table must contain:

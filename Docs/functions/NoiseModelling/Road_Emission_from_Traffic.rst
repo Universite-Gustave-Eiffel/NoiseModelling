@@ -26,6 +26,8 @@ Mandatory inputs
    
    *  IDSOURCE  : an identifier, if present will be copied as is. It is expected if you will use LW_ROADS as SOURCES_EMISSION in the Noise_Level_From_Source script input (INTEGER)
    
+   *  BRIDGE_PK  : optional, if present will be copied as is. Identifies the bridge deck (see tableBridgePoints in Noise_level_from_source) this road segment sits on, so its relative Z is resolved against the deck instead of the ground below it (INTEGER)
+   
    *  PERIOD  : Any text that could be time period ex. D, E, N, DEN (Varchar), if present will be copied as is
    
    *  LV  : Hourly average light vehicle count (DOUBLE)
