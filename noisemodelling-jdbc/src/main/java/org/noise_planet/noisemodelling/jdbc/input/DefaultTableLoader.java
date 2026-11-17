@@ -901,8 +901,35 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                         pb.withBarrierHeight(rBar, lBar);
                     }
                     pb.withPosition(BridgePoint.Position.fromString(rs.getString("POSITION")));
-                    pb.withGirderType(Bridge.GirderType.fromString(rs.getString("GIRDER_TYPE")));
-                    pb.withSlabType(Bridge.SlabType.fromString(rs.getString("SLAB_TYPE")));
+                    // Girder/slab type only feed the ASJ structural-noise emission model - nothing
+                    // in bridge classification, deck geometry or diffraction (the only things this
+                    // loader's own callers use a Bridge for) ever reads them. An unrecognised value
+                    // here (e.g. "CONCRETE" instead of one of the specific CONCRETE_* constants)
+                    // must not abort loading this bridge - and with it, every source/receiver that
+                    // depends on it - over a field those callers never look at. Fall back to the
+                    // same default fromString(null) already uses for a missing column.
+                    String girderTypeStr = rs.getString("GIRDER_TYPE");
+                    Bridge.GirderType girderType;
+                    try {
+                        girderType = Bridge.GirderType.fromString(girderTypeStr);
+                    } catch (IllegalArgumentException ex) {
+                        LOGGER.warn("Bridge point PK {} (bridge {}) has an unrecognised GIRDER_TYPE '{}', " +
+                                "falling back to the default - this only affects the structural-noise " +
+                                "emission model, not bridge geometry or diffraction", pk, bridgePk, girderTypeStr);
+                        girderType = Bridge.GirderType.fromString(null);
+                    }
+                    String slabTypeStr = rs.getString("SLAB_TYPE");
+                    Bridge.SlabType slabType;
+                    try {
+                        slabType = Bridge.SlabType.fromString(slabTypeStr);
+                    } catch (IllegalArgumentException ex) {
+                        LOGGER.warn("Bridge point PK {} (bridge {}) has an unrecognised SLAB_TYPE '{}', " +
+                                "falling back to the default - this only affects the structural-noise " +
+                                "emission model, not bridge geometry or diffraction", pk, bridgePk, slabTypeStr);
+                        slabType = Bridge.SlabType.fromString(null);
+                    }
+                    pb.withGirderType(girderType);
+                    pb.withSlabType(slabType);
                     pointsByBridge.computeIfAbsent(bridgePk, k -> new ArrayList<>()).add(pb.build());
                 }
             }

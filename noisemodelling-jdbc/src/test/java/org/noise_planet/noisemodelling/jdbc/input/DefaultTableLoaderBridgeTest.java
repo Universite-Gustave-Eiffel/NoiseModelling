@@ -163,6 +163,48 @@ public class DefaultTableLoaderBridgeTest {
     }
 
     @Test
+    public void unrecognisedGirderOrSlabTypeFallsBackInsteadOfFailingTheWholeBridge() throws Exception {
+        // Real-world report (PR #1061): GIRDER_TYPE = 'CONCRETE' (not one of the specific
+        // CONCRETE_BOX/CONCRETE_PLATE/CONCRETE_HOLLOW_SLAB constants) made the whole bridge - and
+        // with it every road/receiver depending on it - fail to load. Girder/slab type only feed
+        // the ASJ structural-noise emission model; nothing in bridge classification, deck geometry
+        // or diffraction reads them, so an unrecognised value here must not abort loading.
+        try (Connection connection = JDBCUtilities.wrapConnection(
+                H2GISDBFactory.createSpatialDataBase(DefaultTableLoaderBridgeTest.class.getSimpleName(), true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE BUILDINGS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON), HEIGHT DOUBLE)");
+                st.execute("CREATE TABLE LW_ROADS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRING))");
+                st.execute("INSERT INTO LW_ROADS(THE_GEOM) VALUES ('LINESTRING(0 20, 450 20)')");
+                st.execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POINT))");
+                st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(225 60)')");
+                st.execute("CREATE TABLE BRIDGE_POINTS(PK INT, BRIDGE_PK INT, THE_GEOM GEOMETRY(POINT), " +
+                        "ABSOLUTE_DECK_HEIGHT DOUBLE, RELATIVE_DECK_HEIGHT DOUBLE, DECK_THICKNESS DOUBLE, " +
+                        "RIGHT_WIDTH DOUBLE, LEFT_WIDTH DOUBLE, RIGHT_BARRIER_HEIGHT DOUBLE, LEFT_BARRIER_HEIGHT DOUBLE, " +
+                        "POSITION VARCHAR, GIRDER_TYPE VARCHAR, SLAB_TYPE VARCHAR)");
+                for (int i = 0; i < 2; i++) {
+                    st.execute("INSERT INTO BRIDGE_POINTS VALUES(" + i + ", 1, 'POINT(" + (i * 90) + " 20)', " +
+                            "10.0, NULL, 0.5, 5.0, 5.0, 1.0, 1.0, 'CENTER', 'CONCRETE', 'CONCRETE')");
+                }
+            }
+
+            NoiseMapByReceiverMaker maker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            maker.setBridgePointsTableName("BRIDGE_POINTS");
+            maker.initialize(connection);
+
+            DefaultTableLoader loader = new DefaultTableLoader();
+            loader.noiseMapByReceiverMaker = maker;
+
+            ProfileBuilder builder = new ProfileBuilder();
+            loader.fetchCellBridges(connection, new Envelope(0, 90, 0, 40), builder);
+            builder.finishFeeding();
+
+            Bridge bridge = builder.getBridgeByPk(1);
+            assertNotNull(bridge, "an unrecognised GIRDER_TYPE/SLAB_TYPE must not stop the bridge from loading");
+            assertEquals(2, bridge.getBridgePointCount());
+        }
+    }
+
+    @Test
     public void initializeClearsTheBridgeExtentsCacheSoAMovedBridgeIsFoundAtItsNewLocation() throws Exception {
         try (Connection connection = JDBCUtilities.wrapConnection(
                 H2GISDBFactory.createSpatialDataBase(DefaultTableLoaderBridgeTest.class.getSimpleName(), true, ""))) {
