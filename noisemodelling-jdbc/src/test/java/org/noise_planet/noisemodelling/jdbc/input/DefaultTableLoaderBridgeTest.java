@@ -205,6 +205,48 @@ public class DefaultTableLoaderBridgeTest {
     }
 
     @Test
+    public void unrecognisedPositionFallsBackInsteadOfFailingTheWholeBridge() throws Exception {
+        // Same hazard as GIRDER_TYPE/SLAB_TYPE above, just caught by self-review rather than a bug
+        // report: POSITION is parsed by the exact same throw-on-unrecognised-value pattern right
+        // next to them, with no try/catch around it either. Unlike girder/slab type it does drive
+        // real deck geometry, but a bad row still must not take the whole bridge down with it - the
+        // same CENTER fallback a *missing* POSITION column already uses silently is no worse here.
+        try (Connection connection = JDBCUtilities.wrapConnection(
+                H2GISDBFactory.createSpatialDataBase(DefaultTableLoaderBridgeTest.class.getSimpleName(), true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE BUILDINGS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON), HEIGHT DOUBLE)");
+                st.execute("CREATE TABLE LW_ROADS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRING))");
+                st.execute("INSERT INTO LW_ROADS(THE_GEOM) VALUES ('LINESTRING(0 20, 450 20)')");
+                st.execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY(POINT))");
+                st.execute("INSERT INTO RECEIVERS(THE_GEOM) VALUES ('POINT(225 60)')");
+                st.execute("CREATE TABLE BRIDGE_POINTS(PK INT, BRIDGE_PK INT, THE_GEOM GEOMETRY(POINT), " +
+                        "ABSOLUTE_DECK_HEIGHT DOUBLE, RELATIVE_DECK_HEIGHT DOUBLE, DECK_THICKNESS DOUBLE, " +
+                        "RIGHT_WIDTH DOUBLE, LEFT_WIDTH DOUBLE, RIGHT_BARRIER_HEIGHT DOUBLE, LEFT_BARRIER_HEIGHT DOUBLE, " +
+                        "POSITION VARCHAR, GIRDER_TYPE VARCHAR, SLAB_TYPE VARCHAR)");
+                for (int i = 0; i < 2; i++) {
+                    st.execute("INSERT INTO BRIDGE_POINTS VALUES(" + i + ", 1, 'POINT(" + (i * 90) + " 20)', " +
+                            "10.0, NULL, 0.5, 5.0, 5.0, 1.0, 1.0, 'CENTRE', 'STEEL_BOX', 'STEEL')");
+                }
+            }
+
+            NoiseMapByReceiverMaker maker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+            maker.setBridgePointsTableName("BRIDGE_POINTS");
+            maker.initialize(connection);
+
+            DefaultTableLoader loader = new DefaultTableLoader();
+            loader.noiseMapByReceiverMaker = maker;
+
+            ProfileBuilder builder = new ProfileBuilder();
+            loader.fetchCellBridges(connection, new Envelope(0, 90, 0, 40), builder);
+            builder.finishFeeding();
+
+            Bridge bridge = builder.getBridgeByPk(1);
+            assertNotNull(bridge, "an unrecognised POSITION must not stop the bridge from loading");
+            assertEquals(2, bridge.getBridgePointCount());
+        }
+    }
+
+    @Test
     public void initializeClearsTheBridgeExtentsCacheSoAMovedBridgeIsFoundAtItsNewLocation() throws Exception {
         try (Connection connection = JDBCUtilities.wrapConnection(
                 H2GISDBFactory.createSpatialDataBase(DefaultTableLoaderBridgeTest.class.getSimpleName(), true, ""))) {

@@ -900,7 +900,25 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                     if (!Double.isNaN(rBar) && !Double.isNaN(lBar)) {
                         pb.withBarrierHeight(rBar, lBar);
                     }
-                    pb.withPosition(BridgePoint.Position.fromString(rs.getString("POSITION")));
+                    // Unlike girder/slab type below, POSITION does drive real deck geometry
+                    // (BridgeTriangulation/BridgePointManager use it to tell the deck's own edges
+                    // apart from its centreline) - but an unrecognised value here must not abort
+                    // the whole bridge either, for the same reason: one bad row would otherwise
+                    // take down every source/receiver depending on it. Falling back to CENTER here
+                    // is no worse than what a *missing* POSITION column already silently does
+                    // (fromString(null) returns the same default) - the only difference is this
+                    // path now warns about it instead of staying silent.
+                    String positionStr = rs.getString("POSITION");
+                    BridgePoint.Position position;
+                    try {
+                        position = BridgePoint.Position.fromString(positionStr);
+                    } catch (IllegalArgumentException ex) {
+                        LOGGER.warn("Bridge point PK {} (bridge {}) has an unrecognised POSITION '{}', " +
+                                "falling back to CENTER - this can change the deck's geometry, check " +
+                                "this row's data", pk, bridgePk, positionStr);
+                        position = BridgePoint.Position.fromString(null);
+                    }
+                    pb.withPosition(position);
                     // Girder/slab type only feed the ASJ structural-noise emission model - nothing
                     // in bridge classification, deck geometry or diffraction (the only things this
                     // loader's own callers use a Bridge for) ever reads them. An unrecognised value
