@@ -41,39 +41,45 @@ public class CurvedProfileGenerator {
 
     /**
      * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
-     * @param flatProfile
-     * @return
+     * <p>
+     * The curved ray follows the unfolded propagation path. Each cut point is moved by the height of the arc at its
+     * abscissa along that path, the cumulative horizontal distance between consecutive cut points (the abscissa used
+     * by {@link JTSUtility#getNewCoordinateSystem(List)}), with d the total length of the unfolded path. For a direct
+     * profile this equals the distance to the source. For a reflection profile it does not: the cut points after the
+     * reflection can lie farther from the source than the receiver, and the distance to the source in plan would raise
+     * them instead of lowering them.
+     * @param flatProfile Cut points of the profile, ordered from the source to the receiver
+     * @param inversed If true, apply the inverse transformation (from curved to flat)
+     * @return The cut points of the curved profile
      */
     public static List<CutPoint> applyTransformation(List<CutPoint> flatProfile, boolean inversed) {
-        // Get chord endpoints
-        CutPoint sourcePoint = flatProfile.get(0);
-        CutPoint receiverPoint = flatProfile.get(flatProfile.size() - 1);
-        Coordinate cs = sourcePoint.getCoordinate();
-        Coordinate cr = receiverPoint.getCoordinate();
+        int pointCount = flatProfile.size();
+        double[] abscissa = new double[pointCount];
+        for (int i = 1; i < pointCount; i++) {
+            abscissa[i] = abscissa[i - 1] + flatProfile.get(i - 1).getCoordinate().distance(flatProfile.get(i).getCoordinate());
+        }
+        double d = pointCount > 0 ? abscissa[pointCount - 1] : 0;
 
-        List<CutPoint> curvedProfile = new ArrayList<>();
-        Coordinate[] curvedCoords = applyTransformation(cs, cr, flatProfile.stream().map(CutPoint::getCoordinate).toArray(Coordinate[]::new), inversed);
-        Coordinate[] groundCoords = applyTransformation(cs, cr, flatProfile.stream().map(p -> new Coordinate(p.getCoordinate().x, p.getCoordinate().y, p.zGround)).toArray(Coordinate[]::new), inversed);
-
-        for (int i = 0; i < curvedCoords.length; i++) {
+        List<CutPoint> curvedProfile = new ArrayList<>(pointCount);
+        for (int i = 0; i < pointCount; i++) {
             CutPoint cp = flatProfile.get(i);
+            double dz = curvedOffset(abscissa[i], d, inversed);
             CutPoint newCp = cp.clone();
-            newCp.setZGround(groundCoords[i].z);
-            newCp.setCoordinate(curvedCoords[i]);
+            newCp.setZGround(cp.zGround + dz);
+            Coordinate c = cp.getCoordinate();
+            newCp.setCoordinate(new Coordinate(c.x, c.y, c.z + dz));
 
-            // If this is a reflection point, also transform the wall coordinates
+            // If this is a reflection point, also move the wall by the offset of the reflection point, so that the
+            // wall altitude interpolated at the reflection point is in the same curved coordinate system as the ray
             if (newCp instanceof CutPointReflection) {
                 CutPointReflection reflectionPoint = (CutPointReflection) newCp;
                 if (reflectionPoint.wall != null) {
-                    // Transform wall endpoints using the same curved transformation
-                    Coordinate[] wallCoords = new Coordinate[]{
-                            new Coordinate(reflectionPoint.wall.p0),
-                            new Coordinate(reflectionPoint.wall.p1)
-                    };
-                    Coordinate[] transformedWallCoords = applyTransformation(cs, cr, wallCoords, inversed);
-
+                    Coordinate p0 = new Coordinate(reflectionPoint.wall.p0);
+                    Coordinate p1 = new Coordinate(reflectionPoint.wall.p1);
+                    p0.z += dz;
+                    p1.z += dz;
                     // Create a NEW LineSegment with transformed coordinates
-                    reflectionPoint.wall = new LineSegment(transformedWallCoords[0], transformedWallCoords[1]);
+                    reflectionPoint.wall = new LineSegment(p0, p1);
                 }
             }
 
@@ -96,29 +102,32 @@ public class CurvedProfileGenerator {
         // Calculate projected distance between source and receiver on the vertical plane
         double d = cs.distance(cr);
 
-        // Calculate radius of curvature (Γ)
-        double radius = Math.max(1000, 8 * d);
-
-        double base = Math.sqrt(radius * radius - d * d / 4);
-
         for (int i = 0; i < flatProfile.length; i++) {
             Coordinate p = flatProfile[i];
-
-            // Apply equation (4) for z coordinate transformation
-            double z = base -
-                    Math.sqrt(radius * radius - Math.pow(p.distance(cs) - d/2, 2));
-
-            if(inverse) {
-                z = -z;
-                // it is a simplification because p.distance3D(cs) is not good if we are not on the curved profile
-                // not mathematically exact, but it gives a close working inverse.
-            }
+            // it is a simplification for the inverse because p.distance3D(cs) is not good if we are not on the curved
+            // profile; not mathematically exact, but it gives a close working inverse.
+            double z = curvedOffset(p.distance(cs), d, inverse);
 
             // Create new coordinate with transformed z
             curvedProfile[i] = new Coordinate(p.x, p.y, p.z + z);
         }
 
         return curvedProfile;
+    }
+
+    /**
+     * Equation (4) of Salomons et al. (2011): vertical offset of the curved coordinate system
+     * @param x Abscissa of the point along the path from the source
+     * @param d Length of the path from the source to the receiver
+     * @param inverse If true, the offset of the inverse transformation (from curved to flat)
+     * @return The vertical offset to add to the altitude of the point
+     */
+    private static double curvedOffset(double x, double d, boolean inverse) {
+        // Calculate radius of curvature (Γ)
+        double radius = Math.max(1000, 8 * d);
+        double base = Math.sqrt(radius * radius - d * d / 4);
+        double z = base - Math.sqrt(radius * radius - Math.pow(x - d / 2, 2));
+        return inverse ? -z : z;
     }
 
 }
