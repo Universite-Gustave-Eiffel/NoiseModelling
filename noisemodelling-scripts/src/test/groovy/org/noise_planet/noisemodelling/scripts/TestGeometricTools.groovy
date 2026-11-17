@@ -21,6 +21,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_lines
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_rail
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
@@ -32,6 +35,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
@@ -229,6 +233,98 @@ class TestGeometricTools extends JdbcTestCase {
         def countAfter = sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED")[0] as Integer
 
         assertTrue(countBefore < countAfter)
+    }
+
+    @Test
+    void testEnrichRoadLineZ() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        for (int i = 0; i <= 10; i++) {
+            for (int j = 0; j <= 10; j++) {
+                sql.execute("INSERT INTO DEM VALUES (ST_SetSRID(ST_MakePoint(" + (i * 10) + ", " + (j * 10) + ", -2), 2154))")
+            }
+        }
+        sql.execute("CREATE TABLE ROADS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(GEOMETRY, 2154), WIDTH DOUBLE)")
+        def input = ["inputDEM": "DEM", "inputRoad": "ROADS", "roadWidth": "WIDTH"]
+
+        // A road below sea level is added to the DEM
+        sql.execute("INSERT INTO ROADS VALUES (1, ST_GeomFromText('LINESTRING Z(0 50 -3, 100 50 -3)', 2154), 6)")
+        new Enrich_DEM_with_road().exec(connection, input)
+        assertTrue((sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED WHERE SOURCE = 'ROA'")[0] as Integer) > 0)
+
+        // A road without Z stops the script with an explicit message
+        sql.execute("UPDATE ROADS SET THE_GEOM = ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154)")
+        assertThrows(IllegalArgumentException.class, () -> new Enrich_DEM_with_road().exec(connection, input))
+    }
+
+    @Test
+    void testEnrichLinesWithoutZ() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        sql.execute("INSERT INTO DEM VALUES (ST_GeomFromText('POINT Z(0 0 10)', 2154)), (ST_GeomFromText('POINT Z(100 100 10)', 2154))")
+        sql.execute("CREATE TABLE LINES(THE_GEOM GEOMETRY(LINESTRING, 2154))")
+        sql.execute("INSERT INTO LINES VALUES (ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154))")
+
+        // Without the check, points with no Z were written into the DEM without error
+        assertThrows(IllegalArgumentException.class, () -> new Enrich_DEM_with_lines().exec(connection, ["inputDEM": "DEM", "inputLine": "LINES"]))
+    }
+
+    @Test
+    void testEnrichDEMRoadsWithoutPosSol() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        sql.execute("INSERT INTO DEM VALUES (ST_GeomFromText('POINT Z(0 0 10)', 2154)), (ST_GeomFromText('POINT Z(100 100 10)', 2154))")
+        sql.execute("CREATE TABLE ORO(THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
+        sql.execute("CREATE TABLE HYDRO(THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
+        sql.execute("CREATE TABLE RAILS(THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE)")
+        sql.execute("CREATE TABLE ROADS(THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH DOUBLE)")
+        sql.execute("INSERT INTO ROADS VALUES (ST_GeomFromText('LINESTRING Z(0 50 10, 100 50 10)', 2154), 6)")
+
+        new Enrich_DEM().exec(connection, ["inputDEM": "DEM", "inputOro": "ORO", "inputHydro": "HYDRO",
+                "inputRoad": "ROADS", "roadWidth": "WIDTH", "inputRail": "RAILS", "railWidth": "WIDTH",
+                "outputSuffixe": "ENRICHED"])
+
+        assertTrue((sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED WHERE SOURCE = 'ROA'")[0] as Integer) > 0)
+    }
+
+    @Test
+    void testEnrichRoadFullWidth() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        for (int i = 0; i <= 20; i++) {
+            for (int j = 0; j <= 20; j++) {
+                sql.execute("INSERT INTO DEM VALUES (ST_SetSRID(ST_MakePoint(" + (i * 5) + ", " + (j * 5) + ", 10), 2154))")
+            }
+        }
+        // Integer width of 41 m: half-width 20.5 m, DEM points removed up to 25.5 m from the road axis
+        sql.execute("CREATE TABLE ROADS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH INTEGER)")
+        sql.execute("INSERT INTO ROADS VALUES (1, ST_GeomFromText('LINESTRING Z(0 50 10, 100 50 10)', 2154), 41)")
+
+        new Enrich_DEM_with_road().exec(connection, ["inputDEM": "DEM", "inputRoad": "ROADS", "roadWidth": "WIDTH"])
+
+        String distanceToRoad = "ST_Distance(D.THE_GEOM, ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154))"
+        assertEquals(20.5, sql.firstRow("SELECT MAX(" + distanceToRoad + ") FROM DEM_ENRICHED D WHERE SOURCE = 'ROA'")[0] as Double, 1e-6)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED D WHERE SOURCE = 'DEM' AND " + distanceToRoad + " < 25.5")[0] as Integer)
+    }
+
+    @Test
+    void testEnrichRailFullWidth() {
+        Sql sql = new Sql(connection)
+        sql.execute("CREATE TABLE DEM(THE_GEOM GEOMETRY(POINTZ, 2154))")
+        for (int i = 0; i <= 20; i++) {
+            for (int j = 0; j <= 20; j++) {
+                sql.execute("INSERT INTO DEM VALUES (ST_SetSRID(ST_MakePoint(" + (i * 5) + ", " + (j * 5) + ", 10), 2154))")
+            }
+        }
+        // Integer width of 41 m: half-width 20.5 m, DEM points removed up to 25.5 m from the rail axis
+        sql.execute("CREATE TABLE RAILS(THE_GEOM GEOMETRY(LINESTRINGZ, 2154), WIDTH INTEGER)")
+        sql.execute("INSERT INTO RAILS VALUES (ST_GeomFromText('LINESTRING Z(0 50 10, 100 50 10)', 2154), 41)")
+
+        new Enrich_DEM_with_rail().exec(connection, ["inputDEM": "DEM", "inputRail": "RAILS", "railWidth": "WIDTH"])
+
+        String distanceToRail = "ST_Distance(D.THE_GEOM, ST_GeomFromText('LINESTRING(0 50, 100 50)', 2154))"
+        assertEquals(20.5, sql.firstRow("SELECT MAX(" + distanceToRail + ") FROM DEM_ENRICHED D WHERE SOURCE = 'RAI'")[0] as Double, 1e-6)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED D WHERE SOURCE = 'DEM' AND " + distanceToRail + " < 25.5")[0] as Integer)
     }
 
 

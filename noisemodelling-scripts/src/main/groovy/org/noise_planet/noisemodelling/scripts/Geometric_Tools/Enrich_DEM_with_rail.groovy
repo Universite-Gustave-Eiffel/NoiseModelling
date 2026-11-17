@@ -147,6 +147,20 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
     }
 }
 
+/**
+ * Stop the script when lines of the table have no Z value: the DEM points created along a line take
+ * their altitude from the line, so the DEM can only be enriched with 3D lines.
+ * @param sql connection to the database
+ * @param lineTable name of the table of lines (roads or railways)
+ */
+static void checkLinesHaveZ(Sql sql, String lineTable) {
+    int linesWithoutZ = sql.firstRow("SELECT COUNT(*) FROM " + lineTable + " WHERE ST_CoordDim(THE_GEOM) < 3")[0] as Integer
+    if (linesWithoutZ > 0) {
+        throw new IllegalArgumentException("Error : " + linesWithoutZ + " lines of the table " + lineTable
+                + " have no Z value. The DEM can only be enriched with 3D lines.")
+    }
+}
+
 
 def exec(Connection connection, input) {
 
@@ -221,7 +235,7 @@ def exec(Connection connection, input) {
     if ('outputsuffix' in input) {
         outputsuffix = input["outputsuffix"] as String
     }
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputsuffix"] as String
+    String enrichedDEM = inputDEM + "_" + outputsuffix
 
     // print to command window
     logger.info('List of the input parameters:')
@@ -237,6 +251,7 @@ def exec(Connection connection, input) {
     logger.info('Start enrich the DEM')
 
     def sql = new Sql(connection)
+    checkLinesHaveZ(sql, inputRail)
 
     def import_dem = """
     ------------
@@ -253,7 +268,7 @@ def exec(Connection connection, input) {
     -- Import railways (that are on the floor --> POS_SOL=0)
 
     DROP TABLE IF EXISTS dem_rail;    
-    CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, $railWidth as WIDTH FROM $inputRail WHERE st_zmin(THE_GEOM) > 0;
+    CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, CAST($railWidth AS DOUBLE PRECISION) as WIDTH FROM $inputRail WHERE ST_CoordDim(THE_GEOM) = 3;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
     ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
@@ -270,9 +285,9 @@ def exec(Connection connection, input) {
     DROP TABLE DEM_WITHOUT_PTLINE IF EXISTS;
     CREATE TABLE DEM_WITHOUT_PTLINE(THE_GEOM geometry(POINTZ, $srid), source varchar) AS SELECT st_setsrid(THE_GEOM, $srid), SOURCE FROM dem_to_enrich;
     
-    -- Remove DEM points that are less than "WIDTH/2" far FROM rails
+    -- Remove DEM points that are less than "WIDTH/2" + 5 m far FROM rails
     DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_rail b 
-        WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, 20) && b.THE_GEOM 
+        WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, (SELECT MAX(WIDTH) / 2 + 5 FROM dem_rail)) && b.THE_GEOM 
         AND ST_DISTANCE(DEM_WITHOUT_PTLINE.THE_GEOM, b.THE_GEOM)< ((b.WIDTH/2) + 5)  LIMIT 1) ;
     
     -- Create buffer points from rails and copy the elevation from the rails to the point
