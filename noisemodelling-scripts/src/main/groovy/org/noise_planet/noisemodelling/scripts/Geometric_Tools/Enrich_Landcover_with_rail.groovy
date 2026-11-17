@@ -297,23 +297,27 @@ def exec(Connection connection, input) {
     CREATE TABLE rail_buff_d4_expl AS SELECT a.the_geom, p.g1 as g FROM ST_Explode('RAIL_DIFF_D4_D3') a, PLATEFORM p WHERE p.IDPLATFORM = a.idplatform;
 
     DROP TABLE IF EXISTS LANDCOVER_DIFF_D4, LANDCOVER_EXPL;
-    CREATE TABLE LANDCOVER_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom, b.g from rail_buff_d4 a, landcover_to_enrich b;
+    -- Union the d4 buffer of every platform into a single geometry, then subtract it once from each polygon.
+    -- Otherwise, with several platforms, each polygon would be cut by each platform buffer separately and the
+    -- later union would restore the area removed by the other platform buffers.
+    CREATE TABLE LANDCOVER_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom, b.g
+        FROM (SELECT ST_UNION(ST_ACCUM(the_geom)) AS the_geom FROM rail_buff_d4) a, landcover_to_enrich b;
     CREATE TABLE LANDCOVER_EXPL AS SELECT the_geom, g FROM ST_Explode('LANDCOVER_DIFF_D4');
 
     -- Unifiy tables
-    DROP TABLE IF EXISTS LANDCOVER_UNION, LANDCOVER_MERGE;
-    CREATE TABLE LANDCOVER_UNION AS SELECT * FROM LANDCOVER_EXPL UNION SELECT * FROM RAIL_BUFF_D1_EXPL UNION SELECT * FROM RAIL_BUFF_D3_EXPL UNION SELECT * FROM RAIL_BUFF_D4_EXPL ; 
+    DROP TABLE IF EXISTS LANDCOVER_UNION;
+    CREATE TABLE LANDCOVER_UNION AS SELECT * FROM LANDCOVER_EXPL UNION ALL SELECT * FROM RAIL_BUFF_D1_EXPL UNION ALL SELECT * FROM RAIL_BUFF_D3_EXPL UNION ALL SELECT * FROM RAIL_BUFF_D4_EXPL ; 
 
-    -- Merge geometries that have the same G
-    CREATE TABLE LANDCOVER_MERGE AS SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, g FROM LANDCOVER_UNION GROUP BY g;
+    -- Create final table
     DROP TABLE IF EXISTS $enrichedLandcover;
-    CREATE TABLE $enrichedLandcover AS SELECT ST_SETSRID(the_geom,$srid) as the_geom, g FROM ST_Explode('LANDCOVER_MERGE');
+    CREATE TABLE $enrichedLandcover AS SELECT ST_SETSRID(the_geom,$srid) as the_geom, g FROM ST_Explode('LANDCOVER_UNION');
+    -- Create spatial index on final table
     CREATE SPATIAL INDEX ON $enrichedLandcover(THE_GEOM);
 
     -- Remove non-needed tables
     DROP TABLE IF EXISTS rail_buff_d1, rail_buff_d3, rail_buff_d4, rail_diff_d3_d1, rail_diff_d4_d3, rail_buff_d1_expl, 
     rail_buff_d3_expl, rail_buff_d4_expl, LANDCOVER_DIFF_D4, LANDCOVER_EXPL, 
-    LANDCOVER_UNION, LANDCOVER_MERGE, landcover_rail, landcover_to_enrich, PLATFORM;
+    LANDCOVER_UNION, landcover_rail, landcover_to_enrich, PLATEFORM;
 
 
     -- Landcover successfully enriched in the table $enrichedLandcover
