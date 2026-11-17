@@ -347,4 +347,64 @@ class TestGeometricTools extends JdbcTestCase {
 
         assertNotEquals(averageHeightBefore, averageHeightAfter)
     }
+
+    @Test
+    void testEnrichLandcoverWithRailDefaultPlatform() {
+        def sql = new Sql(connection)
+        // LANDCOVER without a platform column: the default platform must be used
+        sql.execute("CREATE TABLE LANDCOVER(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), GROUND_G DOUBLE)")
+        sql.execute("""INSERT INTO LANDCOVER VALUES
+            (1, ST_GeomFromText('POLYGON((0 -50, 100 -50, 100 50, 0 50, 0 -50))', 2154), 0.7),
+            (2, ST_GeomFromText('POLYGON((200 0, 300 0, 300 100, 200 100, 200 0))', 2154), 1)""")
+        // RAIL table without a PLATFORM column
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 110 0 1)', 2154))")
+
+        new Enrich_Landcover_with_rail().exec(connection,
+                ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL"])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "LANDCOVER_ENRICHED"))
+        // The default platform (DEFAULT) must have been applied: its g1=0 zone produces G=0 rows in the enriched
+        // landcover, whereas the input landcover only contained G=0.7 and G=1.0.
+        assertTrue(sql.firstRow("SELECT COUNT(*) C FROM LANDCOVER_ENRICHED WHERE G = 0").C as Integer > 0)
+    }
+
+    @Test
+    void testEnrichLandcoverWithRailLowercasePlatform() {
+        def sql = new Sql(connection)
+        sql.execute("CREATE TABLE LANDCOVER(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), GROUND_G DOUBLE)")
+        sql.execute("""INSERT INTO LANDCOVER VALUES
+            (1, ST_GeomFromText('POLYGON((0 -50, 100 -50, 100 50, 0 50, 0 -50))', 2154), 0.7),
+            (2, ST_GeomFromText('POLYGON((200 0, 300 0, 300 100, 200 100, 200 0))', 2154), 1)""")
+        // PLATFORM value is lowercase: it must be normalized to uppercase (SNCF)
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), PLATFORM VARCHAR)")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 110 0 1)', 2154), 'sncf')")
+
+        new Enrich_Landcover_with_rail().exec(connection,
+                ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL"])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "LANDCOVER_ENRICHED"))
+        // The SNCF platform (g1=0, g3=0) must be applied, producing G=0 rows in the enriched landcover.
+        assertTrue(sql.firstRow("SELECT COUNT(*) C FROM LANDCOVER_ENRICHED WHERE G = 0").C as Integer > 0)
+    }
+
+    @Test
+    void testEnrichLandcoverWithRailUnknownPlatform() {
+        def sql = new Sql(connection)
+        sql.execute("CREATE TABLE LANDCOVER(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), GROUND_G DOUBLE)")
+        sql.execute("""INSERT INTO LANDCOVER VALUES
+            (1, ST_GeomFromText('POLYGON((0 -50, 100 -50, 100 50, 0 50, 0 -50))', 2154), 0.7)""")
+        // PLATFORM value not present in the data file: must be rejected instead of silently dropping rails
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), PLATFORM VARCHAR)")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 110 0 1)', 2154), 'UNKNOWN_PLATFORM')")
+
+        boolean thrown = false
+        try {
+            new Enrich_Landcover_with_rail().exec(connection,
+                    ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL"])
+        } catch (IllegalArgumentException e) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IllegalArgumentException for unknown platform")
+    }
 }

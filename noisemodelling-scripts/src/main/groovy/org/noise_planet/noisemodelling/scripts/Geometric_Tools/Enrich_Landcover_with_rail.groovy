@@ -153,6 +153,9 @@ def exec(Connection connection, input) {
     String inputLandcover = input["inputLandcover"]
     String gColumn = input["gColumn"]
     String inputRail = input["inputRail"]
+
+    List<String> railColumns = JDBCUtilities.getColumnNames(connection, TableLocation.parse(inputRail))
+
     String railWidth = null
     if ('railWidth' in input && input["railWidth"] != null && !(input["railWidth"] as String).trim().isEmpty()) {
         railWidth = input["railWidth"] as String
@@ -162,7 +165,6 @@ def exec(Connection connection, input) {
     // overrides the total platform width (d4) defined in the railway platform data file.
     boolean hasRailWidth = false
     if (railWidth != null) {
-        List<String> railColumns = JDBCUtilities.getColumnNames(connection, TableLocation.parse(inputRail))
         hasRailWidth = railColumns.any { String c -> c.equalsIgnoreCase(railWidth) }
     }
 
@@ -171,6 +173,9 @@ def exec(Connection connection, input) {
     if ('platformColumn' in input && input["platformColumn"] != null && !(input["platformColumn"] as String).trim().isEmpty()) {
         platformColumn = input["platformColumn"] as String
     }
+    // Whether the platform column is actually present in the railways table. When absent, every rail
+    // section uses the default platform.
+    boolean hasPlatformColumn = railColumns.any { String c -> c.equalsIgnoreCase(platformColumn) }
 
     // Railway platform data file (JSON). By default the one provided with NoiseModelling is used.
     String railwayPlatformDataFile = RailWayLWIterator.RAILWAY_PLATFORMS_JSON
@@ -184,7 +189,19 @@ def exec(Connection connection, input) {
         throw new IllegalArgumentException("No platform definition found in the railway platform data file: " + railwayPlatformDataFile)
     }
     String platformInsert = buildPlatformInsert(platforms)
-    
+
+    // Default platform identifier used when the railways table has no platform column or a NULL/empty value
+    String defaultPlatform = platforms.containsKey("DEFAULT") ? "DEFAULT" : platforms.keySet().iterator().next()
+
+    // SQL predicate resolving the platform of each rail section. When the platform column is absent, every
+    // section uses the default platform. When present, values are uppercased to match the loaded platform keys.
+    String platformPredicate = "p.idplatform = '$defaultPlatform'"
+    if (hasPlatformColumn) {
+        // Validate that every non-empty platform value in the railways table is a known platform
+        Enrich_DEM_with_rail.checkPlatforms(connection, platformColumn, inputRail, platforms)
+        platformPredicate = "p.idplatform = UPPER(a.$platformColumn)"
+    }
+
 
     // If no SRID provided, the one from DEM layer is applied
     Integer srid = 0
@@ -253,7 +270,7 @@ def exec(Connection connection, input) {
     CREATE TABLE landcover_rail AS SELECT a.THE_GEOM, p.d2 as d2, p.d3 as d3, $d4Expr as d4, 
         p.idplatform, p.d1, p.g1, p.g2, p.g3
         FROM $inputRail a, PLATEFORM p 
-        WHERE st_zmin(a.THE_GEOM) > 0 AND p.idplatform = a.$platformColumn;
+        WHERE st_zmin(a.THE_GEOM) > 0 AND $platformPredicate;
 
     CREATE SPATIAL INDEX ON landcover_rail(THE_GEOM);
     ALTER TABLE landcover_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
@@ -312,7 +329,7 @@ def exec(Connection connection, input) {
     stringBuilder.append(import_rail)
     stringBuilder.append(queries_landcover_rail)
 
-    def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "platformColumn": platformColumn, "outputsuffix": outputsuffix, "srid": srid, "platformInsert": platformInsert, "d4Expr": d4Expr]
+    def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "platformColumn": platformColumn, "outputsuffix": outputsuffix, "srid": srid, "platformInsert": platformInsert, "d4Expr": d4Expr, "platformPredicate": platformPredicate]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
     DataBaseUtilities.parseScript(template.toString(), connection, progress, logger)
 

@@ -173,6 +173,9 @@ def exec(Connection connection, input) {
     String inputDEM = input["inputDEM"]
     //String enrichedDEM = input["inputDEM"] += "_ENRICHED"
     String inputRail = input["inputRail"]
+
+    List<String> railColumns = JDBCUtilities.getColumnNames(connection, TableLocation.parse(inputRail, dbType))
+
     String railWidth = null
     if ('railWidth' in input && input["railWidth"] != null && !(input["railWidth"] as String).trim().isEmpty()) {
         railWidth = input["railWidth"] as String
@@ -182,7 +185,6 @@ def exec(Connection connection, input) {
     // overrides the total platform width (d4) defined in the railway platform data file.
     boolean hasRailWidth = false
     if (railWidth != null) {
-        List<String> railColumns = JDBCUtilities.getColumnNames(connection, TableLocation.parse(inputRail, dbType))
         hasRailWidth = railColumns.any { String c -> c.equalsIgnoreCase(railWidth) }
     }
 
@@ -191,6 +193,9 @@ def exec(Connection connection, input) {
     if ('platformColumn' in input && input["platformColumn"] != null && !(input["platformColumn"] as String).trim().isEmpty()) {
         platformColumn = input["platformColumn"] as String
     }
+    // Whether the platform column is actually present in the railways table. When absent, every rail
+    // section uses the default platform.
+    boolean hasPlatformColumn = railColumns.any { String c -> c.equalsIgnoreCase(platformColumn) }
 
     // Railway platform data file (JSON). By default the one provided with NoiseModelling is used.
     String railwayPlatformDataFile = RailWayLWIterator.RAILWAY_PLATFORMS_JSON
@@ -204,6 +209,17 @@ def exec(Connection connection, input) {
         throw new IllegalArgumentException("No platform definition found in the railway platform data file: " + railwayPlatformDataFile)
     }
     String platformInsert = buildPlatformInsert(platforms)
+
+    // Default platform identifier used when the railways table has no platform column or a NULL/empty value
+    String defaultPlatform = platforms.containsKey("DEFAULT") ? "DEFAULT" : platforms.keySet().iterator().next()
+
+    // SQL predicate resolving the platform of each rail section. When the platform column is absent, every
+    // section uses the default platform. When present, values are uppercased to match the loaded platform keys.
+    String platformPredicate = "p.idplatform = '$defaultPlatform'"
+    if (hasPlatformColumn) {
+        checkPlatforms(connection, platformColumn, inputRail, platforms)
+        platformPredicate = "p.idplatform = UPPER(a.$platformColumn)"
+    }
 
     // Simplify tolerance for rail geometries before computing the buffers. Default value is 0.5m
     double simplifyTolerance = input.getOrDefault("simplifyTolerance", 0.5) as Double
@@ -274,7 +290,7 @@ def exec(Connection connection, input) {
     DROP TABLE IF EXISTS dem_rail;    
     CREATE TABLE dem_rail AS SELECT ST_LineMerge(ST_Accum(a.THE_GEOM)) THE_GEOM, 'RAIL' as SOURCE, p.d2 as D2, p.d3 as D3, $d4Expr as D4, p.h2 as HRAIL
         FROM $inputRail a, PLATEFORM p 
-        WHERE not (st_zmin(a.THE_GEOM) = 0 AND st_zmax(a.THE_GEOM) = 0) AND p.idplatform = a.$platformColumn GROUP BY p.d2, p.d3, $d4Expr, p.h2, p.idplatform;
+        WHERE not (st_zmin(a.THE_GEOM) = 0 AND st_zmax(a.THE_GEOM) = 0) AND $platformPredicate GROUP BY p.d2, p.d3, $d4Expr, p.h2, p.idplatform;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
     ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
@@ -340,6 +356,23 @@ def exec(Connection connection, input) {
 
     return [result: enrichedDEM]
 
+}
+
+static checkPlatforms(Connection connection, String platformColumn, String inputRail, Map<String, RailwayPlatform> platforms) {
+// Validate that every non-empty platform value in the railways table is a known platform
+    Sql validationSql = new Sql(connection)
+    List<String> unknownPlatforms = []
+    String validationQuery = "SELECT DISTINCT CAST($platformColumn AS VARCHAR) AS PLATFORM_NAME FROM $inputRail WHERE $platformColumn IS NOT NULL"
+    validationSql.eachRow(validationQuery) { row ->
+        String name = row.PLATFORM_NAME
+        if (name != null && !name.trim().isEmpty() && !platforms.containsKey(name.toUpperCase())) {
+            unknownPlatforms.add(name)
+        }
+    }
+    if (!unknownPlatforms.isEmpty()) {
+        throw new IllegalArgumentException("Unknown platform(s) " + unknownPlatforms +
+                " in column $platformColumn of table $inputRail. Available platforms: " + platforms.keySet())
+    }
 }
 
 /**
