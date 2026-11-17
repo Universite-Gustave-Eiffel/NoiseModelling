@@ -188,7 +188,7 @@ def exec(Connection connection, input) {
     if (platforms.isEmpty()) {
         throw new IllegalArgumentException("No platform definition found in the railway platform data file: " + railwayPlatformDataFile)
     }
-    String platformInsert = buildPlatformInsert(platforms)
+    String platformInsert = Enrich_DEM_with_rail.buildPlatformInsert(platforms, connection.createStatement())
 
     // Default platform identifier used when the railways table has no platform column or a NULL/empty value
     String defaultPlatform = platforms.containsKey("DEFAULT") ? "DEFAULT" : platforms.keySet().iterator().next()
@@ -339,25 +339,4 @@ def exec(Connection connection, input) {
 
     return [result: enrichedLandcover]
 
-}
-
-/**
- * Builds the SQL INSERT statements that populate the PLATEFORM lookup table from the
- * platform definitions loaded from a JSON data file.
- * <p>
- * Each platform contributes one row holding the track gauge (d1), the section half-widths
- * (d2, d3, d4), the ground factors of the platform (g1), the shoulder (g2) and the track (g3)
- * zones, and the platform heights (h1, h2). The half-widths d2, d3 and d4 are taken from the
- * platform definition (d2_0, d3_0 and d4_0 respectively).
- *
- * @param platforms the map of platform identifier (upper case) to its definition
- * @return a string of SQL INSERT statements, one per platform
- */
-private static String buildPlatformInsert(Map<String, RailwayPlatform> platforms) {
-    StringBuilder sql = new StringBuilder()
-    platforms.each { String name, RailwayPlatform p ->
-        sql.append(String.format(Locale.ROOT, "INSERT INTO PLATEFORM VALUES ('%s', %f, %f, %f, %f, %f, %f, %f, %f, %f);%n",
-                name, p.d1, p.d2_0, p.d3_0, p.d4_0, p.g1, p.g2, p.g3, p.h1, p.h2))
-    }
-    return sql.toString()
 }

@@ -365,8 +365,10 @@ class TestGeometricTools extends JdbcTestCase {
         sql.execute("CREATE TABLE RAIL (THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
         sql.execute("INSERT INTO RAIL VALUES (ST_GeomFromText('LINESTRING Z(-10 0 5, 110 0 5)', 2154))")
 
+        double densifydistance = 10
+
         new Enrich_DEM_with_rail().exec(connection,
-                ["inputDEM": "DEM", "inputRail": "RAIL", "inputSRID": 2154])
+                ["inputDEM": "DEM", "inputRail": "RAIL", "inputSRID": 2154, "densifyDistance" : densifydistance])
 
         String railGeom = "ST_GeomFromText('LINESTRING Z(-10 0 5, 110 0 5)', 2154)"
         // d2 ring (d2_0/2 = 1.65 m): at the rail elevation
@@ -377,6 +379,8 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(4.32d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 4.1 AND 4.2").z as double, 1e-6)
         // Original DEM points beyond the platform keep their elevation
         assertEquals(0.0d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15").z as double, 1e-6)
+        // Compute the minimal average distance between created dem points on the largest buffer
+        assertEquals(densifydistance, sql.firstRow("SELECT AVG(ST_Distance(D.THE_GEOM, (SELECT THE_GEOM FROM DEM_ENRICHED WHERE PK != D.PK AND SOURCE = 'RAI' AND ST_EXPAND(THE_GEOM, 50, 50) && D.THE_GEOM  AND ST_DISTANCE(D.THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15 ORDER BY ST_Distance(D.THE_GEOM, THE_GEOM) LIMIT 1 ))) avgdist FROM DEM_ENRICHED D WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15").avgdist, 1.0)
     }
 
     @Test

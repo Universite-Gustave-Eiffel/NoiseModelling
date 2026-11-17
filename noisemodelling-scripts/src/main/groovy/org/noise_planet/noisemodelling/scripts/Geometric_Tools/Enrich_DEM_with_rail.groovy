@@ -208,7 +208,7 @@ def exec(Connection connection, input) {
     if (platforms.isEmpty()) {
         throw new IllegalArgumentException("No platform definition found in the railway platform data file: " + railwayPlatformDataFile)
     }
-    String platformInsert = buildPlatformInsert(platforms)
+    String platformInsert = buildPlatformInsert(platforms, connection.createStatement())
 
     // Default platform identifier used when the railways table has no platform column or a NULL/empty value
     String defaultPlatform = platforms.containsKey("DEFAULT") ? "DEFAULT" : platforms.keySet().iterator().next()
@@ -305,7 +305,8 @@ def exec(Connection connection, input) {
     -- Insert rail platform into $enrichedDEM
 
     DROP TABLE DEM_WITHOUT_PTLINE IF EXISTS;
-    CREATE TABLE DEM_WITHOUT_PTLINE(THE_GEOM geometry(POINTZ, $srid), source varchar) AS SELECT st_setsrid(THE_GEOM, $srid), SOURCE FROM dem_to_enrich;
+    CREATE TABLE DEM_WITHOUT_PTLINE(PK SERIAL PRIMARY KEY, THE_GEOM geometry(POINTZ, $srid), source varchar);
+    INSERT INTO DEM_WITHOUT_PTLINE(THE_GEOM,source) SELECT st_setsrid(THE_GEOM, $srid), SOURCE FROM dem_to_enrich;
     
     -- Remove DEM points that are less than "D4/2" far FROM rails
     DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_rail b 
@@ -387,11 +388,11 @@ static checkPlatforms(Connection connection, String platformColumn, String input
  * @param platforms the map of platform identifier (upper case) to its definition
  * @return a string of SQL INSERT statements, one per platform
  */
-private static String buildPlatformInsert(Map<String, RailwayPlatform> platforms) {
+static String buildPlatformInsert(Map<String, RailwayPlatform> platforms, Statement st) {
     StringBuilder sql = new StringBuilder()
     platforms.each { String name, RailwayPlatform p ->
-        sql.append(String.format(Locale.ROOT, "INSERT INTO PLATEFORM VALUES ('%s', %f, %f, %f, %f, %f, %f, %f, %f, %f);%n",
-                name, p.d1, p.d2_0, p.d3_0, p.d4_0, p.g1, p.g2, p.g3, p.h1, p.h2))
+        sql.append(String.format(Locale.ROOT, "INSERT INTO PLATEFORM VALUES (%s, %f, %f, %f, %f, %f, %f, %f, %f, %f);%n",
+               st.enquoteLiteral(name), p.d1, p.d2_0, p.d3_0, p.d4_0, p.g1, p.g2, p.g3, p.h1, p.h2))
     }
     return sql.toString()
 }
