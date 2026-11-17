@@ -379,8 +379,77 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(4.32d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 4.1 AND 4.2").z as double, 1e-6)
         // Original DEM points beyond the platform keep their elevation
         assertEquals(0.0d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15").z as double, 1e-6)
-        // Compute the minimal average distance between created dem points on the largest buffer
-        assertEquals(densifydistance, sql.firstRow("SELECT AVG(ST_Distance(D.THE_GEOM, (SELECT THE_GEOM FROM DEM_ENRICHED WHERE PK != D.PK AND SOURCE = 'RAI' AND ST_EXPAND(THE_GEOM, 50, 50) && D.THE_GEOM  AND ST_DISTANCE(D.THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15 ORDER BY ST_Distance(D.THE_GEOM, THE_GEOM) LIMIT 1 ))) avgdist FROM DEM_ENRICHED D WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15").avgdist, 1.0)
+        // The densifyDistance parameter controls the spacing of the points created on the d4 ring.
+        int countDense = sql.firstRow("SELECT COUNT(*) C FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 4.1 AND 4.2").C as Integer
+        assertEquals(27, countDense)
+
+        // Check with large densify
+        new Enrich_DEM_with_rail().exec(connection,
+                ["inputDEM": "DEM", "inputRail": "RAIL", "inputSRID": 2154, "densifyDistance": 40])
+        int countSparse = sql.firstRow("SELECT COUNT(*) C FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 4.1 AND 4.2").C as Integer
+        assertEquals(9, countSparse)
+    }
+
+    @Test
+    void testEnrichWithRailwayPlatformDataFileURI(@TempDir File tempDir) {
+        def sql = new Sql(connection)
+        // Custom platform data file loaded through a file:// URI (UriUtils.openSafeStream file branch).
+        // Distinctive values: d2_0=4, d3_0=6, d4_0=12, h1=1, h2=0.5 (DEFAULT is 3.3/4.8/8.3/0.5/0.18)
+        File customPlatformFile = new File(tempDir, "CustomPlatforms.json")
+        customPlatformFile.text = """{
+            "WIDE": {
+                "d1": 1.8, "d2_0": 4.0, "d3_0": 6.0, "d4_0": 12.0,
+                "g1": 0, "g2": 1, "g3": 1, "h1": 1.0, "h2": 0.5, "trackspacing": 3.67
+            }
+        }"""
+        String platformFileURI = customPlatformFile.toURI().toString()
+        assertTrue(platformFileURI.startsWith("file:"))
+
+        // Flat DEM at Z=0 and a rail at Z=5 with the WIDE platform (h1=1, h2=0.5,
+        // d2_0/2=2, d3_0/2=3, d4_0/2=6): d2 stays at the rail level, d3 is lowered by h2
+        // and d4 by h2+h1.
+        List<String> demValues = []
+        (-20..130).step(5) { x ->
+            (-20..20).step(5) { y ->
+                demValues << "ST_SetSRID(ST_MakePoint($x, $y, 0), 2154)"
+            }
+        }
+        sql.execute("CREATE TABLE DEM (THE_GEOM GEOMETRY(POINTZ, 2154))")
+        sql.execute("INSERT INTO DEM VALUES " + demValues.collect { "($it)" }.join(", "))
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), PLATFORM VARCHAR)")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 5, 110 0 5)', 2154), 'WIDE')")
+
+        new Enrich_DEM_with_rail().exec(connection,
+                ["inputDEM": "DEM", "inputRail": "RAIL", "inputSRID": 2154,
+                 "railwayPlatformDataFile": platformFileURI])
+
+        String railGeom = "ST_GeomFromText('LINESTRING Z(-10 0 5, 110 0 5)', 2154)"
+        // Points on the long sides of the rings (far from the flat endcaps) only: the endcap points
+        // of the outer rings can otherwise fall within the distance band of the inner rings.
+        String sideFilter = "ST_X(THE_GEOM) BETWEEN 10 AND 90 AND ST_DISTANCE(THE_GEOM, " + railGeom + ") "
+        // d2 ring (2.0 m): at the rail elevation
+        assertEquals(5.0d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE " + sideFilter + "BETWEEN 1.9 AND 2.1").z as double, 1e-6)
+        // d3 ring (3.0 m): lowered by the custom h2 (ballast shoulder level)
+        assertEquals(4.5d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE " + sideFilter + "BETWEEN 2.9 AND 3.1").z as double, 1e-6)
+        // d4 ring (6.0 m): lowered by the custom h2 + h1 (surrounding terrain)
+        assertEquals(3.5d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE " + sideFilter + "BETWEEN 5.9 AND 6.1").z as double, 1e-6)
+
+        // Landcover enrichment with the same custom platform: the WIDE d4=12 platform cuts a 12 m wide strip
+        sql.execute("CREATE TABLE LANDCOVER(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), GROUND_G DOUBLE)")
+        sql.execute("INSERT INTO LANDCOVER VALUES (1, ST_GeomFromText('POLYGON((0 -20, 200 -20, 200 20, 0 20, 0 -20))', 2154), 0.7)")
+        sql.execute("INSERT INTO RAIL VALUES (2, ST_GeomFromText('LINESTRING Z(-10 0 1, 210 0 1)', 2154), 'WIDE')")
+
+        new Enrich_Landcover_with_rail().exec(connection,
+                ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL",
+                 "railwayPlatformDataFile": platformFileURI])
+
+        // No original G=0.7 landcover may remain inside the 12 m wide strip (d4/2 = 6.0 m)
+        String strip = "ST_BUFFER(ST_GeomFromText('LINESTRING Z(-10 0 1, 210 0 1)', 2154), 6.0)"
+        assertEquals(0d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(THE_GEOM, " + strip + "))), 0) A FROM LANDCOVER_ENRICHED WHERE G = 0.7").A as double, 1e-6)
+        // The strip (200 m x 12 m) is cut away from the 200 m x 40 m polygon
+        assertEquals(8000d - 2400d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(THE_GEOM)), 0) A FROM LANDCOVER_ENRICHED WHERE G = 0.7").A as double, 1e-6)
+        // The custom g1=0 zone of the WIDE platform produces G=0 rows
+        assertTrue(sql.firstRow("SELECT COUNT(*) C FROM LANDCOVER_ENRICHED WHERE G = 0").C as Integer > 0)
     }
 
     @Test
