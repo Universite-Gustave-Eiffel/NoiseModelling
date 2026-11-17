@@ -1151,6 +1151,59 @@ public class BridgeProfileBuilderTest {
     }
 
     @Test
+    public void groundChangeBetweenThePivotAndTheReceiverIsNotLost() {
+        // greptile review of PR #1061: addBridgeCutPts's pivot hand-off marker only records the
+        // ground coefficient at the pivot's own position, then the propagation pass lets that one
+        // value ride all the way to the receiver. For this geometry the pivot (a lateral diffraction
+        // point against the deck's side edge, not against the source-receiver line) sits at exactly
+        // (42.5, 25.0) - if a ground-type boundary falls between there and the receiver at
+        // (45, 20), the receiver must pick up the far side's coefficient, not whatever happened to
+        // be under the pivot itself.
+        List<Coordinate> pts = Arrays.asList(
+                new Coordinate(0, 20, 10),
+                new Coordinate(50, 20, 10),
+                new Coordinate(100, 20, 10));
+        List<BridgePoint> bridgePoints = new ArrayList<>();
+        for (long i = 0; i < pts.size(); i++) {
+            bridgePoints.add(new BridgePoint.Builder(i, 100L, pts.get((int) i))
+                    .withHeightType(Scene.HeightType.ABSOLUTE)
+                    .withDeckThickness(0.5)
+                    .withWidth(5.0, 5.0)
+                    .withBarrierHeight(1.0, 1.0)
+                    .withPosition(BridgePoint.Position.CENTER)
+                    .withGirderType(Bridge.GirderType.STEEL_BOX)
+                    .withSlabType(Bridge.SlabType.STEEL)
+                    .build());
+        }
+        Bridge deckBridge = new Bridge.Builder(bridgePoints)
+                .setPrimaryKey(100L)
+                .setGirderType(Bridge.GirderType.STEEL_BOX)
+                .setSlabType(Bridge.SlabType.STEEL)
+                .build();
+        ProfileBuilder pb = new ProfileBuilder();
+        for (int x = 0; x <= 100; x += 50) {
+            for (int y = 0; y <= 100; y += 50) {
+                pb.addTopographicPoint(new Coordinate(x, y, 0.0));
+            }
+        }
+        // Boundary at x=44 - strictly between the pivot (x=42.5) and the receiver (x=45), well
+        // inside the bridge's own footprint (x in [0,100]).
+        pb.addGroundEffect(-50, 44, -50, 150, 0.2);
+        pb.addGroundEffect(44, 150, -50, 150, 0.6);
+        pb.addBridge(deckBridge);
+        pb.finishFeeding();
+
+        Coordinate source = new Coordinate(40, 20, 10.05);
+        Coordinate receiver = new Coordinate(45, 20, 2.0);
+        CutProfile profile = pb.getProfile(source, receiver);
+
+        assertEquals(0.6, profile.getReceiver().getGroundCoefficient(), 1e-9,
+                "the receiver is on the far side (x=45) of a ground-type boundary at x=44 that lies "
+                        + "between the pivot (x=42.5) and the receiver - it must get that side's own "
+                        + "coefficient (0.6), not whatever was under the pivot itself (0.2)");
+    }
+
+    @Test
     public void sourceAwayFromAnyBridgeStaysUnrelated() {
         ProfileBuilder pb = builderWithDeck();
         CutProfile profile = pb.getProfile(new Coordinate(10, 60, 2.0), new Coordinate(10, 90, 2.0));

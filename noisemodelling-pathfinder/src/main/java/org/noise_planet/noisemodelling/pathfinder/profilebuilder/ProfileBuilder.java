@@ -1423,6 +1423,48 @@ public class ProfileBuilder {
     }
 
     /**
+     * Find ground-type boundary crossings (ground lines only - walls/buildings are not considered)
+     * along an arbitrary line segment, in distance-from-{@code line.p0} order.
+     * <p>Used by {@link #addBridgeCutPts} to rebuild the real ground crossings on a bridge's
+     * pivot-to-receiver leg, since that leg does not generally lie on the original straight
+     * source-receiver line that {@link #addGroundBuildingCutPts} already walked (the pivot is a
+     * diffraction point found against the deck's own edge, not against the source-receiver line).
+     *
+     * @param line line segment to walk
+     * @param profile profile the resulting cut points belong to (passed through to
+     *                {@link #processGroundEffect}, not otherwise read here)
+     * @return the ground-effect cut points found, ordered by distance from {@code line.p0}
+     */
+    private List<CutPoint> findGroundEffectCutPts(LineSegment line, CutProfile profile) {
+        List<CutPoint> found = new LinkedList<>();
+        Set<Integer> processed = new HashSet<>();
+        for (LineSegment seg : splitSegment(line.p0, line.p1, maxLineLength)) {
+            for (Object result : rtree.query(new Envelope(seg.p0, seg.p1))) {
+                if (!(result instanceof Integer) || !processed.add((Integer) result)) {
+                    continue;
+                }
+                LineObstruction facetLine = processedObstructions.get((Integer) result);
+                if (!(facetLine instanceof GroundLine)) {
+                    continue;
+                }
+                Coordinate intersection = line.intersection(facetLine.line);
+                if (intersection == null) {
+                    continue;
+                }
+                intersection = new Coordinate(intersection);
+                if (!isNaN(facetLine.line.p0.z) && !isNaN(facetLine.line.p1.z)) {
+                    intersection.z = Double.compare(facetLine.line.p0.z, facetLine.line.p1.z) == 0
+                            ? facetLine.line.p0.z
+                            : Vertex.interpolateZ(intersection, facetLine.line.p0, facetLine.line.p1);
+                }
+                processGroundEffect((Integer) result, intersection, (GroundLine) facetLine, line, found, false, profile);
+            }
+        }
+        found.sort(Comparator.comparingDouble(cp -> line.p0.distance(cp.getCoordinate())));
+        return found;
+    }
+
+    /**
      * Set the {@link org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship} of a source
      * from its position relative to the registered bridge decks: on the deck, under the deck, or
      * unrelated. The first matching bridge wins. This is a fallback for callers that do not classify
@@ -1529,6 +1571,17 @@ public class ProfileBuilder {
             // do that, e.g. CnossosPathBuilder adjusting a reflection point's height) would corrupt
             // both. Always pass a fresh copy.
             newCutPoints.add(new CutPointGroundEffect(pivotGroundAbsorptionIndex, new Coordinate(firstCut.getCoordinate()), pivotGroundCoefficient));
+            // The pivot-to-receiver leg is a real stretch of ground-level propagation whenever the
+            // receiver sits under the same deck the source is on (rather than beyond its far edge) -
+            // any ground-type boundary crossed between the pivot and the receiver is just as real as
+            // one crossed before the bridge, and must not be silently replaced by the single
+            // coefficient looked up at the pivot's own position above. The stale markers removed
+            // above were found along the *original* straight source-receiver line, which the real
+            // bent path only coincides with when the pivot happens to sit on it - rebuild them fresh
+            // along the segment the ray actually follows from here on.
+            if (rtree != null) {
+                newCutPoints.addAll(findGroundEffectCutPts(new LineSegment(firstCut.getCoordinate(), fullLine.p1), profile));
+            }
             profile.hasBridgeIntersection = true;
             sortCutPoints = false;
             segments = ProfileUtils.splitToSegments(firstCut.getCoordinate(), fullLine.p1, maxLineLength);
