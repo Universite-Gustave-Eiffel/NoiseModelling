@@ -155,7 +155,16 @@ public class Utils {
     public static Double sumDbValues(Double dB1, Double dB2) {
         return wToDb(dbToW(dB1) + dbToW(dB2));
     }
-
+    /**
+     * Energetic sum of 3 dB values
+     * @param dB1 value in dB
+     * @param dB2 value in dB
+     * @param dB3 value in dB
+     * @return
+     */
+    public static Double sumDb3(Double dB1, Double dB2, Double dB3) {
+        return wToDb(dbToW(dB1) + dbToW(dB2) + dbToW(dB3));
+    }
     /**
      * Energetic sum of 5 dB values
      * @param dB1 value in dB
@@ -177,6 +186,16 @@ public class Utils {
             LW[idFreq] = 10*Math.log10(Math.pow(10, (LWi[idFreq] + 10 * Math.log10(nBUnit) + deltaT) / 10));
         }
         return LW;
+    }
+
+    public static double[] tertsToOctave(double[] terts) {
+        double [] octave = new double[8];
+        for (int idFreq = 0 ; idFreq < 8; idFreq ++) {
+            octave[idFreq] = sumDb3(terts[idFreq*3],
+                                    terts[idFreq*3 + 1],
+                                    terts[idFreq*3 + 2]);
+        }
+        return octave;
     }
 
 }

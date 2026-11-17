@@ -117,6 +117,39 @@ class TestNoiseModelling extends JdbcTestCase {
                 NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME+" WHERE PERIOD = 'D'")
 
         assertEquals(688, receiversCount[0]["CPT"] as Integer)
+
+        //Testing octave band output
+        sql.execute("DROP TABLE IF EXISTS LW_RAILWAY_TERTS")
+        sql.execute("CREATE TABLE LW_RAILWAY_TERTS AS SELECT * FROM LW_RAILWAY")
+        sql.execute("DROP TABLE LW_RAILWAY")
+
+        new Railway_Emission_from_Traffic().exec(connection,
+                ["tableRailwayTraffic": "RAIL_TRAFFIC",
+                 "tableRailwayTrack": "RAIL_SECTIONS",
+                 "octaveOutput": "TRUE"
+                ])
+
+        // Test columns
+        def fieldNamesOctave = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
+        def expectedOctave = ["PK_SECTION","THE_GEOM","DIR_ID","GS","HRAIL","CREF","HZD63","HZD125","HZD250",
+                              "HZD500","HZD1000","HZD2000","HZD4000","HZD8000","HZE63","HZE125","HZE250","HZE500",
+                              "HZE1000","HZE2000","HZE4000","HZE8000","HZN63","HZN125","HZN250","HZN500","HZN1000",
+                              "HZN2000","HZN4000","HZN8000", "PK"]
+        assertArrayEquals(expectedOctave.toArray(new String[expectedOctave.size()]),
+                fieldNamesOctave.toArray(new String[fieldNamesOctave.size()]))
+
+        // Test rows
+        def tertsSize = sql.rows("SELECT COUNT(*) CPT FROM LW_RAILWAY_TERTS")
+        def octaveSize = sql.rows("SELECT COUNT(*) CPT FROM LW_RAILWAY")
+        assertEquals(tertsSize[0]["CPT"] as Integer, octaveSize[0]["CPT"] as Integer)
+
+        // Test content
+        def tertsbands = sql.rows("SELECT * FROM LW_RAILWAY_TERTS WHERE PK=1")
+        def octaveLevel = sql.rows("SELECT * FROM LW_RAILWAY WHERE PK=1 ")
+        def expectedOctaveLevel = 10*Math.log10(10**(tertsbands[0]["HZD50"]/10) +
+                10**(tertsbands[0]["HZD63"]/10)  +
+                10**(tertsbands[0]["HZD80"]/10))
+        assertEquals(expectedOctaveLevel, octaveLevel[0]["HZD63"] as double, 0.001)
     }
 
     @Test

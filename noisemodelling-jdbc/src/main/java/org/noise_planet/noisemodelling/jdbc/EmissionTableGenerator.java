@@ -6,7 +6,6 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
@@ -26,14 +25,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.noise_planet.noisemodelling.emission.utils.Utils.tertsToOctave;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 
 /**
  * Create emission table from traffic data (RAIL or ROADS)
  */
 public class EmissionTableGenerator {
-    public static final List<Integer> roadOctaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    public static final List<Integer> octaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public static final String DEN_PERIOD = "DEN";
 
     public enum STANDARD_PERIOD {DAY, EVENING, NIGHT}
@@ -182,9 +181,9 @@ public class EmissionTableGenerator {
             hgvPerHour = hv;
         }
         // Compute emission
-        double[] lvl = new double[roadOctaveFrequencyBands.size()];
-        for (int idFreq = 0; idFreq < roadOctaveFrequencyBands.size(); idFreq++) {
-            int freq = roadOctaveFrequencyBands.get(idFreq);
+        double[] lvl = new double[octaveFrequencyBands.size()];
+        for (int idFreq = 0; idFreq < octaveFrequencyBands.size(); idFreq++) {
+            int freq = octaveFrequencyBands.get(idFreq);
             RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
@@ -269,7 +268,8 @@ public class EmissionTableGenerator {
      * @throws SQLException       If an error occurs while accessing the database or executing queries.
      */
     public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
-        makeTrainLWTable(connection, railSectionTableName, railTrafficTableName, outputTable, frequencyPrepend, RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
+        boolean octaveOutput = false;
+        makeTrainLWTable(connection, railSectionTableName, railTrafficTableName, outputTable, frequencyPrepend, RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON, octaveOutput);
     }
 
     /**
@@ -283,10 +283,16 @@ public class EmissionTableGenerator {
      * @param trainSetDataFile    File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for train set data configuration.
      * @param railwayEmissionDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for railway metadata configuration.
      * @param platformDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for platform data configuration.
+     * @param octaveOutput         Output emission table is in octaves, not in third octave outputs
      * @throws SQLException If error occurred
      */
-    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile, String platformDataFile) throws SQLException {
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName,
+                                        String outputTable, String frequencyPrepend, String vehicleDataFile,
+                                        String trainSetDataFile, String railwayEmissionDataFile, String platformDataFile,
+                                        boolean octaveOutput)
+            throws SQLException {
 
+        int[] outputFrequencies = octaveOutput ? octaveFrequencyBands.stream().mapToInt(Integer::intValue).toArray() : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
 
@@ -296,28 +302,28 @@ public class EmissionTableGenerator {
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(PK_SECTION, the_geom," +
                 " DIR_ID, GS, HRAIL, CREF");
         StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?,?,?");
-        for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int f : outputFrequencies) {
             createTableQuery.append(", ").append(frequencyPrepend).append("D");
-            createTableQuery.append(thirdOctave);
+            createTableQuery.append(f);
             createTableQuery.append(" double precision");
             insertIntoQuery.append(", ").append(frequencyPrepend).append("D");
-            insertIntoQuery.append(thirdOctave);
+            insertIntoQuery.append(f);
             insertIntoValuesQuery.append(", ?");
         }
-        for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int f : outputFrequencies) {
             createTableQuery.append(", ").append(frequencyPrepend).append("E");
-            createTableQuery.append(thirdOctave);
+            createTableQuery.append(f);
             createTableQuery.append(" double precision");
             insertIntoQuery.append(", ").append(frequencyPrepend).append("E");
-            insertIntoQuery.append(thirdOctave);
+            insertIntoQuery.append(f);
             insertIntoValuesQuery.append(", ?");
         }
-        for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int f : outputFrequencies) {
             createTableQuery.append(", ").append(frequencyPrepend).append("N");
-            createTableQuery.append(thirdOctave);
+            createTableQuery.append(f);
             createTableQuery.append(" double precision");
             insertIntoQuery.append(", ").append(frequencyPrepend).append("N");
-            insertIntoQuery.append(thirdOctave);
+            insertIntoQuery.append(f);
             insertIntoValuesQuery.append(", ?");
         }
 
@@ -410,6 +416,10 @@ public class EmissionTableGenerator {
                         continue;
                     }
 
+                    double[] DayOutput = octaveOutput ? tertsToOctave(LWDay) : LWDay;
+                    double[] EveningOutput = octaveOutput ? tertsToOctave(LWEvening) : LWEvening;
+                    double[] NightOutput = octaveOutput ? tertsToOctave(LWNight) : LWNight;
+
                     try (PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString())) {
                         for (Geometry trackGeometry : geometries) {
 
@@ -422,13 +432,13 @@ public class EmissionTableGenerator {
                             ps.setDouble(cursor++, railWayLWGeom.getGs());
                             ps.setDouble(cursor++, hRail);
                             ps.setDouble(cursor++, railWayLWGeom.getCref());
-                            for (double v : LWDay) {
+                            for (double v : DayOutput) {
                                 ps.setDouble(cursor++, v);
                             }
-                            for (double v : LWEvening) {
+                            for (double v : EveningOutput) {
                                 ps.setDouble(cursor++, v);
                             }
-                            for (double v : LWNight) {
+                            for (double v : NightOutput) {
                                 ps.setDouble(cursor++, v);
                             }
                             ps.addBatch();
