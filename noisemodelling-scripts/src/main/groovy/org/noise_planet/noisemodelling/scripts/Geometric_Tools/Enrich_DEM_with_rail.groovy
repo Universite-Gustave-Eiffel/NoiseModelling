@@ -58,16 +58,16 @@ description = '&#10145;&#65039; Insert altimetric points coming from railways in
                 '<li>Railway platform data file (railwayPlatformDataFile): URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used (Optional)</li>' +
               '</ul>' +
               '<hr>' +
-              'The railway platform geometry (section widths and platform height) is read from the ' +
+              'The railway platform geometry (section widths and platform heights) is read from the ' +
               '<b>PLATFORM</b> column of the input railways table and resolved against the railway platform data file. ' +
               'In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 (the section half-widths) are taken from the platform definition ' +
               '(d2_0, d3_0 and d4_0 respectively), and d4 can be overridden by the <b>railWidth</b> column when it is present in the railways table. ' +
-              'The platform height used to lower the inserted points is the platform h2 (hRail) value:' +
+              'The inserted points are lowered below the top-of-rail elevation using the platform heights ' +
+              '(h2 = rail height above the ballast, h1 = ballast shoulder height):' +
               '<ul>' +
-                '<li>d2 = d2_0</li>' +
-                '<li>d3 = d3_0</li>' +
-                '<li>d4 = d4_0, or railWidth if the railWidth column is present</li>' +
-                '<li>hRail = h2</li>' +
+                '<li>d2 = d2_0, points at the rail elevation</li>' +
+                '<li>d3 = d3_0, points lowered by h2 (ballast shoulder level)</li>' +
+                '<li>d4 = d4_0, or railWidth if the railWidth column is present, points lowered by h2 + h1 (surrounding terrain)</li>' +
               '</ul>' +
               '<img src="wps_images/railway_plateform.png" alt="Railways platform" width="95%" align="center">'
 
@@ -288,9 +288,9 @@ def exec(Connection connection, input) {
     -- Import railways (remove geometries without Z data)
 
     DROP TABLE IF EXISTS dem_rail;    
-    CREATE TABLE dem_rail AS SELECT ST_LineMerge(ST_Accum(a.THE_GEOM)) THE_GEOM, 'RAIL' as SOURCE, p.d2 as D2, p.d3 as D3, $d4Expr as D4, p.h2 as HRAIL
+    CREATE TABLE dem_rail AS SELECT ST_LineMerge(ST_Accum(a.THE_GEOM)) THE_GEOM, 'RAIL' as SOURCE, p.d2 as D2, p.d3 as D3, $d4Expr as D4, p.h2 as HRAIL, p.h1 as H1
         FROM $inputRail a, PLATEFORM p 
-        WHERE not (st_zmin(a.THE_GEOM) = 0 AND st_zmax(a.THE_GEOM) = 0) AND $platformPredicate GROUP BY p.d2, p.d3, $d4Expr, p.h2, p.idplatform;
+        WHERE not (st_zmin(a.THE_GEOM) = 0 AND st_zmax(a.THE_GEOM) = 0) AND $platformPredicate GROUP BY p.d2, p.d3, $d4Expr, p.h2, p.h1, p.idplatform;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
     ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
@@ -325,7 +325,7 @@ def exec(Connection connection, input) {
 
     -- # d4 = D4/2
     CREATE TABLE BUFFERED_D4 AS SELECT ST_ToMultiPoint(ST_Densify(ST_Buffer(ST_Simplify(THE_GEOM, $simplifyTolerance), D4/2, 'endcap=flat join=mitre'), $densifyDistance)) THE_GEOM, PK_LINE FROM dem_rail WHERE st_length(st_simplify(THE_GEOM, $simplifyTolerance)) > 0 ;
-    INSERT INTO DEM_WITHOUT_PTLINE(THE_GEOM, SOURCE) SELECT st_setsrid(ST_MakePoint(ST_X(P.THE_GEOM), ST_Y(P.THE_GEOM), ST_Z(ST_ProjectPoint(P.THE_GEOM,L.THE_GEOM))-L.HRAIL), $srid) THE_GEOM, 'RAI' FROM ST_EXPLODE('BUFFERED_D4') P, dem_rail L WHERE P.PK_LINE = L.PK_LINE;
+    INSERT INTO DEM_WITHOUT_PTLINE(THE_GEOM, SOURCE) SELECT st_setsrid(ST_MakePoint(ST_X(P.THE_GEOM), ST_Y(P.THE_GEOM), ST_Z(ST_ProjectPoint(P.THE_GEOM,L.THE_GEOM))-L.HRAIL-L.H1), $srid) THE_GEOM, 'RAI' FROM ST_EXPLODE('BUFFERED_D4') P, dem_rail L WHERE P.PK_LINE = L.PK_LINE;
     
     -- $enrichedDEM enriched with railways
     """

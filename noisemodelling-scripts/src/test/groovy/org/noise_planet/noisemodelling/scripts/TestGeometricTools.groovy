@@ -349,6 +349,37 @@ class TestGeometricTools extends JdbcTestCase {
     }
 
     @Test
+    void testEnrichDEMWithRailElevations() {
+        def sql = new Sql(connection)
+        // Flat DEM at Z=0 and a rail at Z=5 with the DEFAULT platform (h1=0.5, h2=0.18,
+        // d2_0=3.3, d3_0=4.8, d4_0=8.3): the d2 ring stays at the rail level, the d3 ring is
+        // lowered by h2 (ballast shoulder level) and the d4 ring by h2+h1 (surrounding terrain).
+        List<String> demValues = []
+        (-20..130).step(5) { x ->
+            (-20..20).step(5) { y ->
+                demValues << "ST_SetSRID(ST_MakePoint($x, $y, 0), 2154)"
+            }
+        }
+        sql.execute("CREATE TABLE DEM (THE_GEOM GEOMETRY(POINTZ, 2154))")
+        sql.execute("INSERT INTO DEM VALUES " + demValues.collect { "($it)" }.join(", "))
+        sql.execute("CREATE TABLE RAIL (THE_GEOM GEOMETRY(LINESTRINGZ, 2154))")
+        sql.execute("INSERT INTO RAIL VALUES (ST_GeomFromText('LINESTRING Z(-10 0 5, 110 0 5)', 2154))")
+
+        new Enrich_DEM_with_rail().exec(connection,
+                ["inputDEM": "DEM", "inputRail": "RAIL", "inputSRID": 2154])
+
+        String railGeom = "ST_GeomFromText('LINESTRING Z(-10 0 5, 110 0 5)', 2154)"
+        // d2 ring (d2_0/2 = 1.65 m): at the rail elevation
+        assertEquals(5.0d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 1.6 AND 1.7").z as double, 1e-6)
+        // d3 ring (d3_0/2 = 2.4 m): lowered by h2 (ballast shoulder level)
+        assertEquals(4.82d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 2.35 AND 2.45").z as double, 1e-6)
+        // d4 ring (d4_0/2 = 4.15 m): lowered by h2 + h1 (surrounding terrain)
+        assertEquals(4.32d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 4.1 AND 4.2").z as double, 1e-6)
+        // Original DEM points beyond the platform keep their elevation
+        assertEquals(0.0d, sql.firstRow("SELECT AVG(ST_Z(THE_GEOM)) z FROM DEM_ENRICHED WHERE ST_DISTANCE(THE_GEOM, " + railGeom + ") BETWEEN 8 AND 15").z as double, 1e-6)
+    }
+
+    @Test
     void testEnrichLandcoverWithRailDefaultPlatform() {
         def sql = new Sql(connection)
         // LANDCOVER without a platform column: the default platform must be used
@@ -386,6 +417,30 @@ class TestGeometricTools extends JdbcTestCase {
         assertTrue(JDBCUtilities.tableExists(connection, "LANDCOVER_ENRICHED"))
         // The SNCF platform (g1=0, g3=0) must be applied, producing G=0 rows in the enriched landcover.
         assertTrue(sql.firstRow("SELECT COUNT(*) C FROM LANDCOVER_ENRICHED WHERE G = 0").C as Integer > 0)
+    }
+
+    @Test
+    void testEnrichLandcoverWithRailTwoPlatforms() {
+        def sql = new Sql(connection)
+        // A single G=0.7 landcover polygon crossed by two parallel rails with different platforms.
+        // The combined d4 buffer of both platforms must be subtracted from each polygon once,
+        // otherwise the original landcover would remain under the rails with its old G.
+        sql.execute("CREATE TABLE LANDCOVER(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POLYGON, 2154), GROUND_G DOUBLE)")
+        sql.execute("INSERT INTO LANDCOVER VALUES (1, ST_GeomFromText('POLYGON((0 -20, 200 -20, 200 20, 0 20, 0 -20))', 2154), 0.7)")
+        sql.execute("CREATE TABLE RAIL(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), PLATFORM VARCHAR)")
+        sql.execute("INSERT INTO RAIL VALUES (1, ST_GeomFromText('LINESTRING Z(-10 0 1, 210 0 1)', 2154), 'SNCF'), (2, ST_GeomFromText('LINESTRING Z(-10 10 1, 210 10 1)', 2154), 'DEFAULT')")
+
+        new Enrich_Landcover_with_rail().exec(connection,
+                ["inputLandcover": "LANDCOVER", "gColumn": "GROUND_G", "inputRail": "RAIL"])
+
+        // No original G=0.7 landcover may remain inside the combined strip of the two platforms
+        // (SNCF d4/2 = 4.0 m around the y=0 rail, DEFAULT d4_0/2 = 4.15 m around the y=10 rail)
+        String strips = "ST_UNION(ST_BUFFER(ST_GeomFromText('LINESTRING Z(-10 0 1, 210 0 1)', 2154), 4.0), ST_BUFFER(ST_GeomFromText('LINESTRING Z(-10 10 1, 210 10 1)', 2154), 4.15))"
+        assertEquals(0d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(THE_GEOM, " + strips + "))), 0) A FROM LANDCOVER_ENRICHED WHERE G = 0.7").A as double, 1e-6)
+        // The two strips (200 m x 8 m for SNCF d4=8 and 200 m x 8.3 m for DEFAULT d4=8.3) are cut away
+        assertEquals(8000d - 1600d - 1660d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(THE_GEOM)), 0) A FROM LANDCOVER_ENRICHED WHERE G = 0.7").A as double, 1e-6)
+        // Within the landcover extent the area is fully covered (no hole is left behind)
+        assertEquals(8000d, sql.firstRow("SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(THE_GEOM, ST_GeomFromText('POLYGON((0 -20, 200 -20, 200 20, 0 20, 0 -20))', 2154)))), 0) A FROM LANDCOVER_ENRICHED").A as double, 1e-6)
     }
 
     @Test
