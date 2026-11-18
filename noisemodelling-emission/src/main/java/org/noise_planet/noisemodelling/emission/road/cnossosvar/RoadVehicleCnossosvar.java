@@ -81,7 +81,7 @@ public class RoadVehicleCnossosvar {
                 double speedStud = (speed >= 90) ? 90 : speed;
                 speedStud = (speedStud <= 50) ? 50 : speedStud;
                 double deltaStud = getNoiseLvl(getCoeff("a", freqParam, veh_type, coeffVer), getCoeff("b", freqParam, veh_type, coeffVer), speedStud, 70.);
-                RoadLvl = RoadLvl + Math.pow(10, deltaStud / 10);
+                RoadLvl = RoadLvl + deltaStud;
             }
         }
 
