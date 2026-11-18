@@ -19,6 +19,7 @@ import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,6 +130,79 @@ public class TestPathFinder {
             assertNotNull(pt);
         }
         assertEquals(7, pts.size());
+    }
+
+    /**
+     * Test regression on https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues/890
+     * Each point source of a line source must be oriented along the line segment it lies on
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceOrientationFollowsSegment() throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addSource(new WKTReader().read("LINESTRING (0 0 0.05, 100 0 0.05, 100 100 0.05)"))
+                .addReceiver(50, 50, 4)
+                .build();
+        for (CutProfile cutProfile : computeCutProfiles(scene)) {
+            CutPointSource source = cutProfile.getSource();
+            // the first segment heads east (yaw 90), the second one heads north (yaw 0)
+            assertEquals(source.getCoordinate().y == 0 ? 90 : 0, source.orientation.yaw, 1e-6);
+        }
+    }
+
+    /**
+     * The point sources of a line source that doubles back over itself must keep the heading of their own leg
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceOrientationOnReturnLeg() throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addSource(new WKTReader().read("LINESTRING (0 0 0.05, 100 0 0.05, 0 0 0.05)"))
+                .addReceiver(50, 50, 4)
+                .build();
+        int east = 0;
+        int west = 0;
+        for (CutProfile cutProfile : computeCutProfiles(scene)) {
+            double yaw = (cutProfile.getSource().orientation.yaw + 360) % 360;
+            if (Math.abs(yaw - 90) < 1e-6) {
+                east++;
+            } else if (Math.abs(yaw - 270) < 1e-6) {
+                west++;
+            }
+        }
+        // the outward leg heads east, the return leg heads west
+        assertTrue(east > 0);
+        assertEquals(east, west);
+    }
+
+    /**
+     * The user PITCH and ROLL of a line source must be kept on its point sources
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestLineSourceUserPitchAndRoll() throws ParseException {
+        Scene scene = new ProfileBuilderDecorator(new ProfileBuilder().finishFeeding())
+                .addReceiver(50, 50, 4)
+                .build();
+        scene.addSource(1L, new WKTReader().read("LINESTRING (0 0 0.05, 0 100 0.05)"), new Orientation(0, 30, 10));
+        for (CutProfile cutProfile : computeCutProfiles(scene)) {
+            Orientation orientation = cutProfile.getSource().orientation;
+            assertEquals(0, orientation.yaw, 1e-6);
+            assertEquals(30, orientation.pitch, 1e-6);
+            assertEquals(10, orientation.roll, 1e-6);
+        }
+    }
+
+    private static List<CutProfile> computeCutProfiles(Scene scene) {
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+        assertFalse(propDataOut.cutProfiles.isEmpty());
+        return new ArrayList<>(propDataOut.cutProfiles);
     }
 
     /**
