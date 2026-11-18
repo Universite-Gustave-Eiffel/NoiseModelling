@@ -27,12 +27,16 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator
+import org.noise_planet.noisemodelling.jdbc.railway.RailwayPlatform
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Statement
+import java.util.Locale
 
 title = 'Enrich Landcover with railways'
 description = '&#10145;&#65039; Insert rail ground surfaces into the input LANDCOVER.</br>' +
@@ -44,17 +48,21 @@ description = '&#10145;&#65039; Insert rail ground surfaces into the input LANDC
               '</ul>' +
               'And four parameters:</br>' +
               ' <ul>' +
-                '<li>Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)</li>' +
-                '<li>Rail platform height (hRail): Railways platform height (Optional). Default value = 0.5m</li>' +
+                '<li>Railways width (railWidth): Name of the column where the total railway platform width is stored (Optional). If the column is present, it overrides the total width (d4) defined in the railway platform data file</li>' +
+                '<li>Rail platform (platformColumn): Name of column where the platform identifier is stored (Optional). Default value = "PLATFORM"</li>' +
                 '<li>Input SRID (inputSRID): SRID of the input tables (Optional)</li>' +
                 '<li>Output suffix (outputsuffix): suffix applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied</li>' +
+                '<li>Railway platform data file (railwayPlatformDataFile): URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used (Optional)</li>' +
               '</ul>' +
               '<hr>' +
-              'In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter <b>railWidth</b>, using the following formula:' +
+              'The railway platform geometry (track gauge, ground factors, heights and section widths) is read from the ' +
+              '<b>PLATFORM</b> column of the input railways table and resolved against the railway platform data file. ' +
+              'In the schema below, the points (in orange) will be inserted into the DEM. d2, d3 and d4 (the section half-widths) are taken from the platform definition ' +
+              '(d2_0, d3_0 and d4_0 respectively), and d4 can be overridden by the <b>railWidth</b> column when it is present in the railways table:' +
               '<ul>' +
-                '<li>d2 = (railWidth - 5.5)/2</li>' +
-                '<li>d3 = (railWidth - 4)/2</li>' +
-                '<li>d4 = (railWidth)/2</li>' +
+                '<li>d2 = d2_0</li>' +
+                '<li>d3 = d3_0</li>' +
+                '<li>d4 = d4_0, or railWidth if the railWidth column is present</li>' +
               '</ul>' +
               '<img src="wps_images/railway_plateform.png" alt="Railways platform" width="95%" align="center">'
 
@@ -88,7 +96,23 @@ inputs = [
         railWidth : [
                 name       : 'Railways width',
                 title      : 'Railways width',
-                description: 'Name of column where the railways width is stored',
+                description: 'Name of column where the total railways platform width is stored. When present, it overrides the total width (d4) defined in the railway platform data file.',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        platformColumn : [
+                name       : 'Platform column',
+                title      : 'Platform column',
+                description: 'Name of column where the platform identifier is stored. The value is resolved against the railway platform data file.',
+                default    : 'PLATFORM',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        railwayPlatformDataFile : [
+                name       : 'Railway platform data file',
+                title      : 'Railway platform data file',
+                description: 'URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
+                min        : 0, max: 1,
                 type       : String.class
         ],
         outputsuffix : [
@@ -109,87 +133,10 @@ outputs = [
         ]
 ]
 
-@CompileStatic
-static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progressVisitor, Logger logger) {
-    Reader reader = null
-    ByteArrayInputStream s = new ByteArrayInputStream(sqlInstructions.getBytes())
-    InputStream is = s
-    List<String> statementList = new LinkedList<>()
-    try {
-        reader  = new InputStreamReader(is)
-        ScriptReader scriptReader = new ScriptReader(reader)
-        scriptReader.setSkipRemarks(false)
-        String statement = scriptReader.readStatement()
-        while (statement != null && !statement.trim().isEmpty()) {
-            statementList.add(statement)
-            statement = scriptReader.readStatement()
-        }
-    } finally {
-        reader.close()
-    }
-    int idStatement = 0
-    final int nbStatements = statementList.size()
-    ProgressVisitor evalProgress = progressVisitor.subProcess(nbStatements)
-    for(String statement : statementList) {
-        for(String subStatement : statement.split("\n")) {
-            if(subStatement.trim().startsWith("--")){
-                logger.info(String.format(Locale.ROOT, "%d/%d %s", idStatement + 1, nbStatements, subStatement.replace("--", "")))            
-            }
-        } 
-        idStatement++
-        sql.execute(statement)
-        evalProgress.endStep()
-        if(evalProgress.isCanceled()) {
-            throw new SQLException("Canceled by user")
-        }
-    }
-}
-
-
-
-
-
-
-
-
 def exec(Connection connection, input) {
 
-
-    //------------------------------------------------------
-    // Clean the database before starting the importation
-
-    List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
-
-    // Build the result string with every tables
-    StringBuilder sb = new StringBuilder()
-
-    // Get every table names
-    List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
-
-    // Loop over the tables
-    tables.each { t ->
-        TableLocation tab = TableLocation.parse(t)
-        if (!ignorelst.contains(tab.getTable())) {
-            // Add the name of the table in the string builder
-            if (sb.size() > 0) {
-                sb.append(" || ")
-            }
-            sb.append(tab.getTable())
-            // Create a connection statement to interact with the database in SQL
-            Statement stmt = connection.createStatement()
-            // Drop the table
-            //stmt.execute("drop table if exists " + tab)
-        }
-    }
-
-    //------------------------------------------------------
-
-
-    // output string, the information given back to the user
-    String resultString = null
-
     // Create a logger to display messages in the geoserver logs and in the command prompt.
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    Logger logger = LoggerFactory.getLogger(Thread.currentThread().getName())
 
     ProgressVisitor progressVisitor
 
@@ -206,8 +153,55 @@ def exec(Connection connection, input) {
     String inputLandcover = input["inputLandcover"]
     String gColumn = input["gColumn"]
     String inputRail = input["inputRail"]
-    String railWidth = input["railWidth"]
-    
+
+    List<String> railColumns = JDBCUtilities.getColumnNames(connection, TableLocation.parse(inputRail))
+
+    String railWidth = null
+    if ('railWidth' in input && input["railWidth"] != null && !(input["railWidth"] as String).trim().isEmpty()) {
+        railWidth = input["railWidth"] as String
+    }
+
+    // Whether the railWidth column is actually present in the railways table. When present, its value
+    // overrides the total platform width (d4) defined in the railway platform data file.
+    boolean hasRailWidth = false
+    if (railWidth != null) {
+        hasRailWidth = railColumns.any { String c -> c.equalsIgnoreCase(railWidth) }
+    }
+
+    // Platform column holding the platform identifier of each rail section
+    String platformColumn = 'PLATFORM'
+    if ('platformColumn' in input && input["platformColumn"] != null && !(input["platformColumn"] as String).trim().isEmpty()) {
+        platformColumn = input["platformColumn"] as String
+    }
+    // Whether the platform column is actually present in the railways table. When absent, every rail
+    // section uses the default platform.
+    boolean hasPlatformColumn = railColumns.any { String c -> c.equalsIgnoreCase(platformColumn) }
+
+    // Railway platform data file (JSON). By default the one provided with NoiseModelling is used.
+    String railwayPlatformDataFile = RailWayLWIterator.RAILWAY_PLATFORMS_JSON
+    if ('railwayPlatformDataFile' in input && input["railwayPlatformDataFile"] != null && !(input["railwayPlatformDataFile"] as String).trim().isEmpty()) {
+        railwayPlatformDataFile = input["railwayPlatformDataFile"] as String
+    }
+
+    // Load the platform definitions (track gauge, ground factors, heights) from the data file
+    Map<String, RailwayPlatform> platforms = RailwayPlatform.loadFromJSON(railwayPlatformDataFile)
+    if (platforms.isEmpty()) {
+        throw new IllegalArgumentException("No platform definition found in the railway platform data file: " + railwayPlatformDataFile)
+    }
+    String platformInsert = Enrich_DEM_with_rail.buildPlatformInsert(platforms, connection.createStatement())
+
+    // Default platform identifier used when the railways table has no platform column or a NULL/empty value
+    String defaultPlatform = platforms.containsKey("DEFAULT") ? "DEFAULT" : platforms.keySet().iterator().next()
+
+    // SQL predicate resolving the platform of each rail section. When the platform column is absent, every
+    // section uses the default platform. When present, values are uppercased to match the loaded platform keys.
+    String platformPredicate = "p.idplatform = '$defaultPlatform'"
+    if (hasPlatformColumn) {
+        // Validate that every non-empty platform value in the railways table is a known platform
+        Enrich_DEM_with_rail.checkPlatforms(connection, platformColumn, inputRail, platforms)
+        platformPredicate = "p.idplatform = UPPER(a.$platformColumn)"
+    }
+
 
     // If no SRID provided, the one from DEM layer is applied
     Integer srid = 0
@@ -223,7 +217,7 @@ def exec(Connection connection, input) {
     if ('outputsuffix' in input) {
         outputsuffix = input["outputsuffix"] as String
     }
-    String enrichedLandcover = input["inputLandcover"] + "_" + input["outputsuffix"] as String
+    String enrichedLandcover = inputLandcover + "_" + outputsuffix
 
     // print to command window
     logger.info('List of the input parameters:')
@@ -232,7 +226,9 @@ def exec(Connection connection, input) {
     logger.info('# Landcover table: ' + inputLandcover)
     logger.info('# Landcover G column: ' + gColumn)
     logger.info('# Railways network table: ' + inputRail)
-    logger.info('# Railways width column: ' + railWidth)
+    logger.info('# Railways width column: ' + (railWidth != null ? railWidth : 'not provided'))
+    logger.info('# Railways platform column: ' + platformColumn)
+    logger.info('# Railway platform data file: ' + railwayPlatformDataFile)
     logger.info('# Output suffix: ' + outputsuffix)
     logger.info('--------------------------------------------')
 
@@ -240,15 +236,17 @@ def exec(Connection connection, input) {
 
     def sql = new Sql(connection)
 
+    // d4 expression: when the railWidth column is present, its value overrides the platform total width (d4)
+    String d4Expr = hasRailWidth ? "a.$railWidth" : "p.d4"
+
 
     def initPlatform = """
     -- Initialize the rail platform table
 
     DROP TABLE IF EXISTS PLATEFORM;
-    CREATE TABLE PLATEFORM (idPlatform varchar Primary Key, d1 float, g1 float, g2 float, g3 float, h1 float, h2 float);
+    CREATE TABLE PLATEFORM (idPlatform varchar Primary Key, d1 float, d2 float, d3 float, d4 float, g1 float, g2 float, g3 float, h1 float, h2 float);
 
-    INSERT INTO PLATEFORM VALUES ('SNCF', 1.435, 0, 1, 1, 0.5, 0.18);
-
+    $platformInsert
     -- Rail platform: layer PLATEFORM imported
     """
 
@@ -256,10 +254,9 @@ def exec(Connection connection, input) {
     def import_landcover = """
     ------------
     -- Import Landcover
-    -- Only geometries where $gColumn is higher than 0 are kept
 
     DROP TABLE IF EXISTS landcover_to_enrich;
-    CREATE TABLE landcover_to_enrich AS SELECT THE_GEOM, $gColumn FROM $inputLandcover WHERE $gColumn>0;
+    CREATE TABLE landcover_to_enrich AS SELECT THE_GEOM, CAST($gColumn AS DOUBLE) as g FROM $inputLandcover;
     CREATE SPATIAL INDEX ON landcover_to_enrich(the_geom);
 
     -- Landcover: layer $inputLandcover imported
@@ -270,10 +267,10 @@ def exec(Connection connection, input) {
     -- Import railways (that are on the floor --> POS_SOL=0)
 
     DROP TABLE IF EXISTS landcover_rail;    
-    CREATE TABLE landcover_rail AS SELECT a.THE_GEOM, a.$railWidth - 5.5 as d2, a.$railWidth - 4 as d3, a.$railWidth as d4, 
+    CREATE TABLE landcover_rail AS SELECT a.THE_GEOM, p.d2 as d2, p.d3 as d3, $d4Expr as d4, 
         p.idplatform, p.d1, p.g1, p.g2, p.g3
         FROM $inputRail a, PLATEFORM p 
-        WHERE st_zmin(a.THE_GEOM) > 0 AND p.idplatform ='SNCF';
+        WHERE st_zmin(a.THE_GEOM) > 0 AND $platformPredicate;
 
     CREATE SPATIAL INDEX ON landcover_rail(THE_GEOM);
     ALTER TABLE landcover_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
@@ -286,54 +283,41 @@ def exec(Connection connection, input) {
     -- Integrates RAIL_SECTIONS into the Landcover
     ------------------------------------------------------------------
     DROP TABLE IF EXISTS rail_buff_d1, rail_buff_d3, rail_buff_d4;
-    CREATE TABLE rail_buff_d1 AS SELECT ST_UNION(ST_ACCUM(ST_BUFFER(the_geom, d1/2))) as the_geom FROM landcover_rail;
-    CREATE TABLE rail_buff_d3 AS SELECT ST_UNION(ST_ACCUM(ST_BUFFER(the_geom, d3/2))) as the_geom FROM landcover_rail;
-    CREATE TABLE rail_buff_d4 AS SELECT ST_UNION(ST_ACCUM(ST_BUFFER(the_geom, d4/2))) as the_geom FROM landcover_rail;
+    CREATE TABLE rail_buff_d1 AS SELECT idplatform, ST_UNION(ST_ACCUM(ST_BUFFER(the_geom, d1/2))) as the_geom FROM landcover_rail GROUP BY idplatform;
+    CREATE TABLE rail_buff_d3 AS SELECT idplatform, ST_UNION(ST_ACCUM(ST_BUFFER(the_geom, d3/2))) as the_geom FROM landcover_rail GROUP BY idplatform;
+    CREATE TABLE rail_buff_d4 AS SELECT idplatform, ST_UNION(ST_ACCUM(ST_BUFFER(the_geom, d4/2))) as the_geom FROM landcover_rail GROUP BY idplatform;
 
     DROP TABLE IF EXISTS rail_diff_d3_d1, rail_diff_d4_d3;
-    CREATE TABLE rail_diff_d3_d1 as select ST_SymDifference(a.the_geom, b.the_geom) as the_geom from rail_buff_d3 a, rail_buff_d1 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE rail_diff_d4_d3 as select ST_SymDifference(a.the_geom, b.the_geom) as the_geom from rail_buff_d4 a, rail_buff_d3 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
+    CREATE TABLE rail_diff_d3_d1 as select a.idplatform, ST_SymDifference(a.the_geom, b.the_geom) as the_geom from rail_buff_d3 a, rail_buff_d1 b where a.idplatform = b.idplatform and a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
+    CREATE TABLE rail_diff_d4_d3 as select a.idplatform, ST_SymDifference(a.the_geom, b.the_geom) as the_geom from rail_buff_d4 a, rail_buff_d3 b where a.idplatform = b.idplatform and a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
     
     DROP TABLE IF EXISTS rail_buff_d1_expl, rail_buff_d3_expl, rail_buff_d4_expl;
-    CREATE TABLE rail_buff_d1_expl AS SELECT a.the_geom, b.g3 as g FROM ST_Explode('RAIL_BUFF_D1') a, PLATEFORM  b WHERE b.IDPLATFORM ='SNCF';
-    CREATE TABLE rail_buff_d3_expl AS SELECT a.the_geom, b.g2 as g FROM ST_Explode('RAIL_DIFF_D3_D1 ') a, PLATEFORM  b WHERE b.IDPLATFORM ='SNCF';
-    CREATE TABLE rail_buff_d4_expl AS SELECT a.the_geom, b.g1 as g FROM ST_Explode('RAIL_DIFF_D4_D3 ') a, PLATEFORM  b WHERE b.IDPLATFORM ='SNCF';
+    CREATE TABLE rail_buff_d1_expl AS SELECT a.the_geom, p.g3 as g FROM ST_Explode('RAIL_BUFF_D1') a, PLATEFORM p WHERE p.IDPLATFORM = a.idplatform;
+    CREATE TABLE rail_buff_d3_expl AS SELECT a.the_geom, p.g2 as g FROM ST_Explode('RAIL_DIFF_D3_D1') a, PLATEFORM p WHERE p.IDPLATFORM = a.idplatform;
+    CREATE TABLE rail_buff_d4_expl AS SELECT a.the_geom, p.g1 as g FROM ST_Explode('RAIL_DIFF_D4_D3') a, PLATEFORM p WHERE p.IDPLATFORM = a.idplatform;
 
-    DROP TABLE IF EXISTS LANDCOVER_G_0, LANDCOVER_G_03, LANDCOVER_G_07, LANDCOVER_G_1;
-    CREATE TABLE LANDCOVER_G_0 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=0;
-    CREATE TABLE LANDCOVER_G_03 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=0.3;
-    CREATE TABLE LANDCOVER_G_07 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=0.7;
-    CREATE TABLE LANDCOVER_G_1 AS SELECT ST_Union(ST_Accum(the_geom)) as the_geom FROM landcover_to_enrich WHERE g=1;
-
-    DROP TABLE IF EXISTS LANDCOVER_0_DIFF_D4, LANDCOVER_03_DIFF_D4, LANDCOVER_07_DIFF_D4, LANDCOVER_1_DIFF_D4;
-    CREATE TABLE LANDCOVER_0_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_0 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE LANDCOVER_03_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_03 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE LANDCOVER_07_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_07 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-    CREATE TABLE LANDCOVER_1_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom from rail_buff_d4 a, LANDCOVER_G_1 b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
-
-    DROP TABLE IF EXISTS LANDCOVER_0_EXPL, LANDCOVER_03_EXPL, LANDCOVER_07_EXPL, LANDCOVER_1_EXPL;
-    CREATE TABLE LANDCOVER_0_EXPL AS SELECT the_geom, 0 as g FROM ST_Explode('LANDCOVER_0_DIFF_D4 ');
-    CREATE TABLE LANDCOVER_03_EXPL AS SELECT the_geom, 0.3 as g FROM ST_Explode('LANDCOVER_03_DIFF_D4 ');
-    CREATE TABLE LANDCOVER_07_EXPL AS SELECT the_geom, 0.7 as g FROM ST_Explode('LANDCOVER_07_DIFF_D4 ');
-    CREATE TABLE LANDCOVER_1_EXPL AS SELECT the_geom, 1 as g FROM ST_Explode('LANDCOVER_1_DIFF_D4 ');
+    DROP TABLE IF EXISTS LANDCOVER_DIFF_D4, LANDCOVER_EXPL;
+    -- Union the d4 buffer of every platform into a single geometry, then subtract it once from each polygon.
+    -- Otherwise, with several platforms, each polygon would be cut by each platform buffer separately and the
+    -- later union would restore the area removed by the other platform buffers.
+    CREATE TABLE LANDCOVER_DIFF_D4 AS SELECT ST_Difference(b.the_geom, a.the_geom) as the_geom, b.g
+        FROM (SELECT ST_UNION(ST_ACCUM(the_geom)) AS the_geom FROM rail_buff_d4) a, landcover_to_enrich b;
+    CREATE TABLE LANDCOVER_EXPL AS SELECT the_geom, g FROM ST_Explode('LANDCOVER_DIFF_D4');
 
     -- Unifiy tables
-    DROP TABLE IF EXISTS LANDCOVER_UNION, LANDCOVER_MERGE;
-    CREATE TABLE LANDCOVER_UNION AS SELECT * FROM LANDCOVER_0_EXPL UNION SELECT * FROM LANDCOVER_03_EXPL UNION SELECT * FROM LANDCOVER_07_EXPL 
-    UNION SELECT * FROM LANDCOVER_1_EXPL UNION SELECT * FROM RAIL_BUFF_D1_EXPL UNION SELECT * FROM RAIL_BUFF_D3_EXPL UNION SELECT * FROM RAIL_BUFF_D4_EXPL ; 
+    DROP TABLE IF EXISTS LANDCOVER_UNION;
+    CREATE TABLE LANDCOVER_UNION AS SELECT * FROM LANDCOVER_EXPL UNION ALL SELECT * FROM RAIL_BUFF_D1_EXPL UNION ALL SELECT * FROM RAIL_BUFF_D3_EXPL UNION ALL SELECT * FROM RAIL_BUFF_D4_EXPL ; 
 
-    -- Merge geometries that have the same G
-    CREATE TABLE LANDCOVER_MERGE AS SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, g FROM LANDCOVER_UNION GROUP BY g;
+    -- Create final table
     DROP TABLE IF EXISTS $enrichedLandcover;
-    CREATE TABLE $enrichedLandcover AS SELECT ST_SETSRID(the_geom,$srid) as the_geom, g FROM ST_Explode('LANDCOVER_MERGE');
+    CREATE TABLE $enrichedLandcover AS SELECT ST_SETSRID(the_geom,$srid) as the_geom, g FROM ST_Explode('LANDCOVER_UNION');
+    -- Create spatial index on final table
     CREATE SPATIAL INDEX ON $enrichedLandcover(THE_GEOM);
 
     -- Remove non-needed tables
     DROP TABLE IF EXISTS rail_buff_d1, rail_buff_d3, rail_buff_d4, rail_diff_d3_d1, rail_diff_d4_d3, rail_buff_d1_expl, 
-    rail_buff_d3_expl, rail_buff_d4_expl, LANDCOVER_G_0, LANDCOVER_G_03, LANDCOVER_G_07, LANDCOVER_G_1, 
-    LANDCOVER_0_DIFF_D4, LANDCOVER_03_DIFF_D4, LANDCOVER_07_DIFF_D4, LANDCOVER_1_DIFF_D4, 
-    LANDCOVER_0_EXPL, LANDCOVER_03_EXPL, LANDCOVER_07_EXPL, LANDCOVER_1_EXPL, 
-    LANDCOVER_UNION, LANDCOVER_MERGE, landcover_rail, landcover_to_enrich;
+    rail_buff_d3_expl, rail_buff_d4_expl, LANDCOVER_DIFF_D4, LANDCOVER_EXPL, 
+    LANDCOVER_UNION, landcover_rail, landcover_to_enrich, PLATEFORM;
 
 
     -- Landcover successfully enriched in the table $enrichedLandcover
@@ -349,10 +333,10 @@ def exec(Connection connection, input) {
     stringBuilder.append(import_rail)
     stringBuilder.append(queries_landcover_rail)
 
-    def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "outputsuffix": outputsuffix, "srid": srid]
+    def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "platformColumn": platformColumn, "outputsuffix": outputsuffix, "srid": srid, "platformInsert": platformInsert, "d4Expr": d4Expr, "platformPredicate": platformPredicate]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
-    parseScript(template.toString(), sql, progress, logger)
+    DataBaseUtilities.parseScript(template.toString(), connection, progress, logger)
 
-    return "Landcover successfully enriched in the table " + enrichedLandcover
+    return [result: enrichedLandcover]
 
 }

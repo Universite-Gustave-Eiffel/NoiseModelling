@@ -15,6 +15,8 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Set;
 
@@ -49,16 +51,53 @@ public class UriUtils {
     }
 
     /**
-     * Fetches a resource as an InputStream using the modern HttpClient API.
+     * Opens a safe input stream for the given URI string.
+     * <p>
+     * Resources referenced with the {@code file} scheme are read directly from the local
+     * filesystem, while the {@code http} and {@code https} schemes are fetched through the
+     * modern HttpClient API. Any other scheme (or a malformed URI) is rejected.
+     *
+     * @param urlString the URI of the resource to open; must use an allowed scheme
+     *                  (http, https or file)
+     * @return An InputStream of the resource content
+     * @throws IOException If the URI is invalid, the scheme is not allowed, a network error
+     *                     occurs, the server returns a non-200 code, the local file cannot be
+     *                     read, or the operation is interrupted
+     */
+    public static InputStream openSafeStream(String urlString) throws IOException {
+        final URI uri;
+        try {
+            uri = new URI(urlString);
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URI: " + urlString, e);
+        }
+        final String scheme = uri.getScheme();
+        if (scheme == null) {
+            throw new IOException("URI has no scheme: " + urlString);
+        }
+        switch (scheme.toLowerCase()) {
+            case "file":
+                return Files.newInputStream(Path.of(uri));
+            case "http":
+            case "https":
+                return openHttpStream(uri, urlString);
+            default:
+                throw new IOException("Unsupported URI scheme: " + scheme);
+        }
+    }
+
+    /**
+     * Fetches an HTTP(S) resource as an InputStream using the modern HttpClient API.
      * This method validates the HTTP status code before returning the stream.
      *
-     * @param urlString The full URL of the resource.
+     * @param uri The validated http or https URI of the resource.
+     * @param urlString The original URL string, used for error reporting.
      * @return An InputStream of the response body.
      * @throws IOException If a network error occurs, or the server returns a non-200 code or the operation is interrupted.
      */
-    public static InputStream openSafeStream(String urlString) throws IOException {
+    private static InputStream openHttpStream(URI uri, String urlString) throws IOException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(urlString))
+                .uri(uri)
                 .timeout(Duration.ofSeconds(30))
                 .GET()
                 .build();

@@ -18,21 +18,23 @@ This script works with two input layers:
 
 And four parameters:
 
-* Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)
+* Railways width (railWidth): Name of the column where the total railway platform width is stored (Optional). If the column is present, it overrides the total width (d4) defined in the railway platform data file
 
-* Rail platform height (hRail): Railways platform height (Optional). Default value = 0.5m
+* Rail platform (platformColumn): Name of column where the platform identifier is stored (Optional). Default value = "PLATFORM"
 
 * Input SRID (inputSRID): SRID of the input tables (Optional)
 
 * Output suffix (outputsuffix): suffix applied at the end of the resulting table name (Optional). If not specified, "ENRICHED" is applied
 
-In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter railWidth, using the following formula:
+* Railway platform data file (railwayPlatformDataFile): URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used (Optional)
 
-* d2 = (railWidth - 5.5)/2
+The railway platform geometry (track gauge, ground factors, heights and section widths) is read from the PLATFORM column of the input railways table and resolved against the railway platform data file. In the schema below, the points (in orange) will be inserted into the DEM. d2, d3 and d4 (the section half-widths) are taken from the platform definition (d2_0, d3_0 and d4_0 respectively), and d4 can be overridden by the railWidth column when it is present in the railways table:
 
-* d3 = (railWidth - 4)/2
+* d2 = d2_0
 
-* d4 = (railWidth)/2
+* d3 = d3_0
+
+* d4 = d4_0, or railWidth if the railWidth column is present
 
 .. figure:: railway_plateform.png
    :align: center
@@ -59,11 +61,6 @@ Mandatory inputs
 
    Type: ``String``
 
-``railWidth`` — *Railways width*
-   Name of column where the railways width is stored
-
-   Type: ``String``
-
 Optional inputs
 ~~~~~~~~~~~~~~~
 
@@ -78,6 +75,23 @@ Optional inputs
    Type: ``String``
 
    Default: ``ENRICHED``
+
+``platformColumn`` — *Platform column*
+   Name of column where the platform identifier is stored. The value is resolved against the railway platform data file.
+
+   Type: ``String``
+
+   Default: ``PLATFORM``
+
+``railWidth`` — *Railways width*
+   Name of column where the total railways platform width is stored. When present, it overrides the total width (d4) defined in the railway platform data file.
+
+   Type: ``String``
+
+``railwayPlatformDataFile`` — *Railway platform data file*
+   URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.
+
+   Type: ``String``
 
 Output
 ------
