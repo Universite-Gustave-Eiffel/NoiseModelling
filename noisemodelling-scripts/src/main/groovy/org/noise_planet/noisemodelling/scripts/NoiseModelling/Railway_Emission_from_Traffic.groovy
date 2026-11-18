@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
+import java.sql.Statement
 
 
 title = 'Compute railway emission lines sources from vehicle, traffic table AND section table.'
@@ -102,6 +103,14 @@ inputs = [
                 name: 'Output table in octaves, not terts',
                 title: 'Output table in octaves',
                 description: 'Generate the output table with emissions per octave band, not per third octave band.',
+                type: Boolean.class,
+                min: 0, max: 1,
+                default: false
+        ],
+        speedUp : [
+                name: 'Speedup propagation calculation',
+                title: 'Speedup propagation calculation',
+                description: 'Generate the output table by summing the sources with the same source height and same directivity profile. Requires `octaveOutput=TRUE`.',
                 type: Boolean.class,
                 min: 0, max: 1,
                 default: false
@@ -189,10 +198,70 @@ def exec(Connection connection, input) {
     if (input['octaveOutput'] != null) {
         octaveOutput = input['octaveOutput'] as Boolean
     }
+    Boolean speedup = false;
+    if (input['speedup'] != null) {
+        speedup = input['speedup'] as Boolean
+    }
+    if (speedup && !octaveOutput) {
+        throw new IllegalArgumentException("Error : to speed up the propagation calculation, you need to also set octaveOutput = TRUE")
+    }
+
+    String outputtable = "LW_RAILWAY"
+    String outputtable_temp = outputtable
+    if (speedup) {
+        outputtable_temp = outputtable + "_T" //reminder: do not use _TEMP as table name
+    }
 
     EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile,
+            outputtable_temp, "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile,
             railwayPlatformDataFile, octaveOutput)
+
+    if (speedup) {
+        Statement stmt = connection.createStatement()
+        stmt.execute("DROP TABLE IF EXISTS " + outputtable)
+
+        def frequencies = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+        def periods = ['D', 'E', 'N']
+        //Sum emission power for heightsource = 0 and normal train directivity to reduce total number of source lines
+        //i.e. ROLLING, TRACTIONA, and AERODYNAMICA
+        StringBuilder sqlString = new StringBuilder();
+        sqlString.append("CREATE TABLE " + outputtable + " AS SELECT ");
+        sqlString.append("PK_SECTION, THE_GEOM, ");
+        sqlString.append("1 AS DIR_ID,");
+        sqlString.append("GS,");
+        sqlString.append("HRAIL,");
+        sqlString.append("CREF,");
+        for (p in periods) {
+            for (f in frequencies){
+                sqlString.append("10*log10(SUM(power(10,HZ").append(p).append(f).append("/10))) as HZ").append(p).append(f).append(",");
+            }
+        }
+        sqlString.append("min(PK) as PK");
+        sqlString.append(" FROM ");
+        sqlString.append(outputtable_temp);
+        sqlString.append(" WHERE DIR_ID in (1, 2, 4) ");
+        sqlString.append("GROUP BY PK_SECTION, GS, HRAIL, CREF, THE_GEOM;");
+
+        stmt.execute(sqlString.toString());
+
+        //All other sources have their specific height, or directivity function
+        sqlString = new StringBuilder();
+        sqlString.append("INSERT INTO ").append(outputtable);
+        sqlString.append(" SELECT PK_SECTION, THE_GEOM, DIR_ID, GS, HRAIL, CREF, ");
+        for (p in periods) {
+            for (f in frequencies) {
+                sqlString.append("HZ").append(p).append(f).append(",")
+            }
+        }
+        sqlString.append("PK");
+        sqlString.append(" FROM ");
+        sqlString.append(outputtable_temp);
+        sqlString.append(" WHERE DIR_ID NOT in (1, 2, 4);");
+
+        stmt.execute(sqlString.toString());
+
+        stmt.execute("DROP TABLE " + outputtable_temp)
+    }
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");
