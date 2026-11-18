@@ -10,11 +10,15 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.prep.PreparedGeometry;
+import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
 
 
 public class GroundAbsorption {
     /** Ground effect area footprint. */
     final Geometry geom;
+    /** Prepared version of the footprint, faster for the repeated intersection tests */
+    final PreparedGeometry preparedGeom;
     /** Ground effect coefficient. */
     final double coef;
 
@@ -26,6 +30,7 @@ public class GroundAbsorption {
     public GroundAbsorption(Geometry geom, double coef) {
         this.geom = geom;
         this.geom.normalize();
+        this.preparedGeom = PreparedGeometryFactory.prepare(this.geom);
         this.coef = coef;
     }
 
