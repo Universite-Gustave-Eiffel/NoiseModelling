@@ -1107,11 +1107,11 @@ public class OsmHandler implements Sink {
                     isRoad = true
                 }
                 if (isBuilding) {
-                    if (!trueHeightFound && "building:levels".equalsIgnoreCase(tag.getKey())) {
-                        height = height - 4 + Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", "")) * 3.0;
+                    if (!trueHeightFound && "building:levels".equalsIgnoreCase(tag.getKey()) && tag.getValue().split(";", -1)[0].replaceAll("[^0-9.]+", "").isNumber()) {
+                        height = height - 4 + Double.parseDouble(tag.getValue().split(";", -1)[0].replaceAll("[^0-9.]+", "")) * 3.0;
                     }
-                    if ("height".equalsIgnoreCase(tag.getKey())) {
-                        height = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
+                    if ("height".equalsIgnoreCase(tag.getKey()) && tag.getValue().replaceAll("[^0-9.]+", "").isNumber()) {
+                        height = Double.parseDouble(tag.getValue().replaceAll("[^0-9.]+", ""));
                         trueHeightFound = true;
                     }
                 }
