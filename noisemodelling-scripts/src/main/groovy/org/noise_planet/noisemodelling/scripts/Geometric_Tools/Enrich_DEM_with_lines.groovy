@@ -27,6 +27,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -94,43 +95,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-@CompileStatic
-static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progressVisitor, Logger logger) {
-    Reader reader = null
-    ByteArrayInputStream s = new ByteArrayInputStream(sqlInstructions.getBytes())
-    InputStream is = s
-    List<String> statementList = new LinkedList<>()
-    try {
-        reader  = new InputStreamReader(is)
-        ScriptReader scriptReader = new ScriptReader(reader)
-        scriptReader.setSkipRemarks(false)
-        String statement = scriptReader.readStatement()
-        while (statement != null && !statement.trim().isEmpty()) {
-            statementList.add(statement)
-            statement = scriptReader.readStatement()
-        }
-    } finally {
-        reader.close()
-    }
-    int idStatement = 0
-    final int nbStatements = statementList.size()
-    ProgressVisitor evalProgress = progressVisitor.subProcess(nbStatements)
-    for(String statement : statementList) {
-        for(String subStatement : statement.split("\n")) {
-            if(subStatement.trim().startsWith("--")){
-                logger.info(String.format(Locale.ROOT, "%d/%d %s", idStatement + 1, nbStatements, subStatement.replace("--", "")))            
-            }
-        } 
-        idStatement++
-        sql.execute(statement)
-        evalProgress.endStep()
-        if(evalProgress.isCanceled()) {
-            throw new SQLException("Canceled by user")
-        }
-    }
-}
-
 
 def exec(Connection connection, input) {
 
@@ -310,7 +274,7 @@ def exec(Connection connection, input) {
 
     def binding = ["inputDEM": inputDEM, "inputLine":inputLine, "source": source, "outputsuffix": outputsuffix, "srid": srid]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
-    parseScript(template.toString(), sql, progress, logger)
+    DataBaseUtilities.parseScript(template.toString(), connection, progress, logger)
 
     return "DEM successfully enriched in the table " + enrichedDEM
     }
