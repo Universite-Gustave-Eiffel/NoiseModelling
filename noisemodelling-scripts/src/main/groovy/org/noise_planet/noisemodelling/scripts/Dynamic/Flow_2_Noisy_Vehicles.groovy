@@ -86,6 +86,13 @@ inputs = [
                    description: 'Number of seconds to compute (INTEGER).',
                    default    : 60,
                    type       : Integer.class],
+        confTemperature         : [
+                name       : 'Temperature',
+                title      : 'Air temperature',
+                description: '&#127777; Air temperature (°C)',
+                default    : 20,
+                type       : Double.class
+        ]
 ]
 
 outputs = [
@@ -131,6 +138,7 @@ def exec(Connection connection, input) {
     if (input['method']) {
         method = input['method'] as String
     }
+    double temperature = input.getOrDefault("confTemperature",20.0) as Double
 
     String sources_table_name = input['tableRoads']
     // do it case-insensitive
@@ -161,7 +169,7 @@ def exec(Connection connection, input) {
                 "ALTER TABLE VEHICLES_PROBA ALTER COLUMN HGV_DENS_D double;" )
 
         IndividualVehicleEmissionProcessData probabilisticProcessData = new IndividualVehicleEmissionProcessData()
-        probabilisticProcessData.setDynamicEmissionTable("VEHICLES_PROBA", sql)
+        probabilisticProcessData.setDynamicEmissionTable("VEHICLES_PROBA", sql,temperature)
 
 
         // random number > Vehicle or not / Light of Heavy
@@ -758,7 +766,7 @@ class IndividualVehicleEmissionProcessData {
         return LEVEL_NO_VEHICLE
     }
 
-    static double[] vehicleSpectrum(double speed, String veh_type) {
+    static double[] vehicleSpectrum(double speed, String veh_type,Double temperature) {
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
         double[] result = new double[list.size()]
         int kk = 0
@@ -771,6 +779,7 @@ class IndividualVehicleEmissionProcessData {
             int VehId = 10
 
             RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
+            rsParameters.setTemperature(temperature)
             rsParameters.setRoadSurface(RoadSurface)
             rsParameters.setSlopePercentage(0)
             rsParameters.setFrequency(f)
@@ -798,7 +807,7 @@ class IndividualVehicleEmissionProcessData {
         nCars = SPEED_LV.size()
         return nCars
     }
-    void setDynamicEmissionTable(String tablename, Sql sql) {
+    void setDynamicEmissionTable(String tablename, Sql sql,Double temperature) {
         //////////////////////
         // Import file text
         //////////////////////
@@ -813,8 +822,8 @@ class IndividualVehicleEmissionProcessData {
         }
         double[] noVehicle = new double[8]
         for (Integer pk : SPEED_LV.keySet()) {
-            double[] lv = vehicleSpectrum(SPEED_LV.get(pk), "1")
-            double[] hv = vehicleSpectrum(SPEED_HV.get(pk), "3")
+            double[] lv = vehicleSpectrum(SPEED_LV.get(pk), "1",temperature)
+            double[] hv = vehicleSpectrum(SPEED_HV.get(pk), "3",temperature)
             LEVEL_LV_ONLY.put(pk, combineSpectrums(lv, noVehicle))
             LEVEL_HV_ONLY.put(pk, combineSpectrums(noVehicle, hv))
             LEVEL_LV_AND_HV.put(pk, combineSpectrums(lv, hv))

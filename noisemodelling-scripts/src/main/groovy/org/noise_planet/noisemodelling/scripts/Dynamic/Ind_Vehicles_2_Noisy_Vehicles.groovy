@@ -70,7 +70,14 @@ inputs = [
                 title : 'Keep source geometries without emission value',
                 description :'Do not delete source geometries that does not contain any emission value. Default to true, it reduce the computation time when evaluating the attenuation',
                 default: true, 
-                type: Boolean.class]
+                type: Boolean.class],
+        confTemperature         : [
+                name       : 'Temperature',
+                title      : 'Air temperature',
+                description: '&#127777; Air temperature (°C)',
+                default    : 20,
+                type       : Double.class
+        ]
 ]
 
 outputs = [
@@ -116,6 +123,7 @@ def exec(Connection connection, Map input) {
     if (input['keepNoEmissionGeoms']) {
         removeGeomsNoEmission = !input['keepNoEmissionGeoms']
     }
+    double temperature = input.getOrDefault("confTemperature",20.0) as Double
 
 
     // do it case-insensitive
@@ -134,7 +142,7 @@ def exec(Connection connection, Map input) {
     String primaryKeyColumnName = nameAndIndex.first()
 
     VehicleEmissionProcessData vehicleEmissionProcessData = new VehicleEmissionProcessData();
-    vehicleEmissionProcessData.setDynamicEmissionTable(vehicles_table_name, sql, tableFormat)
+    vehicleEmissionProcessData.setDynamicEmissionTable(vehicles_table_name, sql, tableFormat,temperature)
 
     sql.execute("drop table if exists SOURCES_EMISSION_DUPLICATES;")
 
@@ -208,7 +216,7 @@ def exec(Connection connection, Map input) {
 class VehicleEmissionProcessData {
 
 
-    void setDynamicEmissionTable(String tablename, Sql sql, String tableFormat) throws SQLException {
+    void setDynamicEmissionTable(String tablename, Sql sql, String tableFormat,Double temperature) throws SQLException {
 
         //////////////////////
         // Import file text
@@ -237,7 +245,7 @@ class VehicleEmissionProcessData {
 
                     int timestep = (int) row[3]
                     // in SUMO, the speed is in m.s-1, we need to convert it in km.h-1
-                    double[] carLevel = getCarsLevel(speed*3.6, id_veh)
+                    double[] carLevel = getCarsLevel(speed*3.6, id_veh,temperature)
                     sql.withBatch(100, qry) { ps ->
                         ps.addBatch(timestep as String, the_geom as Geometry,
                                 carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
@@ -268,7 +276,7 @@ class VehicleEmissionProcessData {
                 int timestep = (int) row[3]
 
                 // in SYMUVIA, the speed is in km.h-1
-                double[] carLevel = getCarsLevel(speed, id_veh)
+                double[] carLevel = getCarsLevel(speed, id_veh,temperature)
                 sql.withBatch(100, qry) { ps ->
                     ps.addBatch(timestep as String, the_geom as Geometry,
                             carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
@@ -286,7 +294,7 @@ class VehicleEmissionProcessData {
 
     }
 
-    double[] getCarsLevel(double speed, def id_veh) throws SQLException {
+    double[] getCarsLevel(double speed, def id_veh,double temperature) throws SQLException {
         double[] res_LV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
 
@@ -307,6 +315,7 @@ class VehicleEmissionProcessData {
             }
 
             RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
+            rsParameters.setTemperature(temperature)
             rsParameters.setRoadSurface(RoadSurface)
             rsParameters.setSlopePercentage(0)
             rsParameters.setFrequency(f)
