@@ -584,6 +584,12 @@ public class RailwayCnossos extends Railway {
                 hasImpactNoise = joinDensity == null || !joinDensity.isNull();
             }
         }
+        // Impact noise is not modelled in track sections with a speed below 50 km/h (30 km/h for trams and light
+        // metro): the minimum speed of the roughness already takes in these effects (Directive 2002/49/EC, Annex II,
+        // section 2.3.2, "Impact noise").
+        if (speed < (isLightRail(typeVehicle) ? MIN_SPEED_LIGHT_RAIL : MIN_SPEED_HEAVY_RAIL)) {
+            hasImpactNoise = false;
+        }
 
         double m = 33;
         for (int idLambda = 0; idLambda < 35; idLambda++) {
