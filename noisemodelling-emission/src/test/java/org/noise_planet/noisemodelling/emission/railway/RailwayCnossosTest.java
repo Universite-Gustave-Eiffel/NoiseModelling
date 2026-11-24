@@ -989,6 +989,16 @@ public class RailwayCnossosTest {
     }
 
     @Test
+    public void Test_Dutch_Categories_Are_Single_Vehicles() throws IOException {
+        // CNOSSOS-NL (Omgevingsregeling, Bijlage XXXIII, Tabel 2.3.j) gives each Dutch category as one vehicle with its
+        // own length and number of axles, and the traffic as numbers of those vehicles per hour.
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        for (int category = 1; category <= 12; category++) {
+            assertEquals(1, railwayCnossos.getNbCoach("NL_CAT" + category), "NL_CAT" + category);
+        }
+    }
+
+    @Test
     public void Test_Vehicle_Vmax_Limit() throws IOException {
         railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
         double vMaxCat8 = railwayCnossos.getMaxSpeed("NL_CAT8");
