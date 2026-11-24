@@ -989,6 +989,35 @@ public class RailwayCnossosTest {
     }
 
     @Test
+    public void Test_Impact_Noise_Not_Below_Minimum_Speed() throws IOException {
+        // Directive 2002/49/EC, Annex II, section 2.3.2: no impact noise in track sections with a speed below 50 km/h
+        // (30 km/h for trams and light metro); from 50 km/h the joints of NL_BB3_M2 raise the rolling noise.
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
+        for (double speed : new double[] {40, 80}) {
+            double[] plain = rolling("NL_CAT1", speed, "");
+            double[] jointed = rolling("NL_CAT1", speed, "NL_BB3_M2");
+            double largest = 0;
+            for (int idFreq = 0; idFreq < 24; idFreq++) {
+                largest = Math.max(largest, jointed[idFreq] - plain[idFreq]);
+            }
+            if (speed < 50) {
+                assertEquals(0, largest, EPSILON_TEST1, "speed " + speed);
+            } else {
+                assertTrue(largest > 1, "speed " + speed);
+            }
+        }
+    }
+
+    private double[] rolling(String vehicle, double speed, String impact) throws IOException {
+        RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(vehicle, speed, 1, 0, 0);
+        RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(160, "NL_BB1", "NL",
+                impact, "", 0, 160, false, 1);
+        return railwayCnossos.evaluate(vehicleParameters, trackParameters).getRailwaySourceList().get("ROLLING").getlW();
+    }
+
+    @Test
     public void Test_Vehicle_Vmax_Limit() throws IOException {
         railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
         double vMaxCat8 = railwayCnossos.getMaxSpeed("NL_CAT8");
