@@ -3,9 +3,9 @@
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
 [![GitHub release](https://img.shields.io/github/release/Universite-Gustave-Eiffel/NoiseModelling)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/)
 
-<img src="https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png" width="90%">
+![The NoiseModelling Builder interface](Docs/images/home/NoiseModelling_banner.png)
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/noise-planet/)
+You can follow NoiseModelling on [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/noise-planet/)
 
 NoiseModelling
 ===============
@@ -73,7 +73,7 @@ It has been widely used for strategic noise mapping, dynamic maps driven by traf
 Documentation
 ---------------------------
 
-An online documentation is available : [NOISEMODELLING DOCUMENTATION](https://noisemodelling.readthedocs.io/en/latest/).
+Want to know more? Visit the [online documentation](https://noisemodelling.readthedocs.io/en/).
 
 Here you'll find a wealth of useful information, including many step-by-step tutorials on how to use NoiseModelling.
 

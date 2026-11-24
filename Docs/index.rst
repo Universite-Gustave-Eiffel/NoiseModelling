@@ -11,10 +11,19 @@ NoiseModelling User Guide
 
 Welcome on the **official NoiseModelling User Guide**.
 
-NoiseModelling is a free and open-source Java library for producing environmental noise maps from local to national scales, implementing CNOSSOS‑EU road and rail noise emission and propagation methods while linking to H2GIS and PostGIS for spatial analysis.
+NoiseModelling is a **free** and **open-source** Java library for **producing environmental noise maps** from local to national scales, implementing `CNOSSOS-EU`_ road and rail noise emission and propagation methods while linking to `H2GIS`_ and `PostGIS`_ for spatial analysis.
+
 It responds to the need for robust noise assessment in public health and environmental planning by enabling simulation and prediction of noise propagation for mitigation design and compliance with EU regulations.
-The software can be used independently or through a graphical interface and is openly available to the research, education, and professional communities.
+
+The software can be used independently or through a Graphical User Interface (GUI) and is openly available to the research, education, and professional communities.
+
 It has been widely used for strategic noise mapping, dynamic maps driven by traffic models or sensors, sensitivity studies, and investigations of particular sources such as emergency sirens and drones.
+
+.. note::
+    The NoiseModelling `logo`_ was updated in October 2026. Some screenshots in this documentation may still show the former logo. This does not affect how the app works.
+
+    .. figure:: images/home/NoiseModelling_new_logo_announcement_small.png
+
 
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 
@@ -25,6 +34,10 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
     - open an `issue`_ or a write a `message`_ *(we prefer these two options)*
     - send us an email at contact@noise-planet.org  
 
+.. _H2GIS : https://h2gis.org/
+.. _PostGIS : https://postgis.net/
+.. _CNOSSOS-EU : https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
+.. _logo : https://noise-planet.org/noisemodelling.html
 .. _issue : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues
 .. _message : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/discussions
 .. _this video : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
@@ -57,7 +70,7 @@ Authors
 
 NoiseModelling project is leaded by acousticians from the *Joint Research Unit in Environmental Acoustics* (`UMRAE`_, Université Gustave Eiffel - Cerema) and Geographic Information Science specialists from `Lab-STICC`_ laboratory (CNRS - DECIDE Team).
 
-The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
+The NoiseModelling team owns the majority of the authorship of this application, **but any external contributions are warmly welcomed**.
 
 .. _UMRAE: https://www.umrae.fr/
 .. _Lab-STICC: https://labsticc.fr

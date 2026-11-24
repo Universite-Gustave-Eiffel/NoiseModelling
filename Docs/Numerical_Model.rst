@@ -13,8 +13,7 @@ Rail traffic emission model
 ----------------------------
 The emission model of the implemented rail traffic is the `CNOSSOS-EU`_ model.
 
-Only french database, from SNCF, is implemented.
-
+Only french database, from `SNCF`_, is implemented.
 
 Without emission model
 ----------------------------
@@ -38,7 +37,5 @@ Propagation Numerical Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The propagation model is the `CNOSSOS-EU`_ one.
 
-
-
 .. _CNOSSOS-EU: https://circabc.europa.eu/sd/a/9566c5b9-8607-4118-8427-906dab7632e2/Directive_2015_996_EN.pdfde
-
+.. _SNCF: https://fr.wikipedia.org/wiki/Soci%C3%A9t%C3%A9_nationale_des_chemins_de_fer_fran%C3%A7ais
