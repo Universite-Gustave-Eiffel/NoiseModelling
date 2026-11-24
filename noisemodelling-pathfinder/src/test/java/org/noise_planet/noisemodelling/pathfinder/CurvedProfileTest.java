@@ -12,11 +12,13 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -295,5 +297,78 @@ public class CurvedProfileTest {
         assertEquals(0, new Coordinate(773, 12, 0).distance(curvedSideHull.get(1)), 0.1);
         assertEquals(0, new Coordinate(986, 79, 0).distance(curvedSideHull.get(2)), 0.1);
 
+    }
+
+    /**
+     * The cut points of a reflection profile are moved by the arc at their abscissa along the unfolded path, not at
+     * their distance to the source in plan. The receiver is 200 m from the source and the wall 50 m behind the
+     * receiver, so the unfolded path is 300 m long and the points after the reflection lie farther from the source
+     * than the receiver. They must be lowered like every point between the source and the receiver.
+     */
+    @Test
+    public void testReflectionProfileFollowsUnfoldedPath() {
+        double wallTop = 3.0;
+        LineSegment wall = new LineSegment(new Coordinate(250, -50, wallTop), new Coordinate(250, 50, wallTop));
+        List<CutPoint> flatProfile = new ArrayList<>();
+        flatProfile.add(new CutPointSource(new CutPoint(new Coordinate(0, 0, 0.05), 0, 0)));
+        flatProfile.add(new CutPoint(new Coordinate(125, 0, 0.66), 0, 0));
+        flatProfile.add(new CutPointReflection(new CutPoint(new Coordinate(250, 0, 1.26), 0, 0), wall,
+                Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)));
+        flatProfile.add(new CutPoint(new Coordinate(225, 0, 1.38), 0, 0));
+        flatProfile.add(new CutPointReceiver(new CutPoint(new Coordinate(200, 0, 1.5), 0, 0)));
+        double[] abscissa = new double[]{0, 125, 250, 275, 300};
+        double d = 300;
+        double radius = Math.max(1000, 8 * d);
+
+        List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(flatProfile, false);
+
+        assertEquals(flatProfile.size(), curvedProfile.size());
+        for (int i = 0; i < flatProfile.size(); i++) {
+            double expectedOffset = Math.sqrt(radius * radius - d * d / 4)
+                    - Math.sqrt(radius * radius - Math.pow(abscissa[i] - d / 2, 2));
+            CutPoint flat = flatProfile.get(i);
+            CutPoint curved = curvedProfile.get(i);
+            assertEquals(flat.getCoordinate().z + expectedOffset, curved.getCoordinate().z, 1e-9);
+            assertEquals(flat.zGround + expectedOffset, curved.zGround, 1e-9);
+            assertEquals(flat.getCoordinate().x, curved.getCoordinate().x, 0);
+            assertEquals(flat.getCoordinate().y, curved.getCoordinate().y, 0);
+            if (i > 0 && i < flatProfile.size() - 1) {
+                assertTrue(expectedOffset < 0, "points between the source and the receiver are lowered");
+            } else {
+                assertEquals(0, expectedOffset, 1e-9);
+            }
+        }
+        // The wall is moved by the offset of the reflection point
+        CutPointReflection curvedReflection = (CutPointReflection) curvedProfile.get(2);
+        assertEquals(curvedProfile.get(2).getCoordinate().z - 1.26 + wallTop, curvedReflection.wall.p0.z, 1e-9);
+        assertEquals(curvedProfile.get(2).getCoordinate().z - 1.26 + wallTop, curvedReflection.wall.p1.z, 1e-9);
+        // The flat profile is left unchanged
+        assertEquals(wallTop, ((CutPointReflection) flatProfile.get(2)).wall.p0.z, 0);
+        assertEquals(1.26, flatProfile.get(2).getCoordinate().z, 0);
+    }
+
+    /**
+     * On a direct profile the abscissa along the path is the distance to the source, so the cut point transformation
+     * gives the same altitudes as the coordinate transformation between the source and the receiver.
+     */
+    @Test
+    public void testDirectProfileMatchesCoordinateTransformation() {
+        Coordinate source = new Coordinate(10, 20, 0.05);
+        Coordinate receiver = new Coordinate(310, 420, 4);
+        List<CutPoint> flatProfile = new ArrayList<>();
+        flatProfile.add(new CutPointSource(new CutPoint(source, 0, 0)));
+        for (int i = 1; i < 10; i++) {
+            double t = i / 10.0;
+            flatProfile.add(new CutPoint(new Coordinate(10 + 300 * t, 20 + 400 * t, 2 + i), 1 + 0.1 * i, 0.5));
+        }
+        flatProfile.add(new CutPointReceiver(new CutPoint(receiver, 0, 0)));
+
+        List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(flatProfile, false);
+        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+                flatProfile.stream().map(CutPoint::getCoordinate).toArray(Coordinate[]::new), false);
+
+        for (int i = 0; i < flatProfile.size(); i++) {
+            assertEquals(curvedCoordinates[i].z, curvedProfile.get(i).getCoordinate().z, 1e-9);
+        }
     }
 }
