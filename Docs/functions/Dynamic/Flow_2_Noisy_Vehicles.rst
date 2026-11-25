@@ -38,6 +38,13 @@ Mandatory inputs
 Optional inputs
 ~~~~~~~~~~~~~~~
 
+``confTemperature`` — *Air temperature*
+   🌡 Air temperature (°C)
+
+   Type: ``Double``
+
+   Default: ``20``
+
 ``duration`` — *duration in sec.*
    Number of seconds to compute (INTEGER).
 

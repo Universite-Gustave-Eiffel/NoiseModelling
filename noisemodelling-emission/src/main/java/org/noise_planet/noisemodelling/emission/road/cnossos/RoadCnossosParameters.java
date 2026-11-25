@@ -76,6 +76,7 @@ public class RoadCnossosParameters {
         speedHgv = MINSPEED;
         speedWav = MINSPEED;
         speedWbv = MINSPEED;
+        temperature=20;
     }
 
     /**

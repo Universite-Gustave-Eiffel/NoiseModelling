@@ -64,7 +64,7 @@ Table SOURCES_GEOM definition
     * Range: 20 to 150 km/h
     * Type: Double
 * ``PVMT``
-    * Description: `CNOSSOS road pavement identifier`_ *(Default* ``DEF`` *)* (`See NM possible values`_)
+    * Description: `CNOSSOS road pavement identifier`_ *(Default* ``NL08`` *)* (`See NM possible values`_)
     * Type: Varchar
 * ``TS_STUD``
     * Description: A limited period (``Ts``) (in months) over the year where a average proportion (``pm``) of light vehicles are equipped with studded tyres [0-12]
@@ -147,7 +147,7 @@ The script ``Road_Emission_from_Traffic`` can convert this traffic into the ``LW
     * Range: 20 to 150 km/h
     * Type: Double
 * ``PVMT``
-    * Description: `CNOSSOS road pavement identifier`_ *(Default* ``DEF`` *)* (`See NM possible values`_)
+    * Description: `CNOSSOS road pavement identifier`_ *(Default* ``NL08`` *)* (`See NM possible values`_)
     * Type: Varchar
 * ``TS_STUD``
     * Description: A limited period (``Ts``) (in months) over the year where a average proportion (``pm``) of light vehicles are equipped with studded tyres [0-12]

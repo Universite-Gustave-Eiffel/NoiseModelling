@@ -35,6 +35,13 @@ Mandatory inputs
 Optional inputs
 ~~~~~~~~~~~~~~~
 
+``confTemperature`` — *Air temperature*
+   🌡 Air temperature (°C)
+
+   Type: ``Double``
+
+   Default: ``20``
+
 ``distance2snap`` — *Maximum distance to snap on the network point sources*
    Maximum distance to snap on the network point sources
 
