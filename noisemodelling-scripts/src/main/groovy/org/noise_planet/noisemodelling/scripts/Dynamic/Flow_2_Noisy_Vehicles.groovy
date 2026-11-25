@@ -253,7 +253,7 @@ def exec(Connection connection, input) {
 
 
                 for (double time = 0; time < duration; time += timestep) {
-                    road.move(time, duration)
+                    road.move(time, duration,temperature)
 
                     for (SourcePoint source in road.source_points) {
                         if (source.levels[0]> 0.0){
@@ -380,17 +380,17 @@ class Road {
         }
     }
 
-    void move(double time, double max_time) {
+    void move(double time, double max_time,Double temperature) {
         resetSourceLevels()
         for (Vehicle vehicle in vehicles) {
             vehicle.move(time, max_time)
             if (vehicle.exists) {
-                updateSourceLevels(vehicle)
+                updateSourceLevels(vehicle,temperature)
             }
         }
     }
 
-    void updateSourceLevels(Vehicle vehicle) {
+    void updateSourceLevels(Vehicle vehicle,Double temperature) {
         SourcePoint closest = null
         SourcePoint secondary_closest = null
         Coordinate vehicle_point = getPoint(vehicle.getPosition())
@@ -415,7 +415,7 @@ class Road {
                 secondary_distance = dist
             }
         }
-        double[] vehicle_levels = vehicle.getLw()
+        double[] vehicle_levels = vehicle.getLw(temperature)
         double primary_weight = 1.0
         double secondary_weight = 0.0
         if (secondary_closest != null) {
@@ -559,7 +559,7 @@ class Vehicle {
         return position % max_position;
     }
 
-    double[] getLw() {
+    double[] getLw(Double temperature) {
         int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000];
         double[] result = new double[freqs.length];
         if (!exists) {
@@ -573,6 +573,7 @@ class Vehicle {
             RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
                     speed * 3.6, 0, vehicle_type, 0,  true, 1, id      )
             rsParametersDynamic.setRoadSurface("DEF")
+            rsParametersDynamic.setTemperature(temperature)
             rsParametersDynamic.setFrequency(freqs[i])
             // remove lw_correction
             result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic) + lw_correction;
