@@ -134,7 +134,7 @@ public class JTSUtility {
             final Coordinate a = coordinates[i];
             final Coordinate b =  coordinates[i+1];
             Coordinate closestPointOnSegment = getNearestPoint(new LineSegment(a, b), from);
-            double closestPointOnSegmentDistance = closestPointOnSegment.distance3D(from);
+            double closestPointOnSegmentDistance = closestPointOnSegment.distance(from);
             if(closestPoint == null || closestPointOnSegmentDistance < closestPointDistance) {
                 closestPoint = closestPointOnSegment;
                 closestPointDistance = closestPointOnSegmentDistance;
