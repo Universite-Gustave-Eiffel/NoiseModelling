@@ -150,6 +150,32 @@ class TestNoiseModelling extends JdbcTestCase {
                 10**(tertsbands[0]["HZD63"]/10)  +
                 10**(tertsbands[0]["HZD80"]/10))
         assertEquals(expectedOctaveLevel, octaveLevel[0]["HZD63"] as double, 0.001)
+
+        // Testing speedup optin
+        sql.execute("DROP TABLE LW_RAILWAY")
+
+        new Railway_Emission_from_Traffic().exec(connection,
+                ["tableRailwayTraffic": "RAIL_TRAFFIC",
+                 "tableRailwayTrack": "RAIL_SECTIONS",
+                 "octaveOutput": "TRUE",
+                 "speedup": "TRUE"
+                ])
+
+        // Test columns
+        def fieldNamesSpeedup = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
+        assertArrayEquals(expectedOctave.toArray(new String[expectedOctave.size()]),
+                fieldNamesSpeedup.toArray(new String[fieldNamesSpeedup.size()]))
+
+        //Test rows
+        def speedupSize = sql.rows("SELECT COUNT(*) CPT FROM LW_RAILWAY")[0]["CPT"] as Integer
+        assert(speedupSize.intValue() <  (octaveSize[0]["CPT"] as Integer).intValue())
+        def tracBSpeedRows = sql.rows("SELECT COUNT(*) CPT FROM LW_RAILWAY WHERE DIR_ID = 3")
+        def tracBNormalRows = sql.rows("SELECT COUNT(*) CPT FROM LW_RAILWAY_TERTS WHERE DIR_ID = 3")
+        assertEquals(tracBNormalRows[0]["CPT"] as Integer, tracBSpeedRows[0]["CPT"] as Integer)
+
+        //Test content
+        def speedupBands = sql.rows("SELECT * FROM LW_RAILWAY WHERE PK=1")
+        assert((speedupBands[0]["HZD63"] as Double).doubleValue() > (octaveLevel[0]["HZD63"] as Double).doubleValue())
     }
 
     @Test
