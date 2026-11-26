@@ -85,4 +85,44 @@ public class DiscreteDirectivitySphereTest {
 
     }
 
+    /**
+     * A pattern that depends only on the elevation must give the same attenuation at every azimuth
+     */
+    @Test
+    public void testElevationOnlyPatternIsIndependentOfAzimuth() {
+        DiscreteDirectivitySphere d = new DiscreteDirectivitySphere(1, new double[]{1000});
+        // 15° grid; 0 dB at or below the horizon, -20 dB at the zenith
+        for (int pitch = -90; pitch <= 90; pitch += 15) {
+            for (int yaw = 0; yaw < 360; yaw += 15) {
+                d.addDirectivityRecord(Math.toRadians(pitch), Math.toRadians(yaw),
+                        new double[]{-20.0 * Math.max(0, pitch) / 90.0});
+            }
+        }
+        // Energy bilinear interpolation between 0 dB (elevation 0°) and -3.333 dB (elevation 15°) at elevation 10°
+        for (int yaw : new int[]{0, 45, 80, 85, 89, 90, 95, 100, 180, 270, 275}) {
+            assertEquals(-1.919, d.getAttenuation(1000, Math.toRadians(yaw), Math.toRadians(10)), 0.01,
+                    "azimuth " + yaw);
+        }
+        // Nearest neighbour
+        assertEquals(new DirectivityRecord(0, Math.toRadians(90), null),
+                d.getRecord(Math.toRadians(1), Math.toRadians(89), 0));
+    }
+
+    /**
+     * Next to the downward pole the azimuth must still be interpolated
+     */
+    @Test
+    public void testAzimuthInterpolationNextToPole() {
+        DiscreteDirectivitySphere d = new DiscreteDirectivitySphere(1, new double[]{1000});
+        // 15° grid; 0 dB at azimuths 0°, 30°..., -10 dB at azimuths 15°, 45°...
+        for (int pitch = -90; pitch <= 90; pitch += 15) {
+            for (int yaw = 0; yaw < 360; yaw += 15) {
+                d.addDirectivityRecord(Math.toRadians(pitch), Math.toRadians(yaw),
+                        new double[]{yaw % 30 == 0 ? 0 : -10});
+            }
+        }
+        // Halfway between azimuths 0° and 15°: 10*log10(0.5 * 1 + 0.5 * 0.1)
+        assertEquals(-2.596, d.getAttenuation(1000, Math.toRadians(7.5), Math.toRadians(-80)), 0.01);
+    }
+
 }
