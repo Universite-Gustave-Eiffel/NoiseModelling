@@ -202,6 +202,41 @@ class TestImportExport extends JdbcTestCase {
 
     }
 
+    @Test
+    void testImportOSMDecimalHeights(@TempDir File temp) {
+        String nodes = ""
+        String ways = ""
+        def tags = ["<tag k=\"height\" v=\"12.5\"/>", "<tag k=\"building:levels\" v=\"2.5\"/>",
+                    "<tag k=\"height\" v=\"unknown\"/>", "<tag k=\"building:levels\" v=\"1;2\"/>",
+                    "<tag k=\"building:levels\" v=\";\"/>"]
+        tags.eachWithIndex { String tag, int i ->
+            double x = 2.0 + i * 0.001
+            [[x, 47.0], [x + 0.0002, 47.0], [x + 0.0002, 47.0002], [x, 47.0002]].eachWithIndex { c, int j ->
+                nodes += "<node id=\"${i * 10 + j + 1}\" version=\"1\" timestamp=\"2024-01-01T00:00:00Z\" lat=\"${c[1]}\" lon=\"${c[0]}\"/>"
+            }
+            ways += "<way id=\"${i + 1}\" version=\"1\" timestamp=\"2024-01-01T00:00:00Z\"><nd ref=\"${i * 10 + 1}\"/><nd ref=\"${i * 10 + 2}\"/>" +
+                    "<nd ref=\"${i * 10 + 3}\"/><nd ref=\"${i * 10 + 4}\"/><nd ref=\"${i * 10 + 1}\"/>" +
+                    "<tag k=\"building\" v=\"yes\"/>${tag}</way>"
+        }
+        File osm = new File(temp, "buildings.osm")
+        osm.text = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><osm version=\"0.6\">" + nodes + ways + "</osm>"
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : osm.getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : true,
+                "ignoreRoads"   : true
+        ])
+
+        def heights = new Sql(connection).rows("SELECT PK, HEIGHT FROM BUILDINGS ORDER BY PK")
+        assertEquals(5, heights.size())
+        assertEquals(12.5, heights[0].HEIGHT as double, 1e-6)
+        assertTrue((heights[1].HEIGHT as double) >= 7.5 && (heights[1].HEIGHT as double) <= 9.6)
+        assertTrue((heights[2].HEIGHT as double) >= 4.0 && (heights[2].HEIGHT as double) <= 6.1)
+        assertTrue((heights[3].HEIGHT as double) >= 3.0 && (heights[3].HEIGHT as double) <= 5.1)
+        assertTrue((heights[4].HEIGHT as double) >= 4.0 && (heights[4].HEIGHT as double) <= 6.1)
+    }
+
     /**
      * Test Linked_Table with external PostGIS database POSTGRES_HOST must be defined
      */
