@@ -39,6 +39,13 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
     LineSegment intersectionLine = new LineSegment();
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
     boolean curved = false;
+    // Caches shared between the four side hull searches of the same source-receiver couple
+    // (left/right x straight/curved): the candidate walls and the plane cuts do not depend
+    // on the side, and the curved rejection does not depend on the side either
+    List<Integer> acceptedCandidates = new ArrayList<>();
+    boolean candidatesCollected = false;
+    Map<Integer, List<Coordinate>> planeCutCache = new HashMap<>();
+    Map<Integer, Boolean> curvedRejectCache = new HashMap<>();
 
     public BuildingIntersectionPathVisitor(Coordinate p1, Coordinate p2, boolean left, ProfileBuilder profileBuilder,
                                            List<Coordinate> input, Plane cutPlane) {
@@ -81,6 +88,44 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
         itemProcessed.clear();
     }
 
+    /**
+     * Prepare the visitor for a new side hull search of the same source-receiver couple.
+     * The candidate walls and the plane cut caches are kept.
+     * @param left Side to search
+     * @param curved True to search with the curved coordinate system
+     * @param input Where the hull points are pushed
+     */
+    public void reset(boolean left, boolean curved, List<Coordinate> input) {
+        this.left = left;
+        this.curved = curved;
+        this.input = input;
+        itemProcessed.clear();
+        pushedBuildingsWideAnglePoints.clear();
+        pushedWallsPoints.clear();
+    }
+
+    /**
+     * @return True when the candidate walls of the first search can be processed again with
+     * {@link #replayCandidates()} instead of asking the spatial index again
+     */
+    public boolean isCandidatesCollected() {
+        return candidatesCollected;
+    }
+
+    public void setCandidatesCollected(boolean candidatesCollected) {
+        this.candidatesCollected = candidatesCollected;
+    }
+
+    /**
+     * Process again the candidate walls accepted by the first search, without asking the
+     * spatial index again
+     */
+    public void replayCandidates() {
+        for (int idCandidate = 0; idCandidate < acceptedCandidates.size(); idCandidate++) {
+            addItem(acceptedCandidates.get(idCandidate));
+        }
+    }
+
 
     /**
      *
@@ -94,6 +139,9 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             LineObstruction processedObstruction = profileBuilder.getProcessedObstructions().get(id);
             // Check if the wall intersects with the segment (only in 2D so it is useless to have a curved path)
             if(processedObstruction.getLineSegment().distance(intersectionLine) < ProfileBuilder.epsilon) {
+                if (!candidatesCollected) {
+                    acceptedCandidates.add(id);
+                }
                 addItem(id);
             }
         }
@@ -121,19 +169,12 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
                 // weird building, no diffraction point
                 return;
             }
-            if(curved) {
-                // Adjust the altitude of the building roof points to be in the curved coordinate system
-                List<Coordinate> curvedRoofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
-                        roofPoints.toArray(new Coordinate[0]), false));
-                // Create a cut of the building volume with the roof points z moved to the bottom following
-                // the curve coordinate system formulae
-                if(cutRoofPointsWithPlane(cutPlane, curvedRoofPoints).isEmpty()) {
-                    // The building roof is below the curved ray
-                    return;
-                }
+            if(curved && isCurvedRayBelowRoof(id, roofPoints)) {
+                // The building roof is below the curved ray
+                return;
             }
             // Create a cut of the building volume
-            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+            roofPoints = cutRoofPointsWithPlaneCached(id, roofPoints);
 
             // remove points that are not on the correct side of the line p1Top2 (use only x,y coordinates)
             roofPoints = filterPointsBySide(p1Top2, left, roofPoints);
@@ -156,19 +197,12 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             Coordinate extendedP1 = new Coordinate(processedWall.line.p1.x + translationVector.getX(),
                     processedWall.line.p1.y + translationVector.getY(), processedWall.line.p1.z);
             List<Coordinate> roofPoints = Arrays.asList(extendedP0, extendedP1);
-            if(curved) {
-                // Adjust the altitude of the building roof points to be in the curved coordinate system
-                List<Coordinate> curvedRoofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
-                        roofPoints.toArray(new Coordinate[0]), false));
-                // Create a cut of the building volume with the roof points z moved to the bottom following
-                // the curve coordinate system formulae
-                if(cutRoofPointsWithPlane(cutPlane, curvedRoofPoints).isEmpty()) {
-                    // The building roof is below the curved ray
-                    return;
-                }
+            if(curved && isCurvedRayBelowRoof(id, roofPoints)) {
+                // The wall top is below the curved ray
+                return;
             }
             // Create a cut of the building volume
-            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+            roofPoints = cutRoofPointsWithPlaneCached(id, roofPoints);
             // remove points that are not on the correct side of the line p1Top2 (use only x,y coordinates)
             roofPoints = filterPointsBySide(p1Top2, left, roofPoints);
             if (!roofPoints.isEmpty()) {
@@ -176,5 +210,36 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
                 input.addAll(roofPoints);
             }
         }
+    }
+
+    /**
+     * Cut of the building volume with the top points z moved to the bottom following the
+     * curved coordinate system formulae, empty when the top is below the curved ray.
+     * The result only depends on the wall, so it is computed once per wall.
+     */
+    private boolean isCurvedRayBelowRoof(int id, List<Coordinate> roofPoints) {
+        Boolean curvedRejected = curvedRejectCache.get(id);
+        if (curvedRejected == null) {
+            // Adjust the altitude of the building roof points to be in the curved coordinate system
+            List<Coordinate> curvedRoofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
+                    roofPoints.toArray(new Coordinate[0]), false));
+            curvedRejected = cutRoofPointsWithPlane(cutPlane, curvedRoofPoints).isEmpty();
+            curvedRejectCache.put(id, curvedRejected);
+        }
+        return curvedRejected;
+    }
+
+    /**
+     * Cut of the building volume with the vertical plane between p1 and p2. The result only
+     * depends on the wall, so it is computed once per wall. Callers must not change the
+     * returned list.
+     */
+    private List<Coordinate> cutRoofPointsWithPlaneCached(int id, List<Coordinate> roofPoints) {
+        List<Coordinate> cutPoints = planeCutCache.get(id);
+        if (cutPoints == null) {
+            cutPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+            planeCutCache.put(id, cutPoints);
+        }
+        return cutPoints;
     }
 }
